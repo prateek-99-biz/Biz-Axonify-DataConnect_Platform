@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand: #82c657;
+    --navy: #1d2b43;
+    --pale: #eef6e8;
+  }
+  html { color-scheme: light; }
+  body { @apply bg-[#F7F9FB] text-navy antialiased; font-feature-settings: "tnum"; }
+  *:focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+}

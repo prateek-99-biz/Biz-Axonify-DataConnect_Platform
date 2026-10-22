@@ -1,0 +1,17 @@
+{
+  "_comment": "Copy to bigquery-mapping.json. Every value below is a PLACEHOLDER (TODO: confirm) — no real DataConnect/reporting table names are known. Point these at the optimized reporting tables described in docs/ARCHITECTURE.md, not at raw DataConnect views.",
+  "clients": {
+    "table": "TODO_project.TODO_dataset.TODO_dim_client",
+    "columns": {
+      "id": "TODO", "name": "TODO", "industry": "TODO", "csmEmail": "TODO", "csmName": "TODO",
+      "axonifyTenantId": "TODO", "salesforceAccountId": "TODO"
+    }
+  },
+  "clientPeriod": {
+    "table": "TODO_project.TODO_dataset.TODO_rpt_client_period",
+    "columns": {
+      "clientId": "TODO", "period": "TODO (string like 2026-Q3)", "registeredUsers": "TODO", "activeUsers": "TODO",
+      "retainedUsers": "TODO", "previousActiveUsers": "TODO", "sessions": "TODO", "featuresAvailable": "TODO", "featuresUsed": "TODO"
+    }
+  }
+}

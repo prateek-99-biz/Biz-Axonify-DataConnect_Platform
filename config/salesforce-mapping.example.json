@@ -1,0 +1,5 @@
+{
+  "_comment": "Phase 3. Salesforce object and field API names are NOT yet agreed — all TODO. Do not guess; confirm with the Salesforce admin.",
+  "account": { "object": "TODO", "fields": { "id": "TODO", "name": "TODO", "industry": "TODO", "owner": "TODO" } },
+  "contract": { "object": "TODO", "fields": { "accountId": "TODO", "start": "TODO", "end": "TODO", "arr": "TODO", "licenses": "TODO" } }
+}

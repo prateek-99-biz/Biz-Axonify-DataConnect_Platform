@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Supabase: DATABASE_URL = pooled connection (port 6543, ?pgbouncer=true), DIRECT_URL = direct connection (port 5432) for migrations.
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// App-side profile for a Supabase Auth user (id = Supabase auth user id; "dev-<email>" for the dev-only login).
+model AppUser {
+  id        String     @id
+  email     String     @unique
+  name      String?
+  role      Role       @default(MEMBER)
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  lastLogin DateTime?
+  notes     Note[]
+  tasks     Task[]     @relation("TaskOwner")
+  created   Task[]     @relation("TaskCreator")
+  acks      AlertAck[]
+}
+
+/// Application-owned client key: Salesforce Account ID <-> Axonify Tenant ID. FK target for notes/tasks.
+model ClientMapping {
+  id                  String   @id @default(cuid())
+  salesforceAccountId String?  @unique
+  axonifyTenantId     String?  @unique
+  displayName         String
+  industry            String?
+  csmEmail            String?
+  verified            Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  notes               Note[]
+  tasks               Task[]
+
+  @@index([displayName])
+}
+
+model Note {
+  id        String        @id @default(cuid())
+  clientId  String
+  client    ClientMapping @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    AppUser       @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime      @default(now())
+
+  @@index([clientId, createdAt])
+}
+
+model Task {
+  id             String        @id @default(cuid())
+  clientId       String
+  client         ClientMapping @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title          String
+  detail         String?
+  priority       TaskPriority  @default(MEDIUM)
+  status         TaskStatus    @default(OPEN)
+  dueDate        DateTime?
+  ownerId        String?
+  owner          AppUser?      @relation("TaskOwner", fields: [ownerId], references: [id])
+  creatorId      String
+  creator        AppUser       @relation("TaskCreator", fields: [creatorId], references: [id])
+  sourceAlertKey String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([clientId, status])
+  @@index([ownerId, status])
+}
+
+model AlertAck {
+  id        String   @id @default(cuid())
+  alertKey  String
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([alertKey, userId])
+}
+
+model MetricDefinition {
+  key         String   @id
+  name        String
+  description String
+  formula     String
+  unit        String
+  status      String   @default("provisional")
+  updatedAt   DateTime @updatedAt
+}
+
+// ---- Daily-synced reporting summaries (filled by `npm run sync` / the Refresh button) ----
+
+model SyncClient {
+  id                  String @id
+  name                String
+  industry            String
+  csmEmail            String
+  csmName             String
+  axonifyTenantId     String?
+  salesforceAccountId String?
+}
+
+model SyncClientPeriod {
+  clientId            String
+  period              String
+  registeredUsers     Int
+  activeUsers         Int
+  retainedUsers       Int
+  previousActiveUsers Int
+  sessions            Int
+  featuresAvailable   Int
+  featuresUsed        Int
+
+  @@id([clientId, period])
+}
+
+model SyncRun {
+  id          String    @id @default(cuid())
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  /// running | ok | failed
+  status      String
+  message     String?
+  clientCount Int       @default(0)
+  rowCount    Int       @default(0)
+  triggeredBy String?
+
+  @@index([startedAt])
+}
