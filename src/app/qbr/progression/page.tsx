@@ -1,6 +1,6 @@
 import { Layers } from "lucide-react";
 import { Card, CardHeader, SourceUnavailable } from "@/components/ui/primitives";
-import { InternalNote, KpiStrip, KpiTile, PageHeader } from "@/components/dashboard/primitives";
+import { InternalNote, KpiStrip, KpiTile, PageHeader, ScopeTag } from "@/components/dashboard/primitives";
 import { ProgressStack } from "@/components/dashboard/dash-charts";
 import { PROGRESS_LABEL, PROGRESS_ORDER, sumProgress, totalOf } from "@/server/dashboard/calc";
 import { loadQbr } from "@/server/dashboard/context";
@@ -20,14 +20,14 @@ export default async function ProgressionPage({ searchParams }: { searchParams: 
     <div className="space-y-6">
       <PageHeader icon={Layers} title="Content Progression" subtitle="Where are users in their learning journey across L1, L2 and L3?" />
       <KpiStrip cols={3}>
-        <KpiTile label="Graduate / Expert %" value={fmtPct(total ? (all.graduate + all.expert) / total : null, 0)} hint="Share of learner-topic records" />
-        <KpiTile label="Not Started %" value={fmtPct(total ? all.notStarted / total : null, 0)} />
-        <KpiTile label="User-Topic Records" value={fmtCompact(total)} />
+        <KpiTile label="Graduate / Expert %" scope="snapshot" value={fmtPct(total ? (all.graduate + all.expert) / total : null, 0)} hint="Share of learner-topic records" />
+        <KpiTile label="Not Started %" scope="snapshot" value={fmtPct(total ? all.notStarted / total : null, 0)} />
+        <KpiTile label="User-Topic Records" scope="snapshot" value={fmtCompact(total)} />
       </KpiStrip>
       {internal && <InternalNote>Each row is a share of that level&apos;s own records and sums to 100%. The source report&apos;s matrix did not sum to 100%, which pointed at a wrong denominator.</InternalNote>}
 
       <Card>
-        <CardHeader title="Progress by question level" subtitle="Share of learner-topic records at each status" />
+        <CardHeader title="Progress by question level" badge={<ScopeTag scope="snapshot" />} subtitle="Share of learner-topic records at each status" />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -52,7 +52,7 @@ export default async function ProgressionPage({ searchParams }: { searchParams: 
       </Card>
 
       <Card>
-        <CardHeader title="Content Progression" subtitle="Learner-topic records by difficulty level and status" />
+        <CardHeader title="Content Progression" badge={<ScopeTag scope="snapshot" />} subtitle="Learner-topic records by difficulty level and status" />
         <div className="p-4"><ProgressStack data={levels.map((l) => ({ label: `Level ${l.level}`, ...l.counts }))} height={300} /></div>
       </Card>
     </div>

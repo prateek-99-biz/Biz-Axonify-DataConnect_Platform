@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { KpiStrip, KpiTile } from "@/components/dashboard/primitives";
+import { KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
 import { TreeSlicer } from "@/components/dashboard/slicers";
 import { contentFlag, descendants, reviewPriority, saturation, weightedAvg } from "@/server/dashboard/calc";
 import type { TopicNode, TopicStat } from "@/server/dashboard/types";
@@ -58,20 +58,20 @@ export function TopicsView({ topics, stats, canExport, internal }: { topics: Top
   return (
     <div className="space-y-6">
       <KpiStrip cols={4}>
-        <KpiTile label="Current Knowledge" value={fmtPct(current, 0)} />
-        <KpiTile label="Knowledge Lift" value={fmtPct(current != null && baseline != null ? current - baseline : null, 0)} hint="Current minus baseline" />
-        <KpiTile label="Audience" value={fmtCompact(aud)} hint="Learners assigned to the selected topics" />
-        <KpiTile label="Training Modules" value={fmtNumber(sum((t) => t.modules))} />
-        <KpiTile label="Topic Completion" value={fmtPct(weightedAvg(scoped, (t) => t.completion), 0)} />
-        <KpiTile label="Released Questions" value={fmtCompact(sum((t) => t.l1 + t.l2 + t.l3))} />
-        <KpiTile label="Target Groups" value={fmtNumber(sum((t) => t.targetGroups))} />
-        <KpiTile label="Latest Topic Created" value={latest ? new Date(latest).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "\u2014"} />
+        <KpiTile label="Current Knowledge" scope="snapshot" value={fmtPct(current, 0)} />
+        <KpiTile label="Knowledge Lift" scope="snapshot" value={fmtPct(current != null && baseline != null ? current - baseline : null, 0)} hint="Current minus baseline" />
+        <KpiTile label="Audience" scope="snapshot" value={fmtCompact(aud)} hint="Learners assigned to the selected topics" />
+        <KpiTile label="Training Modules" scope="snapshot" value={fmtNumber(sum((t) => t.modules))} />
+        <KpiTile label="Topic Completion" scope="snapshot" value={fmtPct(weightedAvg(scoped, (t) => t.completion), 0)} />
+        <KpiTile label="Released Questions" scope="snapshot" value={fmtCompact(sum((t) => t.l1 + t.l2 + t.l3))} />
+        <KpiTile label="Target Groups" scope="snapshot" value={fmtNumber(sum((t) => t.targetGroups))} />
+        <KpiTile label="Latest Topic Created" scope="snapshot" value={latest ? new Date(latest).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "\u2014"} />
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[20rem_1fr]">
         <TreeSlicer title="Topic selection" nodes={topics} selected={sel} onChange={setSel} />
         <Card className={cn("min-w-0")}>
-          <CardHeader title="Topic detail" subtitle={internal ? "Content flags and priority are shown to Biz Group staff only" : "Questions per difficulty level and coverage"} />
+          <CardHeader title="Topic detail" badge={<ScopeTag scope="snapshot" />} subtitle={internal ? "Content flags and priority are shown to Biz Group staff only" : "Questions per difficulty level and coverage"} />
           <DataTable canExport={canExport} exportName="topic-coverage" columns={columns} rows={rows} pageSize={12} />
         </Card>
       </div>

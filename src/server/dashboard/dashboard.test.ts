@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateMonths, contentFlag, descendants, engagementHealth, resolveRange, reviewPriority, saturation, teamStatus, teamTrend } from "./calc";
+import { aggregateMonths, contentFlag, isCurrentMonth, monthAxisLabel, descendants, engagementHealth, resolveRange, reviewPriority, saturation, teamStatus, teamTrend } from "./calc";
 import { mockDashboard } from "./mock";
 import { can, parseRole } from "@/server/auth/rbac";
 
@@ -37,6 +37,15 @@ describe("content rules", () => {
     expect(reviewPriority(t(0, 0, 0))).toBe(1);
     expect(reviewPriority(t(5, 5, 5))).toBe(7);
     expect(saturation(t(5, 4, 4))).toBeCloseTo(13 / 12, 10);
+  });
+});
+
+describe("in-progress month", () => {
+  it("marks only the month of the last refresh", () => {
+    expect(isCurrentMonth("2026-10", "2026-10-28T09:00:00.000Z")).toBe(true);
+    expect(isCurrentMonth("2026-09", "2026-10-28T09:00:00.000Z")).toBe(false);
+    expect(monthAxisLabel("2026-10", "2026-10-28T09:00:00.000Z")).toBe("Oct 2026 (to date)");
+    expect(monthAxisLabel("2026-09", "2026-10-28T09:00:00.000Z")).toBe("Sep 2026");
   });
 });
 

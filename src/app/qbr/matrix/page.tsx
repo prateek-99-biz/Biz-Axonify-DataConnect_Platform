@@ -1,6 +1,6 @@
 import { Grid2x2 } from "lucide-react";
 import { Card, CardHeader, SourceUnavailable } from "@/components/ui/primitives";
-import { PageHeader } from "@/components/dashboard/primitives";
+import { PageHeader, ScopeTag } from "@/components/dashboard/primitives";
 import { QuadrantBubbles } from "@/components/dashboard/dash-charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { loadQbr } from "@/server/dashboard/context";
@@ -40,7 +40,7 @@ export default async function MatrixPage({ searchParams }: { searchParams: Promi
       <PageHeader icon={Grid2x2} title="Knowledge & Confidence Matrix" subtitle="Data that drives performance" />
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
         <Card>
-          <CardHeader title="Knowledge & Confidence Matrix" subtitle="Bubble size = number of learners · dashed lines mark 50%" />
+          <CardHeader title="Knowledge & Confidence Matrix" badge={<ScopeTag scope="snapshot" />} subtitle="Bubble size = number of learners · dashed lines mark 50%" />
           <div className="p-4"><QuadrantBubbles points={data.matrix} /></div>
         </Card>
         <Card className="self-start">
@@ -54,7 +54,7 @@ export default async function MatrixPage({ searchParams }: { searchParams: Promi
         </Card>
       </div>
       <Card>
-        <CardHeader title="Learner segments" subtitle={`${fmtNumber(total)} learners with knowledge and confidence data`} />
+        <CardHeader title="Learner segments" badge={<ScopeTag scope="snapshot" />} subtitle={`${fmtNumber(total)} learners with knowledge and confidence data`} />
         <DataTable searchable={false} columns={[{ key: "segment", header: "Segment" }, { key: "meaning", header: "What it means" }, { key: "learners", header: "Learners", align: "right" }, { key: "share", header: "Share", align: "right" }, { key: "knowledge", header: "Avg knowledge", align: "right" }, { key: "confidence", header: "Avg confidence", align: "right" }]} rows={rows} />
       </Card>
     </div>

@@ -26,6 +26,16 @@ export function resolveRange(available: string[], from?: string, to?: string): R
   return { from: f, to: t };
 }
 
+/** True when the month is the one the data was last refreshed in, so its calendar-based totals are still growing. */
+export function isCurrentMonth(month: string, asOf: string) {
+  return month === asOf.slice(0, 7);
+}
+
+/** Chart label for a month; the in-progress month is marked so a dip is not read as a drop. */
+export function monthAxisLabel(month: string, asOf: string) {
+  return isCurrentMonth(month, asOf) ? `${monthLabel(month)} (to date)` : monthLabel(month);
+}
+
 export function monthLabel(m: string) {
   const [y, mo] = m.split("-").map(Number);
   return new Date(Date.UTC(y, mo - 1, 1)).toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });

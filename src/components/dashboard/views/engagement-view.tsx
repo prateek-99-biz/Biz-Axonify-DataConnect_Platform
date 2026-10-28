@@ -3,16 +3,16 @@
 import { useMemo, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { KpiStrip, KpiTile, TrendPill } from "@/components/dashboard/primitives";
+import { KpiStrip, KpiTile, ScopeTag, TrendPill } from "@/components/dashboard/primitives";
 import { DualAxisLine } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
-import { aggregateMonths, descendants, inRange, monthLabel, teamRows, type Range } from "@/server/dashboard/calc";
+import { aggregateMonths, descendants, inRange, monthAxisLabel, teamRows, type Range } from "@/server/dashboard/calc";
 import type { TeamMonth, TeamNode } from "@/server/dashboard/types";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 
 const TREND_RANK = { Declining: 0, Stable: 1, "No prior data": 2, Rising: 3 } as const;
 
-export function EngagementView({ teams, teamMonths, range, canExport }: { teams: TeamNode[]; teamMonths: TeamMonth[]; range: Range; canExport: boolean }) {
+export function EngagementView({ teams, teamMonths, range, canExport, asOf }: { teams: TeamNode[]; teamMonths: TeamMonth[]; range: Range; canExport: boolean; asOf: string }) {
   const [sel, setSel] = useState<Set<string>>(new Set());
 
   const scoped = useMemo(() => {
@@ -24,7 +24,7 @@ export function EngagementView({ teams, teamMonths, range, canExport }: { teams:
   const latest = months.at(-1);
   const part = latest && latest.activeUsers ? latest.trainingUsers / latest.activeUsers : null;
 
-  const chart = months.map((m) => ({ month: monthLabel(m.month), participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null, frequency: m.frequency }));
+  const chart = months.map((m) => ({ month: monthAxisLabel(m.month, asOf), participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null, frequency: m.frequency }));
 
   const rows: TableRow[] = useMemo(() => {
     const keep = sel.size ? descendants(teams, sel) : null;
@@ -45,24 +45,24 @@ export function EngagementView({ teams, teamMonths, range, canExport }: { teams:
   return (
     <div className="space-y-6">
       <KpiStrip>
-        <KpiTile label="Participation Rate" value={fmtPct(part, 0)} hint="Training users ÷ active users, latest month" />
-        <KpiTile label="Avg Time / Day" value={latest ? latest.avgTimePerDayMin.toFixed(1) : "\u2014"} hint="Minutes per active user" />
-        <KpiTile label="Avg Frequency" value={latest ? latest.frequency.toFixed(1) : "\u2014"} hint="Sessions per active user" />
-        <KpiTile label="Logged-in Users" value={fmtNumber(latest?.loggedInUsers)} hint="Users with at least one session" />
-        <KpiTile label="Training Users" value={fmtNumber(latest?.trainingUsers)} hint="Active users with a training session" />
+        <KpiTile label="Participation Rate" scope="month" value={fmtPct(part, 0)} hint="Training users ÷ active users, latest month" />
+        <KpiTile label="Avg Time / Day" scope="month" value={latest ? latest.avgTimePerDayMin.toFixed(1) : "\u2014"} hint="Minutes per active user" />
+        <KpiTile label="Avg Frequency" scope="month" value={latest ? latest.frequency.toFixed(1) : "\u2014"} hint="Sessions per active user" />
+        <KpiTile label="Logged-in Users" scope="month" value={fmtNumber(latest?.loggedInUsers)} hint="Users with at least one session" />
+        <KpiTile label="Training Users" scope="month" value={fmtNumber(latest?.trainingUsers)} hint="Active users with a training session" />
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[18rem_1fr]">
         <TreeSlicer title="Teams" nodes={teams} selected={sel} onChange={setSel} />
         <div className="space-y-4">
           <Card>
-            <CardHeader title="Avg Participation and Avg Frequency by Month" subtitle={sel.size ? "Filtered to the selected teams" : "All teams"} />
+            <CardHeader title="Avg Participation and Avg Frequency by Month" badge={<ScopeTag scope="range" />} subtitle={sel.size ? "Filtered to the selected teams" : "All teams"} />
             <div className="p-4">
               <DualAxisLine data={chart} xKey="month" left={{ key: "participation", label: "Avg participation", format: "pct" }} right={{ key: "frequency", label: "Avg frequency", format: "decimal" }} />
             </div>
           </Card>
           <Card>
-            <CardHeader title="Teams" subtitle="Latest month in range, month-over-month trend (±3 participation points)" />
+            <CardHeader title="Teams" badge={<ScopeTag scope="month" />} subtitle="Latest month in range, month-over-month trend (±3 participation points)" />
             <DataTable canExport={canExport} exportName="engagement-teams" pageSize={12}
               columns={[{ key: "team", header: "Team" }, { key: "participation", header: "Team participation", align: "right" }, { key: "frequency", header: "Team frequency", align: "right" }, { key: "trend", header: "Team trend" }]}
               rows={rows} />

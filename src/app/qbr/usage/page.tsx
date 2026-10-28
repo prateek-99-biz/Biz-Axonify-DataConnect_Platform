@@ -12,7 +12,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-6">
       <PageHeader icon={Cog} title="Usage & Activity" subtitle="Hours · games · rewards · platform" />
-      <UsageView usageMonthly={data.usageMonthly} platformAccess={data.platformAccess} hours={data.hours} features={data.features} range={range} />
+      <UsageView usageMonthly={data.usageMonthly} platformAccess={data.platformAccess} hours={data.hours} features={data.features} range={range} asOf={data.asOf} />
     </div>
   );
 }

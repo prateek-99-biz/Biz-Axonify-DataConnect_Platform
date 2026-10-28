@@ -2,15 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/primitives";
-import { KpiStrip, KpiTile } from "@/components/dashboard/primitives";
+import { KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
 import { Donut, HBars, HourColumns } from "@/components/dashboard/dash-charts";
 import { ChecklistSlicer } from "@/components/dashboard/slicers";
-import { inRange, type Range } from "@/server/dashboard/calc";
+import { inRange, isCurrentMonth, type Range } from "@/server/dashboard/calc";
 import type { FeatureUsage, HourCount, PlatformAccess, UsageMonth } from "@/server/dashboard/types";
 import { fmtCompact, fmtNumber } from "@/lib/utils";
 
-export function UsageView({ usageMonthly, platformAccess, hours, features, range }: {
-  usageMonthly: UsageMonth[]; platformAccess: PlatformAccess[]; hours: HourCount[]; features: FeatureUsage[]; range: Range;
+export function UsageView({ usageMonthly, platformAccess, hours, features, range, asOf }: {
+  usageMonthly: UsageMonth[]; platformAccess: PlatformAccess[]; hours: HourCount[]; features: FeatureUsage[]; range: Range; asOf: string;
 }) {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const options = platformAccess.map((p) => p.platform);
@@ -24,33 +24,34 @@ export function UsageView({ usageMonthly, platformAccess, hours, features, range
     };
   }, [usageMonthly, range]);
 
+  const partial = isCurrentMonth(range.to, asOf);
   const donut = platformAccess.filter((p) => sel.size === 0 || sel.has(p.platform)).map((p) => ({ name: p.platform, value: p.logins }));
 
   return (
     <div className="space-y-6">
       <KpiStrip cols={6}>
-        <KpiTile label="Training Hours" value={fmtCompact(totals.trainingHours)} hint="Selected date range" />
-        <KpiTile label="Platform Logins" value={fmtCompact(totals.platformLogins)} hint="Selected date range" />
-        <KpiTile label="Training Activities" value={fmtCompact(totals.trainingActivities)} hint="Selected date range" />
-        <KpiTile label="Games Played" value={fmtCompact(totals.gamesPlayed)} hint="Selected date range" />
-        <KpiTile label="Points Spent" value={fmtNumber(totals.pointsSpent)} hint="Selected date range" />
-        <KpiTile label="Broadcasts Sent" value={fmtNumber(totals.broadcastsSent)} hint="Selected date range" />
+        <KpiTile label="Training Hours" scope="range" value={fmtCompact(totals.trainingHours)} hint={partial ? "Includes the current month to date" : "Selected date range"} />
+        <KpiTile label="Platform Logins" scope="range" value={fmtCompact(totals.platformLogins)} hint={partial ? "Includes the current month to date" : "Selected date range"} />
+        <KpiTile label="Training Activities" scope="range" value={fmtCompact(totals.trainingActivities)} hint={partial ? "Includes the current month to date" : "Selected date range"} />
+        <KpiTile label="Games Played" scope="range" value={fmtCompact(totals.gamesPlayed)} hint={partial ? "Includes the current month to date" : "Selected date range"} />
+        <KpiTile label="Points Spent" scope="range" value={fmtNumber(totals.pointsSpent)} hint={partial ? "Includes the current month to date" : "Selected date range"} />
+        <KpiTile label="Broadcasts Sent" scope="range" value={fmtNumber(totals.broadcastsSent)} hint={partial ? "Includes the current month to date" : "Selected date range"} />
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[14rem_1fr_1fr]">
         <ChecklistSlicer title="Platform" options={options} selected={sel} onChange={setSel} />
         <Card>
-          <CardHeader title="Platform Access" subtitle="Logins by device, last 30 days" />
+          <CardHeader title="Platform Access" badge={<ScopeTag scope="d30" />} subtitle="Logins by device, last 30 days" />
           <div className="p-4"><Donut data={donut} /></div>
         </Card>
         <Card>
-          <CardHeader title="Feature Usage % - Last 30 Days" subtitle="Share of active users" />
+          <CardHeader title="Feature Usage % - Last 30 Days" badge={<ScopeTag scope="d30" />} subtitle="Share of active users" />
           <div className="p-4"><HBars data={features.map((f) => ({ name: f.feature, share: f.share }))} nameKey="name" nameWidth={110} series={[{ key: "share", label: "Active users using feature", color: 0 }]} format="pct" maxHeight={260} /></div>
         </Card>
       </div>
 
       <Card>
-        <CardHeader title="Training by Time of Day" subtitle="Training activity count by hour, last 30 days (UTC)" />
+        <CardHeader title="Training by Time of Day" badge={<ScopeTag scope="d30" />} subtitle="Training activity count by hour, last 30 days (UTC)" />
         <div className="p-4"><HourColumns data={hours} /></div>
       </Card>
     </div>

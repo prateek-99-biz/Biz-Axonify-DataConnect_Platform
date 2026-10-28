@@ -12,7 +12,7 @@ export default async function EngagementPage({ searchParams }: { searchParams: P
   return (
     <div className="space-y-6">
       <PageHeader icon={Activity} title="Engagement Overview" subtitle="Participation · frequency · active users · training users" />
-      <EngagementView teams={data.teams} teamMonths={data.teamMonths} range={range} canExport={canExport} />
+      <EngagementView teams={data.teams} teamMonths={data.teamMonths} range={range} canExport={canExport} asOf={data.asOf} />
     </div>
   );
 }

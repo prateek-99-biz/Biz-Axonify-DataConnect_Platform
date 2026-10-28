@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { SourceUnavailable, Card, CardHeader } from "@/components/ui/primitives";
-import { KpiStrip, KpiTile, PageHeader } from "@/components/dashboard/primitives";
+import { KpiStrip, KpiTile, PageHeader, ScopeTag } from "@/components/dashboard/primitives";
 import { SingleLine } from "@/components/dashboard/dash-charts";
 import { QBR_PAGES } from "@/components/dashboard/pages";
 import { House } from "lucide-react";
-import { headline, monthLabel } from "@/server/dashboard/calc";
+import { headline, monthAxisLabel, monthLabel } from "@/server/dashboard/calc";
 import { carryQuery, loadQbr } from "@/server/dashboard/context";
 import type { SearchParams } from "@/server/services/context";
 import { fmtCompact, fmtPct } from "@/lib/utils";
@@ -19,7 +19,7 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
   const qs = carryQuery(sp);
 
   const series = h.months.map((m) => ({
-    month: monthLabel(m.month), frequency: m.frequency, participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null,
+    month: monthAxisLabel(m.month, data.asOf), frequency: m.frequency, participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null,
   }));
 
   return (
@@ -27,11 +27,11 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
       <PageHeader icon={House} title="Axonify Data Connect" subtitle={`${data.clientName} \u00b7 ${monthLabel(range.from)} to ${monthLabel(range.to)}`} />
 
       <KpiStrip>
-        <KpiTile label="Engagement Health" value={fmtPct(h.health, 0)} hint="50% participation + 50% knowledge" />
-        <KpiTile label="Avg Frequency" value={h.latest ? `${h.latest.frequency.toFixed(1)}x` : "\u2014"} hint="Sessions per active user, latest month" />
-        <KpiTile label="Active Users" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
-        <KpiTile label="Avg Participation" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
-        <KpiTile label="Avg Knowledge" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />
+        <KpiTile label="Engagement Health" scope="month" scopeLabel="Month + snapshot" value={fmtPct(h.health, 0)} hint="50% participation + 50% knowledge" />
+        <KpiTile label="Avg Frequency" scope="month" value={h.latest ? `${h.latest.frequency.toFixed(1)}x` : "\u2014"} hint="Sessions per active user, latest month" />
+        <KpiTile label="Active Users" scope="month" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
+        <KpiTile label="Avg Participation" scope="month" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
+        <KpiTile label="Avg Knowledge" scope="snapshot" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />
       </KpiStrip>
 
       <Card>
@@ -54,11 +54,11 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader title="Avg Frequency by Month" subtitle="Sessions per active user" />
+          <CardHeader title="Avg Frequency by Month" badge={<ScopeTag scope="range" />} subtitle="Sessions per active user" />
           <div className="p-4"><SingleLine data={series} xKey="month" yKey="frequency" label="Avg frequency" format="decimal" /></div>
         </Card>
         <Card>
-          <CardHeader title="Avg Participation by Month" subtitle="Training users ÷ active users" />
+          <CardHeader title="Avg Participation by Month" badge={<ScopeTag scope="range" />} subtitle="Training users ÷ active users" />
           <div className="p-4"><SingleLine data={series} xKey="month" yKey="participation" label="Avg participation" format="pct" /></div>
         </Card>
       </div>

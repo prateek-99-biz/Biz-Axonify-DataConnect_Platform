@@ -1,6 +1,6 @@
 import { Package } from "lucide-react";
 import { Card, CardHeader, SourceUnavailable } from "@/components/ui/primitives";
-import { InternalNote, KpiStrip, KpiTile, PageHeader } from "@/components/dashboard/primitives";
+import { InternalNote, KpiStrip, KpiTile, PageHeader, ScopeTag } from "@/components/dashboard/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { Badge } from "@/components/ui/primitives";
 import { loadQbr } from "@/server/dashboard/context";
@@ -31,16 +31,16 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
     <div className="space-y-6">
       <PageHeader icon={Package} title="Content Delivery" subtitle="How much content is being assigned to people and groups?" />
       <KpiStrip cols={6}>
-        <KpiTile label="Avg Question Pool" value={fmtNumber(data.delivery.avgQuestionPool, 0)} hint="Released questions per assigned topic" />
-        <KpiTile label="Est. Months to Graduate" value={dash(data.delivery.estimatedMonthsToGraduate)} />
-        <KpiTile label="Avg Programs / Group" value={dash(avg((g) => g.programs))} hint="Active groups" />
-        <KpiTile label="Max Programs / Group" value={dash(max((g) => g.programs), 0)} />
-        <KpiTile label="Avg Reinforcement / Group" value={dash(avg((g) => g.reinforcementTopics))} hint="Active groups" />
-        <KpiTile label="Max Reinforcement / Group" value={dash(max((g) => g.reinforcementTopics), 0)} />
+        <KpiTile label="Avg Question Pool" scope="snapshot" value={fmtNumber(data.delivery.avgQuestionPool, 0)} hint="Released questions per assigned topic" />
+        <KpiTile label="Est. Months to Graduate" scope="snapshot" value={dash(data.delivery.estimatedMonthsToGraduate)} />
+        <KpiTile label="Avg Programs / Group" scope="snapshot" value={dash(avg((g) => g.programs))} hint="Active groups" />
+        <KpiTile label="Max Programs / Group" scope="snapshot" value={dash(max((g) => g.programs), 0)} />
+        <KpiTile label="Avg Reinforcement / Group" scope="snapshot" value={dash(avg((g) => g.reinforcementTopics))} hint="Active groups" />
+        <KpiTile label="Max Reinforcement / Group" scope="snapshot" value={dash(max((g) => g.reinforcementTopics), 0)} />
       </KpiStrip>
       {internal && empty && <InternalNote>Every active group shows 0 programs and 0 reinforcement topics. The source report had the same gap, so check the assignment data before presenting this page.</InternalNote>}
       <Card>
-        <CardHeader title="Training groups" subtitle="Programs and reinforcement topics assigned per group" />
+        <CardHeader title="Training groups" badge={<ScopeTag scope="snapshot" />} subtitle="Programs and reinforcement topics assigned per group" />
         <DataTable canExport={canExport} exportName="training-groups" pageSize={12}
           columns={[{ key: "name", header: "Training group" }, { key: "status", header: "Status" }, { key: "programs", header: "Programs assigned", align: "right" }, { key: "reinforcement", header: "Reinforcement topics assigned", align: "right" }]}
           rows={rows} />

@@ -20,7 +20,27 @@ export function PageHeader({ icon: Icon, title, subtitle, right }: { icon: Lucid
   );
 }
 
-export function KpiTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+/**
+ * Which time window a number covers. Dashboard pages mix date-range charts with snapshots and rolling windows, so
+ * every KPI and card says which one it is.
+ */
+export const SCOPES = {
+  range: { label: "Date range", help: "Follows the date range selected at the top of the page." },
+  month: { label: "Latest month", help: "The most recent month in the selected range (rolling 30 days to the last data refresh when it is the current month)." },
+  d30: { label: "Last 30 days", help: "Rolling 30 days to the last data refresh. Ignores the date range." },
+  snapshot: { label: "Snapshot", help: "Current state at the last data refresh. Ignores the date range." },
+} as const;
+export type Scope = keyof typeof SCOPES;
+
+export function ScopeTag({ scope, label }: { scope: Scope; label?: string }) {
+  return (
+    <span title={SCOPES[scope].help} className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-white/10 dark:text-slate-300">
+      {label ?? SCOPES[scope].label}
+    </span>
+  );
+}
+
+export function KpiTile({ label, value, hint, scope, scopeLabel }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string }) {
   return (
     <Card className="relative py-4 pl-6 pr-4" title={hint}>
       <span aria-hidden className="absolute bottom-4 left-3 top-4 w-1 rounded-full bg-gradient-to-b from-brand to-brand-accent" />

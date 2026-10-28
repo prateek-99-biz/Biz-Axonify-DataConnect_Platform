@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { DataBar, KpiStrip, KpiTile } from "@/components/dashboard/primitives";
+import { DataBar, KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
 import { HBars } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
 import { descendants, weightedAvg } from "@/server/dashboard/calc";
@@ -40,16 +40,16 @@ export function KnowledgeView({ topics, stats, knowledge, frequency, canExport }
   return (
     <div className="space-y-6">
       <KpiStrip>
-        <KpiTile label="Baseline Knowledge" value={fmtPct(baseline, 0)} hint="Score at first attempt" />
-        <KpiTile label="Current Knowledge" value={fmtPct(current, 0)} hint="Latest score" />
-        <KpiTile label="Confidence Level" value={fmtPct(knowledge.confidence, 0)} hint="Self-reported confidence" />
-        <KpiTile label="Experts" value={fmtNumber(knowledge.experts)} hint="Learners at 90% or above" />
-        <KpiTile label="Topic Completion" value={fmtPct(completion, 0)} hint="Learner-topic records at Graduate" />
+        <KpiTile label="Baseline Knowledge" scope="snapshot" value={fmtPct(baseline, 0)} hint="Score at first attempt" />
+        <KpiTile label="Current Knowledge" scope="snapshot" value={fmtPct(current, 0)} hint="Latest score" />
+        <KpiTile label="Confidence Level" scope="snapshot" value={fmtPct(knowledge.confidence, 0)} hint="Self-reported confidence" />
+        <KpiTile label="Experts" scope="snapshot" value={fmtNumber(knowledge.experts)} hint="Learners at 90% or above" />
+        <KpiTile label="Topic Completion" scope="snapshot" value={fmtPct(completion, 0)} hint="Learner-topic records at Graduate" />
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
         <Card>
-          <CardHeader title="Knowledge growth by topic" subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} \u00b7 current vs baseline`} />
+          <CardHeader title="Knowledge growth by topic" badge={<ScopeTag scope="snapshot" />} subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} \u00b7 current vs baseline`} />
           <div className="p-4">
             {bars.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No topics selected.</p> : (
               <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current knowledge", color: 2 }, { key: "baseline", label: "Baseline knowledge", color: 5 }]} />
@@ -60,7 +60,7 @@ export function KnowledgeView({ topics, stats, knowledge, frequency, canExport }
       </div>
 
       <Card>
-        <CardHeader title="Knowledge by learning frequency" subtitle="Learners who train more often know more and gain more" />
+        <CardHeader title="Knowledge by learning frequency" badge={<ScopeTag scope="snapshot" />} subtitle="Learners who train more often know more and gain more" />
         <DataTable searchable={false} canExport={canExport} exportName="knowledge-by-frequency"
           columns={[{ key: "bucket", header: "Frequency" }, { key: "users", header: "Frequency user %", align: "right" }, { key: "current", header: "Current knowledge", align: "right" }, { key: "lift", header: "Knowledge lift", align: "right" }]}
           rows={rows} />

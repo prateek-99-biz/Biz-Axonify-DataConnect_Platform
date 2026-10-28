@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button, Card, CardHeader } from "@/components/ui/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { StatusDot, TrendPill } from "@/components/dashboard/primitives";
+import { StatusDot, TrendPill, ScopeTag } from "@/components/dashboard/primitives";
 import { ChecklistSlicer } from "@/components/dashboard/slicers";
 import { teamRows, type Range, type TeamRow, type TeamStatus } from "@/server/dashboard/calc";
 import type { TeamMonth, TeamNode } from "@/server/dashboard/types";
@@ -55,7 +55,7 @@ export function TeamsView({ teams, teamMonths, range, canExport, internal }: { t
       <ChecklistSlicer title="Team name" options={names} selected={sel} onChange={setSel} />
       <div className="space-y-4">
         <Card>
-          <CardHeader title="Team Performance Distribution" subtitle={`${rows.length} team${rows.length === 1 ? "" : "s"} \u00b7 status blends participation (\u2265 75% = full score) and frequency (\u2265 6x = full score)`} />
+          <CardHeader title="Team Performance Distribution" badge={<ScopeTag scope="month" />} subtitle={`${rows.length} team${rows.length === 1 ? "" : "s"} \u00b7 status blends participation (\u2265 75% = full score) and frequency (\u2265 6x = full score)`} />
           <div className="p-5">
             <div className="flex h-10 overflow-hidden rounded-xl" role="img" aria-label={`High ${counts.High}, Medium ${counts.Medium}, Low ${counts.Low}`}>
               {(["High", "Medium", "Low"] as const).map((s) => counts[s] > 0 && (
@@ -72,11 +72,11 @@ export function TeamsView({ teams, teamMonths, range, canExport, internal }: { t
 
         <div className="grid gap-4 2xl:grid-cols-2">
           <Card>
-            <CardHeader title="Top Performing Teams" subtitle="Highest participation among High-status teams" />
+            <CardHeader title="Top Performing Teams" badge={<ScopeTag scope="month" />} subtitle="Highest participation among High-status teams" />
             <DataTable searchable={false} columns={COLS} rows={top.map(toRow)} pageSize={10} emptyTitle="No High-status teams" />
           </Card>
           <Card>
-            <CardHeader title="Teams Needing Attention" subtitle="Lowest participation among Low-status teams" />
+            <CardHeader title="Teams Needing Attention" badge={<ScopeTag scope="month" />} subtitle="Lowest participation among Low-status teams" />
             <DataTable searchable={false} columns={COLS} rows={attention.map(toRow)} pageSize={10} emptyTitle="No Low-status teams" />
           </Card>
         </div>
@@ -87,7 +87,7 @@ export function TeamsView({ teams, teamMonths, range, canExport, internal }: { t
 
         {all && (
           <Card>
-            <CardHeader title="All teams" subtitle={internal ? "Ranked by participation \u00b7 internal export available" : "Ranked by participation"} />
+            <CardHeader title="All teams" badge={<ScopeTag scope="month" />} subtitle={internal ? "Ranked by participation \u00b7 internal export available" : "Ranked by participation"} />
             <DataTable canExport={canExport} exportName="team-performance" columns={detailCols} rows={ranked.map(toRow)} pageSize={15} />
           </Card>
         )}
