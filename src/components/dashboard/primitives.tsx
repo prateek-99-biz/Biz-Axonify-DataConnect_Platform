@@ -35,7 +35,7 @@ export type Scope = keyof typeof SCOPES;
 
 export function ScopeTag({ scope, label }: { scope: Scope; label?: string }) {
   return (
-    <span title={SCOPES[scope].help} className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-white/10 dark:text-slate-300">
+    <span title={SCOPES[scope].help} className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
       {label ?? SCOPES[scope].label}
     </span>
   );
@@ -48,6 +48,7 @@ export function KpiTile({ label, value, hint, scope, scopeLabel, metric }: { lab
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">{value}</p>
       {hint && <p className="mt-0.5 truncate text-[11px] text-slate-400">{hint}</p>}
+      {scope && <div className="mt-2"><ScopeTag scope={scope} label={scopeLabel} /></div>}
     </Card>
   );
 }

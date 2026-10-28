@@ -36,7 +36,7 @@ export function EngagementView({ teams, teamMonths, range, canExport, asOf }: { 
         cells: {
           team: { v: r.team.name },
           participation: { v: r.participation, node: fmtPct(r.participation, 0) },
-          frequency: { v: r.frequency, node: r.frequency == null ? "\u2014" : `${r.frequency.toFixed(1)}x` },
+          frequency: { v: r.frequency, node: r.frequency == null ? "\u2014" : r.frequency.toFixed(1) },
           trend: { v: r.trend, node: <TrendPill trend={r.trend} /> },
         },
       }));
@@ -64,7 +64,7 @@ export function EngagementView({ teams, teamMonths, range, canExport, asOf }: { 
           <Card>
             <CardHeader title="Teams" badge={<ScopeTag scope="month" />} subtitle="Latest month in range, month-over-month trend (±3 participation points)" />
             <DataTable canExport={canExport} exportName="engagement-teams" pageSize={12}
-              columns={[{ key: "team", header: "Team" }, { key: "participation", header: "Team training participation", align: "right" }, { key: "frequency", header: "Team frequency", align: "right" }, { key: "trend", header: "Team trend" }]}
+              columns={[{ key: "team", header: "Team" }, { key: "participation", header: "Team training participation", align: "right" }, { key: "frequency", header: "Team frequency (days)", align: "right" }, { key: "trend", header: "Team trend" }]}
               rows={rows} />
           </Card>
         </div>

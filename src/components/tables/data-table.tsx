@@ -39,7 +39,12 @@ export function DataTable({
   const visible = filtered.slice(cur * pageSize, (cur + 1) * pageSize);
 
   function exportCsv() {
-    const esc = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+    // Text starting with = + - @ (or a control character) would run as a formula in Excel; numbers are left alone.
+    const esc = (s: unknown) => {
+      const raw = String(s ?? "");
+      const safe = typeof s !== "number" && /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
     const csv = [columns.map((c) => esc(c.header)).join(","), ...filtered.map((r) => columns.map((c) => esc(r.cells[c.key]?.v)).join(","))].join("\r\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");

@@ -115,7 +115,9 @@ export function aggregate(rows: ClientPeriodRow[], quarters: string[]): DerivedM
   const t = sumRows(inPeriod);
   // Registered users are a point-in-time stock: use the latest quarter, not the sum across quarters.
   if (quarters.length > 1 && inPeriod.length) {
-    const last = quarters[quarters.length - 1];
+    // A year in progress has fewer than four quarters of data: use (and divide by) the quarters that actually have rows.
+    const withData = quarters.filter((q) => inPeriod.some((r) => r.period === q));
+    const last = withData[withData.length - 1];
     const lastRows = inPeriod.filter((r) => r.period === last);
     t.registeredUsers = sumRows(lastRows).registeredUsers;
     // Knowledge is a current snapshot, like the report's Current Knowledge: use the latest quarter.
@@ -124,8 +126,8 @@ export function aggregate(rows: ClientPeriodRow[], quarters: string[]): DerivedM
     t.knowledgeWeighted = lastTotals.knowledgeWeighted;
     // Active users across a year is not the sum of quarterly actives (double counting); average of quarters
     // is a documented approximation until DataConnect supports distinct-over-year. Training users follow the same rule.
-    t.activeUsers = Math.round(t.activeUsers / quarters.length);
-    t.trainingUsers = Math.round(t.trainingUsers / quarters.length);
+    t.activeUsers = Math.round(t.activeUsers / withData.length);
+    t.trainingUsers = Math.round(t.trainingUsers / withData.length);
   }
   return derive(t);
 }

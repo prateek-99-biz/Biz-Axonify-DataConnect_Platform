@@ -62,6 +62,18 @@ describe("derived metrics", () => {
   });
 });
 
+describe("aggregate for a year in progress", () => {
+  it("uses and divides by the quarters that have data", () => {
+    const rows = [row({ period: "2026-Q1", registeredUsers: 90, activeUsers: 60, trainingUsers: 30 }), row({ period: "2026-Q2", registeredUsers: 100, activeUsers: 80, trainingUsers: 50 })];
+    const m = aggregate(rows, quartersIn({ year: 2026, quarter: null }));
+    expect(m.registeredUsers).toBe(100); // latest quarter with data, not an empty Q4
+    expect(m.activeUsers).toBe(70); // (60 + 80) / 2 quarters, not / 4
+    expect(m.trainingUsers).toBe(40);
+    expect(m.participationRate).toBeCloseTo(40 / 70, 10);
+    expect(m.avgKnowledge).not.toBeNull();
+  });
+});
+
 describe("aggregate", () => {
   it("ratio-of-sums across clients (user weighted)", () => {
     const m = aggregate([row({ clientId: "a", registeredUsers: 100, activeUsers: 90 }), row({ clientId: "b", registeredUsers: 900, activeUsers: 90 })], ["2026-Q1"]);

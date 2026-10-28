@@ -97,3 +97,28 @@ Source: AdminZone > Reports > Participation and Knowledge Summary, compared with
 - [x] Optional AdminZone anchors in [config/axonify-reference.json](config/axonify-reference.json) (NFXP, Emirates as read on 2026-10-28). They are compared only within 3 days of capture because Axonify shows rolling 30-day windows; after that they are reported as skipped. Recapture by reading Reports > Participation and Knowledge Summary and updating values and `capturedOn`.
 - First full run (16 tenants): 325 passed, 5 failed.
 - [x] **G1 RESOLVED 2026-10-28, not a bug.** Verified on boehringer.axonify.com: the default Participation view ("Users in Active Training Programs") shows 700 employees, 412 logged in, 378 completed training, 15.2 days, which equals the platform and the team view. The "All Users" view shows 926 / 425 / 381, which equals the user-level BigQuery view. The two differ only for clients with users outside active programs (boehringer, jlearning, learninghub, tiraedx); NFXP and Emirates are identical. The platform follows Axonify's default view. `reconcile` now treats the user-level count as an upper bound (`compareAtMost`) and checks equality against the AdminZone anchors (Boehringer added); full run: 334 passed, 0 failed. If clients should see all users instead, take the counts from the user-level view. Original finding: $1
+
+## H. Full check: functional, code audit, visual (2026-10-28)
+**Functional:** typecheck clean, lint clean, 53 tests pass, production build passes (26 routes), 14/14 BigQuery dry-runs valid, `reconcile` 334/334 on fresh data. `reconcile --snapshot` on what is stored in Postgres: 237 passed, **97 failed**: the 16 snapshots were synced at 07:20 UTC, before the A1-A3, E1, knowledge-method and scale fixes, so the pages still show the old numbers (e.g. NFXP 17,034 active vs 8,630 in AdminZone; team tree still shows "Contact Center | MAN" as top-level nodes). **A re-sync is required** (admin "Refresh data" or `npm run sync`), then `npm run reconcile -- --snapshot` should be clean.
+
+**Visual (dev server, Chrome pane):** all 10 QBR pages, portfolio, Client 360 and data reliability render; dark and light themes OK; phone width (375px) has no horizontal overflow; CLIENT login is pinned to its own client (`?client=352` still shows its own), staff pages redirect to /qbr, `/api/sync`, `/api/search` and notes return 403.
+- [x] Found and fixed: KPI scope tags were never rendered inside tiles (an earlier edit silently missed on CRLF line endings; no test covered rendering).
+- [x] Found and fixed: scope tag text was unreadable in dark mode (app inverts the slate scale; `dark:` overrides were wrong).
+- [x] Fixed: frequency shown as "9.2x" on Home and in the team table; it is days ("9.2 days", header "Team frequency (days)").
+- [x] Fixed: matrix legend overlapped the x-axis label.
+- [ ] Content page shows "2026-10-27" while Topics shows "27 Oct 2026" (inconsistent date formats).
+- [ ] Topic names fall back to "Topic TE178526" under "Uncategorised" for topics without learner scores (A5).
+
+**Independent code audit (subagent, claims spot-checked in code):**
+- [x] Fixed: open redirect on sign-in (`/\host` passed the old check): `safeCallbackUrl` in `src/lib/safe-redirect.ts` + test.
+- [x] Fixed: CSV export could run formulas in Excel (cells starting `= + - @`).
+- [x] Fixed: full-year portfolio aggregation used an empty latest quarter and divided by 4 even with fewer quarters of data (`aggregate`); test added.
+- [x] Fixed: sync replaced a tenant's good snapshot with an empty one if its queries returned nothing; such tenants now keep their previous snapshot and the run message says so.
+- [x] Fixed: portfolio "Active users" / "Engagement rate" wording: active means an active account (Axonify "Employees"), so engagement rate is about 98% and low-signal (documented, calculation unchanged).
+- [ ] **High, decision needed:** new Supabase users are created as MEMBER (`src/server/auth/index.ts`), so an external client user has staff access until an admin demotes them in Settings. Safe only if public sign-ups stay disabled (README step 2). Suggested: create new users as inactive or CLIENT-without-client until promoted.
+- [ ] Medium: snapshot payload is cast to `DashboardData` with no version check (`context.ts`), so an old-shape snapshot after a code change can crash pages or show stale meanings; add a `schemaVersion` and treat a mismatch as "not synced yet".
+- [ ] Medium: `qbr/layout.tsx` calls `loadQbr({})`, so the From/To lists come from the first client, not the selected one, and the payload is loaded twice per navigation; no error boundary above the layout (add `global-error.tsx`).
+- [ ] Medium: sync lock is check-then-create (two simultaneous refreshes can both start), no BigQuery timeout, no `maxDuration`.
+- [ ] Medium: malformed JSON bodies return 500 not 400; `tasks/[taskId]` maps any DB error to "not found".
+- [ ] Low: `normKnowledge` threshold guess (portfolio); frequency bucket boundary (exactly 20 sessions); mapping-file parse errors are swallowed; `auth()` is not cached per request.
+- Housekeeping: `.claude/launch.json` (dev server config for the preview) was added and is untracked.

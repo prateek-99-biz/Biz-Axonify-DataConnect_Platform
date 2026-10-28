@@ -173,7 +173,7 @@ export function QuadrantBubbles({ points, height = 480 }: {
         <ReferenceLine y={0.5} stroke={mid} strokeDasharray="6 5" />
         <Tooltip cursor={{ strokeDasharray: "3 3", stroke: t.grid }} contentStyle={t.tooltip} itemStyle={{ color: t.tooltip.color }}
           formatter={(v, n) => (n === "Learners" ? new Intl.NumberFormat("en-US").format(Number(v)) : `${(Number(v) * 100).toFixed(0)}%`)} />
-        <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
+        <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
         {points.map((p, i) => (
           <Scatter isAnimationActive={false} key={p.segment} name={p.segment} data={[p]} fill={colors[i % colors.length]} shape={SHAPES[i % SHAPES.length]} fillOpacity={0.85} />
         ))}

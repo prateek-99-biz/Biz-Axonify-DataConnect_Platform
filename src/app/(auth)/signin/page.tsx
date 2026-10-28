@@ -8,10 +8,11 @@ import { Button, CALLOUT_CRITICAL, Card, Input, Select } from "@/components/ui/p
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { safeCallbackUrl } from "@/lib/safe-redirect";
 
 export default async function SignIn({ searchParams }: { searchParams: Promise<{ callbackUrl?: string; error?: string }> }) {
   const sp = await searchParams;
-  const callbackUrl = sp.callbackUrl?.startsWith("/") && !sp.callbackUrl.startsWith("//") ? sp.callbackUrl : "/portfolio";
+  const callbackUrl = safeCallbackUrl(sp.callbackUrl);
 
   async function login(form: FormData) {
     "use server";

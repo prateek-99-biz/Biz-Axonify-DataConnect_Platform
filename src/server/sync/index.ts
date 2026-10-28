@@ -50,14 +50,18 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
       dashboards = res.data;
     }
 
+    let skipped = 0;
     await db.$transaction(async (tx) => {
       await tx.syncClientPeriod.deleteMany();
       await tx.syncClient.deleteMany();
       await tx.syncClient.createMany({ data: clients.data });
       await tx.syncClientPeriod.createMany({ data: rows.data });
       if (dashboards) {
-        await tx.syncDashboard.deleteMany();
-        await tx.syncDashboard.createMany({ data: [...dashboards].map(([clientId, d]) => ({ clientId, payload: d as unknown as Prisma.InputJsonValue })) });
+        // A tenant whose query returned nothing keeps its previous snapshot instead of being replaced by an empty one.
+        const usable = [...dashboards].filter(([, d]) => d.months.length > 0);
+        await tx.syncDashboard.deleteMany({ where: { clientId: { in: usable.map(([clientId]) => clientId) } } });
+        await tx.syncDashboard.createMany({ data: usable.map(([clientId, d]) => ({ clientId, payload: d as unknown as Prisma.InputJsonValue })) });
+        skipped = dashboards.size - usable.length;
       }
       for (const c of clients.data) {
         await tx.clientMapping.upsert({
@@ -69,7 +73,7 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
     }, { timeout: 120_000 });
 
     const finishedAt = new Date();
-    await db.syncRun.update({ where: { id: run.id }, data: { status: "ok", finishedAt, clientCount: clients.data.length, rowCount: rows.data.length } });
+    await db.syncRun.update({ where: { id: run.id }, data: { status: "ok", finishedAt, clientCount: clients.data.length, rowCount: rows.data.length, message: skipped ? `${skipped} client dashboard(s) had no data; their previous snapshot was kept.` : null } });
     return { ok: true, clients: clients.data.length, rows: rows.data.length, finishedAt: finishedAt.toISOString() };
   } catch (e) {
     return fail("error", e instanceof Error ? e.message : "Unknown error");

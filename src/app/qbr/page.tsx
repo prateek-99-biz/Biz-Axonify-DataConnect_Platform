@@ -28,7 +28,7 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
 
       <KpiStrip>
         <KpiTile label="Engagement Health" metric="health" scope="month" scopeLabel="Month + snapshot" value={fmtPct(h.health, 0)} hint="50% participation + 50% knowledge" />
-        <KpiTile label="Avg Frequency" metric="frequency" scope="month" value={h.latest ? `${h.latest.frequency.toFixed(1)}x` : "\u2014"} hint="Days active per logged-in user" />
+        <KpiTile label="Avg Frequency" metric="frequency" scope="month" value={h.latest ? `${h.latest.frequency.toFixed(1)} days` : "\u2014"} hint="Days active per logged-in user" />
         <KpiTile label="Active Users" metric="activeUsers" scope="month" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
         <KpiTile label="Training Participation" metric="participation" scope="month" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
         <KpiTile label="Avg Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />

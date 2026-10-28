@@ -25,15 +25,15 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "active_users",
     name: "Active users",
-    description: "Distinct users with at least one recorded session in the period.",
-    formula: "count(distinct users with ≥1 session in period)",
+    description: "Distinct users whose account is active in the period (Axonify's 'Employees' in the Participation report). This is not a count of users who logged in, so it stays close to registered users.",
+    formula: "count(distinct users with an active account in period)",
     unit: "count",
     status: "provisional",
   },
   {
     key: "engagement_rate",
     name: "Engagement rate",
-    description: "Share of registered users that were active in the period. Not a report measure; the report's utilization needs contracted licenses, which are not available.",
+    description: "Share of registered users with an active account in the period. Because active means an active account, this is close to 100% and says little; treat it as low-signal until a login-based or license-based version exists. Not a report measure.",
     formula: "active_users / registered_users",
     unit: "ratio",
     status: "provisional",
