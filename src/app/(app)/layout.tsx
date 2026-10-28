@@ -38,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen gap-3 overflow-hidden p-3">
-      <Suspense fallback={<aside className="glass-nav hidden w-64 md:block" />}>
+      <Suspense fallback={<aside className="glass-nav hidden w-[4.5rem] md:block" />}>
         <Sidebar allowed={allowed} />
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
