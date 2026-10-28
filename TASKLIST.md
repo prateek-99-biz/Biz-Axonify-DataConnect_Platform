@@ -63,7 +63,24 @@ Source: AdminZone > Reports > Participation and Knowledge Summary, compared with
 
 - [x] **E1 (P0) FIXED 2026-10-28.** Frequency is weighted by the wrong users.** `aggregateMonths` weights team `average_frequency` (and time per day) by `employee_count`, but the team average is over logged-in users. Weighting by `employee_logged_in_count` gives 13.13, which matches Axonify's 13.1 (13.83 today). Fix in `calc.ts` (`aggregateMonths`).
 - [ ] **E2 (P1) Naming differs from Axonify.** Axonify "Average Participation" is logged-in ÷ employees (15%), and "Average Training Participation" is training ÷ employees (11%). The platform's "Participation" (training ÷ active) equals Axonify's *Training* Participation, as in the Power BI report. Keep, but label it "Training participation" or show both.
-- [ ] **E3 (P1) Knowledge averaging differs.** Axonify averages across user-topic-level rows (88.7% current, 77.7% baseline, lift 11.0 in BigQuery; the report shows 89.4% and +11, the small gap is probably answer weighting). The platform averages each learner first, then learners (85.7% / 79.4%), which matches the Power BI report for Emirates (83% / 71%). Decide which definition clients should see (Power BI parity or Axonify-admin parity), then label it. Topic status filter (Current vs All-Time) made no difference to the Axonify figure.
+- [x] **E3 (P1) FIXED 2026-10-28.** Knowledge averaging differs.** Axonify averages across user-topic-level rows (88.7% current, 77.7% baseline, lift 11.0 in BigQuery; the report shows 89.4% and +11, the small gap is probably answer weighting). The platform averages each learner first, then learners (85.7% / 79.4%), which matches the Power BI report for Emirates (83% / 71%). Decide which definition clients should see (Power BI parity or Axonify-admin parity), then label it. Topic status filter (Current vs All-Time) made no difference to the Axonify figure.
 - [ ] **E4** Teams table lists leaf teams only; Axonify lists parents too (e.g. EPC 1 (CTJV): 5,655 employees, 656 logged in, 520 training, 11.6% / 9.2%, freq 15.8). Parent rows exist in the data; consider a toggle.
 - [ ] **E5** Not yet compared: Topic Progress, User Summary, Question Summary, Training Activities/Sessions (usage), Device Popularity, other clients.
 - 2026-10-28 E1: `aggregateMonths` weights frequency and time per day by logged-in users. NFXP Oct 2026 frequency 13.83 -> 13.13 (Axonify 13.1). Re-sync needed for stored snapshots.
+
+## F. Verification: emirates.axonify.com (tenant 324), 2026-10-28 (after A1-A3, E1)
+| Metric | Axonify | Platform | Verdict |
+|---|---|---|---|
+| Employees (Participation) | 2,754 (963 + 1,791) | 2,754 | match |
+| Logged in / completed training | 963 / 889 | 963 / 889 | match |
+| Avg Participation / Training Participation | 35% / 32% | 35.0% (logged-in basis, not shown) / 32.3% | match |
+| Avg Frequency (days) | 11.3 | 11.28 | match (E1 fix confirmed) |
+| Topic status mix (Not started / Beginner / Intermediate / Graduate / Expert) | Not started about 74% | 74.3 / 3.4 / 8.8 / 7.2 / 6.3 % | match |
+| Current Knowledge / lift | 85.9% / +16 | 82.8% / +12 (learner-mean); 85.2% / +16.3 (row average) | same E3 definition gap |
+| Topic Completion | 22% ("completed" = Intermediate or above) | 13.9% (Graduate only) | **definition differs (F1)** |
+
+- [x] Emirates user counts, participation and frequency reconcile exactly; the A1 and E1 fixes are confirmed on a second client.
+- [ ] **F1 (P1)** "Topic Completion" is Graduate-only on the platform (matches the Power BI report: 14%) but Axonify counts Intermediate and above (22%). Label it "Graduate topic levels" or pick one definition.
+- [x] **F2 (P1) FIXED 2026-10-28.**** E3 repeats: Axonify knowledge equals the row-average (about 0.7 pt higher, likely answer weighting); platform learner-mean is about 3 points lower on current and 4 on lift.
+- Still to compare: Axonify Avg Time/Day (no direct field in these reports), Training Activities/Sessions (usage), Device Popularity, User Summary, Question Summary.
+- 2026-10-28 E3/F2: account knowledge, frequency-bucket knowledge and portfolio knowledge now average all user-topic-level rows (queries `knowledgeAccount`, `frequency`, `clientPeriod`). Experts (learner mean >= 90) and the matrix stay learner-based. Result: NFXP 88.7% current / +11.0 (Axonify 89.4% / +11), Emirates 85.2% / +16.3 (Axonify 85.9% / +16). Remaining ~0.7 pt gap is likely answer weighting (not in the DataConnect view). Power BI parity for knowledge is dropped on purpose. Re-sync needed.

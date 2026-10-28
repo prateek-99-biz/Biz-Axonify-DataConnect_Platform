@@ -57,8 +57,8 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "avg_knowledge",
     name: "Current knowledge",
-    description: "Average current knowledge score of learners with knowledge data, on a 0-1 scale (report: Current Knowledge).",
-    formula: "avg(current_knowledge); values above 1 are divided by 100",
+    description: "Average current score across every active user-topic-level record with a score, on a 0-1 scale. Same method as Axonify's Knowledge Summary report.",
+    formula: "avg(current_score) over user-topic-level rows; values above 1 are divided by 100",
     unit: "ratio",
     status: "approved",
   },

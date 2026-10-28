@@ -31,7 +31,7 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
         <KpiTile label="Avg Frequency" value={h.latest ? `${h.latest.frequency.toFixed(1)}x` : "\u2014"} hint="Sessions per active user, latest month" />
         <KpiTile label="Active Users" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
         <KpiTile label="Avg Participation" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
-        <KpiTile label="Avg Knowledge" value={fmtPct(h.avgKnowledge, 0)} hint="Current knowledge, learners with data" />
+        <KpiTile label="Avg Knowledge" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />
       </KpiStrip>
 
       <Card>

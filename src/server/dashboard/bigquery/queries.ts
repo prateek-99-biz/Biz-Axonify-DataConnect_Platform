@@ -42,20 +42,26 @@ export const QUERIES = {
   /** Account-level knowledge, confidence, experts and completion (report: FactKnowledgeAccount). */
   knowledgeAccount: (t: T) => `
     WITH learner_knowledge AS (
-      SELECT tenant_id, employee_id,
-        AVG(baseline_score) AS learner_baseline, AVG(current_score) AS learner_current
+      SELECT tenant_id, employee_id, AVG(current_score) AS learner_current
       FROM ${t("analytics_SDE_topic_progress")}
       WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL AND baseline_score IS NOT NULL
       GROUP BY tenant_id, employee_id
     ),
-    sde AS (
-      SELECT tenant_id,
-        COUNT(DISTINCT employee_id) AS learners,
-        AVG(learner_baseline) AS avg_baseline,
-        AVG(learner_current) AS avg_current,
-        COUNT(DISTINCT IF(learner_current >= 90, employee_id, NULL)) AS expert_users
-      FROM learner_knowledge
+    -- Axonify's Knowledge Summary averages every user-topic-level score, not each learner's average
+    score_rows AS (
+      SELECT tenant_id, AVG(baseline_score) AS avg_baseline, AVG(current_score) AS avg_current
+      FROM ${t("analytics_SDE_topic_progress")}
+      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL AND baseline_score IS NOT NULL
       GROUP BY tenant_id
+    ),
+    sde AS (
+      SELECT lk.tenant_id,
+        COUNT(DISTINCT lk.employee_id) AS learners,
+        ANY_VALUE(sr.avg_baseline) AS avg_baseline,
+        ANY_VALUE(sr.avg_current) AS avg_current,
+        COUNT(DISTINCT IF(lk.learner_current >= 90, lk.employee_id, NULL)) AS expert_users
+      FROM learner_knowledge lk JOIN score_rows sr USING (tenant_id)
+      GROUP BY lk.tenant_id
     ),
     user_topic AS (
       SELECT tenant_id, user_id, topic_id,
@@ -176,10 +182,9 @@ export const QUERIES = {
       GROUP BY fump.tenant_id, fu.employee_id
     ),
     user_knowledge AS (
-      SELECT tenant_id, employee_id, AVG(baseline_score) AS baseline, AVG(current_score) AS current_score
+      SELECT tenant_id, employee_id, baseline_score AS baseline, current_score
       FROM ${t("analytics_SDE_topic_progress")}
       WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL AND baseline_score IS NOT NULL
-      GROUP BY tenant_id, employee_id
     )
     SELECT uf.tenant_id, uf.frequency_sort,
       COUNT(DISTINCT uf.employee_id) AS user_count,
@@ -457,13 +462,9 @@ export const QUERIES = {
       GROUP BY cur.tenant_id, cur.quarter_start
     ),
     knowledge AS (
-      SELECT tenant_id, COUNT(*) AS learners, AVG(learner_score) AS avg_current
-      FROM (
-        SELECT tenant_id, employee_id, AVG(current_score) AS learner_score
-        FROM ${t("analytics_SDE_topic_progress")}
-        WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL
-        GROUP BY tenant_id, employee_id
-      )
+      SELECT tenant_id, COUNT(DISTINCT employee_id) AS learners, AVG(current_score) AS avg_current
+      FROM ${t("analytics_SDE_topic_progress")}
+      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL
       GROUP BY tenant_id
     ),
     latest AS (SELECT MAX(quarter_start) AS quarter_start FROM q)

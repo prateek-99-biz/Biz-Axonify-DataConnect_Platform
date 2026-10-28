@@ -51,7 +51,7 @@ Source of truth in code: `src/server/metrics/definitions.ts`, `calculations.ts`,
 | Participation | training users ÷ active users | Report measure (Team Participation). Home/Engagement KPIs use the latest month in range |
 | Avg frequency | user-weighted mean of `average_frequency` (sessions per active user per month) | Team views roll up by weight = `employee_count` |
 | Avg time per day | user-weighted mean of `average_time_spent_per_day_minutes` | |
-| Current / baseline knowledge | mean over active learners of each learner's mean `current_score` / `baseline_score`; values above 1 divided by 100 | `analytics_SDE_topic_progress`; current snapshot, **not** date-ranged |
+| Current / baseline knowledge | mean of `current_score` / `baseline_score` over every active user-topic-level row (Axonify Knowledge Summary method); values above 1 divided by 100 | `analytics_SDE_topic_progress`; current snapshot, **not** date-ranged |
 | Knowledge lift | current minus baseline | per topic and per frequency bucket |
 | Confidence | mean `current_confidence` over active user-topic records (scale 0-100, includes Not Started rows at 0) | `content_user_topic_progress` |
 | Experts | learners whose mean current score ≥ 90 | App rule; report DAX not visible |
