@@ -23,19 +23,19 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">
           <Brand className="h-5 w-5 text-navy" aria-hidden />
         </span>
-        <span className="leading-tight">
+        <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">
           <span className="block text-sm font-bold tracking-tight">Biz Customer</span>
           <span className="block text-xs font-medium text-brand-ink">Intelligence · Axonify</span>
         </span>
       </div>
       <div className="relative mx-4 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" aria-hidden />
       <nav className="relative flex-1 space-y-1 px-3 py-4">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Workspace</p>
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">Workspace</p>
         {NAV.filter((n) => allowed.includes(n.perm)).map((n) => {
           const active = path === n.href || path.startsWith(n.href + "/");
           return (
             <Link key={n.href} href={qs ? `${n.href}?${qs}` : n.href} aria-current={active ? "page" : undefined}
-              className={cn("group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
+              className={cn("group relative flex items-center gap-3 rounded-xl px-[10px] py-2.5 text-sm transition-all",
                 active
                   ? "bg-gradient-to-r from-brand to-brand-accent font-semibold text-navy shadow-[0_10px_26px_-12px_rgb(var(--brand-accent)/0.9)]"
                   : "text-slate-600 hover:bg-white/60 hover:text-ink dark:hover:bg-white/10")}>
@@ -43,7 +43,7 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
                 active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                 <n.icon className="h-4 w-4" aria-hidden />
               </span>
-              {n.label}
+              <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">{n.label}</span>
             </Link>
           );
         })}

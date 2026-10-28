@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
-import { LogOut } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { Badge, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { monthLabel } from "@/server/dashboard/calc";
@@ -57,12 +57,14 @@ export function QbrShell(p: QbrShellProps) {
 
   return (
     <div className="flex h-screen gap-3 overflow-hidden p-3">
-      <aside className="glass-nav hidden w-64 shrink-0 flex-col lg:flex" aria-label="Dashboard pages">
+      {/* The rail keeps a fixed 4.5rem slot; the panel grows over the page on hover or keyboard focus. */}
+      <div className="relative z-30 hidden w-[4.5rem] shrink-0 lg:block">
+      <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 focus-within:w-64" aria-label="Dashboard pages">
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
         <div className="relative flex h-16 items-center gap-3 px-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent text-sm font-extrabold text-navy shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">Ax</span>
-          <span className="leading-tight">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent text-sm font-extrabold text-navy shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">Ax</span>
+          <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">
             <span className="block text-sm font-bold tracking-tight">Axonify Data Connect</span>
             <span className="block text-xs font-medium text-brand-ink">{p.internal ? "Internal view" : "Quarterly business review"}</span>
           </span>
@@ -73,22 +75,24 @@ export function QbrShell(p: QbrShellProps) {
             const active = n.href === "/qbr" ? path === "/qbr" : path === n.href || path.startsWith(n.href + "/");
             return (
               <Link key={n.href} href={href(n.href)} aria-current={active ? "page" : undefined}
-                className={cn("group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all",
+                className={cn("group flex items-center gap-3 rounded-xl px-[10px] py-2 text-sm transition-all",
                   active ? "bg-gradient-to-r from-brand to-brand-accent font-semibold text-navy shadow-[0_10px_26px_-12px_rgb(var(--brand-accent)/0.9)]" : "text-slate-600 hover:bg-white/60 hover:text-ink dark:hover:bg-white/10")}>
                 <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                   <n.icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className="truncate">{n.label}</span>
+                <span className="truncate opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">{n.label}</span>
               </Link>
             );
           })}
         </nav>
         {p.internal && (
-          <Link href="/portfolio" className="relative m-3 rounded-xl border border-line/60 bg-white/40 px-3 py-2 text-center text-xs font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-ink dark:bg-white/5 dark:hover:bg-white/10">
-            ← Back to team workspace
+          <Link href="/portfolio" aria-label="Back to team workspace" className="relative m-3 flex items-center gap-2 rounded-xl border border-line/60 bg-white/40 px-[10px] py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-ink dark:bg-white/5 dark:hover:bg-white/10">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center"><ArrowLeft className="h-4 w-4" aria-hidden /></span>
+            <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">Back to team workspace</span>
           </Link>
         )}
       </aside>
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <header className="glass relative z-20 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5" aria-busy={pending}>
