@@ -12,6 +12,7 @@ datasource db {
 enum Role {
   ADMIN
   MEMBER
+  CLIENT
 }
 
 enum TaskStatus {
@@ -34,6 +35,9 @@ model AppUser {
   email     String     @unique
   name      String?
   role      Role       @default(MEMBER)
+  /// Set for CLIENT users: the one client whose dashboard they may see.
+  clientId  String?
+  client    ClientMapping? @relation("ClientUsers", fields: [clientId], references: [id], onDelete: SetNull)
   active    Boolean    @default(true)
   createdAt DateTime   @default(now())
   lastLogin DateTime?
@@ -41,6 +45,8 @@ model AppUser {
   tasks     Task[]     @relation("TaskOwner")
   created   Task[]     @relation("TaskCreator")
   acks      AlertAck[]
+
+  @@index([clientId])
 }
 
 /// Application-owned client key: Salesforce Account ID <-> Axonify Tenant ID. FK target for notes/tasks.
@@ -56,6 +62,7 @@ model ClientMapping {
   createdAt           DateTime @default(now())
   notes               Note[]
   tasks               Task[]
+  users               AppUser[] @relation("ClientUsers")
 
   @@index([displayName])
 }
@@ -130,6 +137,9 @@ model SyncClientPeriod {
   period              String
   registeredUsers     Int
   activeUsers         Int
+  trainingUsers       Int     @default(0)
+  knowledgeLearners   Int     @default(0)
+  avgKnowledge        Float?
   retainedUsers       Int
   previousActiveUsers Int
   sessions            Int
@@ -137,6 +147,13 @@ model SyncClientPeriod {
   featuresUsed        Int
 
   @@id([clientId, period])
+}
+
+/// One JSON snapshot of every dashboard dataset per client (filled by the sync, read by /qbr).
+model SyncDashboard {
+  clientId String   @id
+  payload  Json
+  syncedAt DateTime @default(now())
 }
 
 model SyncRun {

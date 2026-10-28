@@ -28,7 +28,7 @@ npm run dev              # http://localhost:3000 → "Development login"
 2. Supabase dashboard → Authentication: turn **off** public sign-ups, then add your team under Users (email + password).
 3. Set `ADMIN_EMAILS=you@bizgroup.ae` (first sign-in of that email becomes Admin; everyone else is Member). Admins change roles in Settings.
 4. `npx prisma migrate deploy && npm run db:seed`.
-5. BigQuery: create the summary tables (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), copy `config/bigquery-mapping.example.json` to `config/bigquery-mapping.json` with the real names, set `BQ_PROJECT_ID` and `GOOGLE_APPLICATION_CREDENTIALS` (service account with BigQuery Data Viewer + Job User).
+5. BigQuery: set `BQ_PROJECT_ID`, `BQ_DATASET` (defaults to `axonify___bizgroup_emea`), `BQ_TENANT_IDS` (the Axonify tenant ids to cover) and `GOOGLE_APPLICATION_CREDENTIALS` (service account with BigQuery Data Viewer + Job User, or `gcloud auth application-default login`). Run `npm run bq:check` to dry-run every query without reading data. A mapping file (`config/bigquery-mapping.example.json`) is only needed to override the built-in client and quarterly queries with your own summary tables.
 6. Set `DATA_ADAPTER=synced`, run `npm run sync` once, then `npm run build && npm start`.
 7. Schedule `npm run sync` daily (Windows Task Scheduler, cron, or a free GitHub Actions schedule).
 
@@ -38,7 +38,10 @@ The `service_role` key is never needed and must not be put in this app.
 Admins see **Refresh data** in the top bar. It runs the same sync as the daily job, enforces a 60-second cooldown, refuses to run twice at once, and reports failures without touching existing data. In mock mode it explains there is nothing to refresh.
 
 ## Roles
-Admin: everything, plus Settings and Refresh. Member: analytics, notes, tasks, CSV export. Enforced server-side ([src/server/auth/rbac.ts](src/server/auth/rbac.ts)).
+Admin: everything, plus Settings and Refresh. Member: analytics, notes, tasks, CSV export. Client (external): only the QBR dashboard for the one client assigned to them in Settings. Enforced server-side ([src/server/auth/rbac.ts](src/server/auth/rbac.ts)); a client user is pinned to their client regardless of URL params.
+
+## Dashboards (`/qbr`)
+The ten pages from [axonify-dashboard-spec.md](axonify-dashboard-spec.md): Homepage, Engagement, Knowledge, Content, Usage, Team Performance, Topic Deep Dive, Knowledge & Confidence Matrix, Content Delivery and Content Progression. One client and one date range are shared across pages through the URL. Staff see the same pages with internal extras (content flags and priority, data-quality notes, CSV export, a link to Client 360); client users see the clean QBR view. Dashboard data is mock-only until `npm run sync` has run against BigQuery; with `DATA_ADAPTER=synced` the pages say so instead of showing anything.
 
 ## Safety rails
 - `DATA_ADAPTER=mock` throws in production; no silent fallback to mock. Unavailable sources show an explanation.

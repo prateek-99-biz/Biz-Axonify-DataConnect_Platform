@@ -1,7 +1,7 @@
 /**
- * Shared metric definitions. ALL are PROVISIONAL: formulas and thresholds below were
- * chosen to make the mock slice computable and have not been agreed with Biz Group or
- * validated against DataConnect. They are surfaced in the UI (Data Reliability →
+ * Shared metric definitions. Participation, knowledge, health score and its bands mirror the Axonify CSM
+ * Power BI report (measures noted per entry) and are marked approved. Engagement rate, retention and feature
+ * adoption are not in the report and stay provisional. Definitions are surfaced in the UI (Data Reliability →
  * Metric definitions) and seeded into Postgres (MetricDefinition).
  */
 export interface MetricDefinition {
@@ -33,10 +33,34 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "engagement_rate",
     name: "Engagement rate",
-    description: "Share of registered users that were active in the period.",
+    description: "Share of registered users that were active in the period. Not a report measure; the report's utilization needs contracted licenses, which are not available.",
     formula: "active_users / registered_users",
     unit: "ratio",
     status: "provisional",
+  },
+  {
+    key: "training_users",
+    name: "Training users",
+    description: "Active users with at least one training session in the period.",
+    formula: "count(active users with ≥1 training session in period)",
+    unit: "count",
+    status: "approved",
+  },
+  {
+    key: "participation_rate",
+    name: "Participation",
+    description: "Share of active users that trained in the period (report: Team Participation).",
+    formula: "training_users / active_users",
+    unit: "ratio",
+    status: "approved",
+  },
+  {
+    key: "avg_knowledge",
+    name: "Current knowledge",
+    description: "Average current knowledge score of learners with knowledge data, on a 0-1 scale (report: Current Knowledge).",
+    formula: "avg(current_knowledge); values above 1 are divided by 100",
+    unit: "ratio",
+    status: "approved",
   },
   {
     key: "retention_rate",
@@ -57,14 +81,14 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "health_score",
     name: "Client health score",
-    description: "Weighted composite of engagement, retention and adoption (0–100). Weights are placeholders.",
-    formula: "100 × (0.5·engagement + 0.3·retention + 0.2·adoption)",
+    description: "Equal-weight composite of participation and knowledge (0–100), as in the Power BI report (Account Health Score).",
+    formula: "100 × (0.5·participation + 0.5·knowledge)",
     unit: "score",
-    status: "provisional",
+    status: "approved",
   },
 ];
 
-export const HEALTH_WEIGHTS = { engagement: 0.5, retention: 0.3, adoption: 0.2 } as const;
+export const HEALTH_WEIGHTS = { participation: 0.5, knowledge: 0.5 } as const;
 
-/** Provisional risk bands on the health score. */
-export const RISK_THRESHOLDS = { critical: 40, warning: 60 } as const;
+/** Health bands from the report (Health Band): at least 75 Healthy, 60 Moderate, 45 At risk, otherwise Critical. */
+export const RISK_THRESHOLDS = { healthy: 75, moderate: 60, atRisk: 45 } as const;

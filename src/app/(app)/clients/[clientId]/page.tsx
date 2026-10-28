@@ -52,17 +52,17 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const { analytics, crm } = getAdapters();
   const trend = rows.sort((a, b) => a.period.localeCompare(b.period)).map((r) => {
     const x = aggregate([r], [r.period]);
-    return { period: r.period, engagementRate: x.engagementRate, retentionRate: x.retentionRate, featureAdoption: x.featureAdoption, activeUsers: r.activeUsers, sessions: r.sessions };
+    return { period: r.period, engagementRate: x.engagementRate, participationRate: x.participationRate, avgKnowledge: x.avgKnowledge, retentionRate: x.retentionRate, featureAdoption: x.featureAdoption, activeUsers: r.activeUsers, sessions: r.sessions };
   });
 
   const header = (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="text-xl font-semibold">{client.name}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <Badge>{client.industry}</Badge><span>CSM: {client.csmName}</span>
           <span>Axonify tenant: {client.axonifyTenantId ?? "unmapped"}</span>
-          <span>Salesforce account: {client.salesforceAccountId ?? <span className="text-amber-700">unmapped</span>}</span>
+          <span>Salesforce account: {client.salesforceAccountId ?? <span className="font-medium text-amber-700 dark:text-amber-300">unmapped</span>}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 text-sm"><span className="text-slate-500">{periodLabel(f.period)}</span><RiskBadge risk={hasData ? m.risk : "unknown"} /></div>
@@ -70,10 +70,10 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   );
 
   const tabs = (
-    <nav aria-label="Client sections" className="flex gap-1 overflow-x-auto border-b border-line">
+    <nav aria-label="Client sections" className="glass inline-flex max-w-full gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none]">
       {TABS.map(([k, label]) => (
         <Link key={k} href={qs(k)} aria-current={tab === k ? "page" : undefined}
-          className={cn("whitespace-nowrap border-b-2 px-3 py-2 text-sm", tab === k ? "border-brand font-medium" : "border-transparent text-slate-500 hover:text-navy")}>{label}</Link>
+          className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm transition-all", tab === k ? "bg-brand font-semibold text-navy shadow-[0_6px_18px_-8px_rgb(var(--brand)/0.9)]" : "text-slate-600 hover:bg-slate-100 hover:text-ink")}>{label}</Link>
       ))}
     </nav>
   );
@@ -97,25 +97,29 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     const factors = contributingFactor(m, mPrev);
     body = (
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard label="Registered users" unit="pct" value={fmtNumber(m.registeredUsers)} vsPrev={delta(m.registeredUsers, mPrev.registeredUsers)} vsYear={delta(m.registeredUsers, mYa.registeredUsers)} />
+          <KpiCard label="Participation" value={fmtPct(m.participationRate)} vsPrev={delta(m.participationRate, mPrev.participationRate)} vsYear={delta(m.participationRate, mYa.participationRate)} />
+          <KpiCard label="Knowledge" value={fmtPct(m.avgKnowledge)} vsPrev={delta(m.avgKnowledge, mPrev.avgKnowledge)} vsYear={delta(m.avgKnowledge, mYa.avgKnowledge)} />
+          <KpiCard label="Health score" unit="abs" value={m.healthScore?.toFixed(0) ?? "—"} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
           <KpiCard label="Engagement" value={fmtPct(m.engagementRate)} vsPrev={delta(m.engagementRate, mPrev.engagementRate)} vsYear={delta(m.engagementRate, mYa.engagementRate)} />
           <KpiCard label="Retention" value={fmtPct(m.retentionRate)} vsPrev={delta(m.retentionRate, mPrev.retentionRate)} vsYear={delta(m.retentionRate, mYa.retentionRate)} />
           <KpiCard label="Feature adoption" value={fmtPct(m.featureAdoption)} vsPrev={delta(m.featureAdoption, mPrev.featureAdoption)} vsYear={delta(m.featureAdoption, mYa.featureAdoption)} />
-          <KpiCard label="Health score" unit="abs" value={m.healthScore?.toFixed(0) ?? "—"} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
         </div>
         <div className="grid gap-4 xl:grid-cols-3">
           <Card className="xl:col-span-2"><CardHeader title="Historical performance" subtitle="All available quarters" />
-            <div className="p-4"><TrendChart data={trend} series={[{ key: "engagementRate", label: "Engagement" }, { key: "retentionRate", label: "Retention" }, { key: "featureAdoption", label: "Adoption" }]} /></div></Card>
+            <div className="p-4"><TrendChart data={trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Engagement" }]} /></div></Card>
           <Card><CardHeader title="What changed" subtitle={`Weighted contribution to health score vs ${periodLabel(previousPeriod(f.period))}`} />
             <ul className="divide-y divide-line text-sm">
               {mPrev.healthScore == null ? <li className="p-4 text-xs text-slate-500">No previous-period data to compare.</li> :
-                factors.map((x) => <li key={x.key} className="flex justify-between px-4 py-3"><span>{x.label}</span><span className={cn("tabular-nums", x.points < -0.05 ? "text-critical" : x.points > 0.05 ? "text-[#3d7a1c]" : "text-slate-500")}>{x.points > 0 ? "+" : ""}{x.points.toFixed(1)} pts</span></li>)}
+                factors.map((x) => <li key={x.key} className="flex justify-between px-4 py-3"><span>{x.label}</span><span className={cn("tabular-nums", x.points < -0.05 ? "text-critical" : x.points > 0.05 ? "text-brand-ink" : "text-slate-500")}>{x.points > 0 ? "+" : ""}{x.points.toFixed(1)} pts</span></li>)}
             </ul></Card>
         </div>
         <Card><CardHeader title="Peer benchmark" subtitle={`This client vs ${client.industry} peers (${peerView.clients.length}) and the whole portfolio (${portfolioView.clients.length}), ${periodLabel(f.period)}`} />
           <div className="p-4"><CompareBars xKey="metric" series={[{ key: "client", label: client.name }, { key: "peers", label: `${client.industry} peers` }, { key: "portfolio", label: "Portfolio" }]}
             data={[
+              { metric: "Participation", client: m.participationRate, peers: peerMetrics.participationRate, portfolio: portfolioView.kpis.current.participationRate },
+              { metric: "Knowledge", client: m.avgKnowledge, peers: peerMetrics.avgKnowledge, portfolio: portfolioView.kpis.current.avgKnowledge },
               { metric: "Engagement", client: m.engagementRate, peers: peerMetrics.engagementRate, portfolio: portfolioView.kpis.current.engagementRate },
               { metric: "Retention", client: m.retentionRate, peers: peerMetrics.retentionRate, portfolio: portfolioView.kpis.current.retentionRate },
               { metric: "Adoption", client: m.featureAdoption, peers: peerMetrics.featureAdoption, portfolio: portfolioView.kpis.current.featureAdoption },

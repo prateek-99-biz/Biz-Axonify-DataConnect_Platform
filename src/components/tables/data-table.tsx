@@ -52,11 +52,11 @@ export function DataTable({
   return (
     <div>
       {(searchable || canExport) && (
-        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2">
+        <div className="flex items-center justify-between gap-3 border-b hairline px-5 py-3">
           {searchable ? (
             <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
-              <Input aria-label="Filter table" className="pl-8" placeholder="Filter rows…" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
+              <Input aria-label="Filter table" className="rounded-full pl-9" placeholder="Filter rows…" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
             </div>
           ) : <span />}
           <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -68,13 +68,13 @@ export function DataTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-line bg-slate-50 text-xs text-slate-500">
+            <tr className="border-b hairline bg-slate-50/60 text-[11px] uppercase tracking-wider text-slate-500">
               {columns.map((c) => {
                 const active = sort?.key === c.key;
                 const Icon = !active ? ArrowUpDown : sort!.dir === 1 ? ArrowUp : ArrowDown;
                 return (
-                  <th key={c.key} scope="col" title={c.hint} aria-sort={active ? (sort!.dir === 1 ? "ascending" : "descending") : "none"} className={cn("px-4 py-2 font-medium", c.align === "right" ? "text-right" : "text-left")}>
-                    <button className="inline-flex items-center gap-1 hover:text-navy" onClick={() => setSort(active && sort!.dir === -1 ? null : { key: c.key, dir: active ? -1 : 1 })}>
+                  <th key={c.key} scope="col" title={c.hint} aria-sort={active ? (sort!.dir === 1 ? "ascending" : "descending") : "none"} className={cn("px-5 py-2.5 font-semibold", c.align === "right" ? "text-right" : "text-left")}>
+                    <button className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-ink" onClick={() => setSort(active && sort!.dir === -1 ? null : { key: c.key, dir: active ? -1 : 1 })}>
                       {c.header}<Icon className="h-3 w-3" aria-hidden />
                     </button>
                   </th>
@@ -84,13 +84,13 @@ export function DataTable({
           </thead>
           <tbody>
             {visible.map((r) => (
-              <tr key={r.id} className="border-b border-line last:border-0 hover:bg-brand-pale/40">
+              <tr key={r.id} className="border-b hairline transition-colors last:border-0 hover:bg-brand/10">
                 {columns.map((c, i) => {
                   const cell = r.cells[c.key];
                   const content = cell?.node ?? (cell?.v == null ? <span className="text-slate-400">—</span> : cell.v);
                   return (
-                    <td key={c.key} className={cn("px-4 py-2", c.align === "right" && "text-right tabular-nums")}>
-                      {i === 0 && r.href ? <Link href={r.href} className="font-medium text-navy hover:underline">{content}</Link> : content}
+                    <td key={c.key} className={cn("px-5 py-3", c.align === "right" && "text-right tabular-nums")}>
+                      {i === 0 && r.href ? <Link href={r.href} className="font-semibold text-ink hover:text-brand-ink hover:underline">{content}</Link> : content}
                     </td>
                   );
                 })}
@@ -101,7 +101,7 @@ export function DataTable({
       </div>
       {filtered.length === 0 && <EmptyState title={emptyTitle}>{emptyHint ?? (q ? "Try a different search term." : undefined)}</EmptyState>}
       {pages > 1 && (
-        <div className="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-slate-500">
+        <div className="flex items-center justify-between border-t hairline px-5 py-3 text-xs text-slate-500">
           <span>Page {cur + 1} of {pages}</span>
           <div className="flex gap-2">
             <Button size="sm" disabled={cur === 0} onClick={() => setPage(cur - 1)}>Previous</Button>

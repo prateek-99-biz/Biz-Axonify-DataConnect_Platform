@@ -1,6 +1,7 @@
 import type { ClientPeriodRow, ClientSummary } from "@/server/data/ports";
 import { aggregate, contributingFactor, delta, type DerivedMetrics, type Delta, type RiskLevel } from "@/server/metrics/calculations";
 import { periodKey, previousPeriod, quarterRange, quartersIn, yearAgo, type Period } from "@/server/metrics/period";
+import { RISK_THRESHOLDS } from "@/server/metrics/definitions";
 
 export interface Filters {
   /** client id or null = all */
@@ -15,7 +16,7 @@ export interface ClientRowView {
   current: DerivedMetrics;
   previous: DerivedMetrics;
   healthDelta: Delta;
-  engagementDelta: Delta;
+  participationDelta: Delta;
   topFactor: { label: string; points: number } | null;
   risk: RiskLevel;
   declining: boolean;
@@ -30,7 +31,7 @@ export interface KpiSet {
 export interface PortfolioView {
   scopeClientCount: number;
   kpis: KpiSet;
-  trend: { period: string; engagementRate: number | null; retentionRate: number | null; featureAdoption: number | null; healthScore: number | null; activeUsers: number }[];
+  trend: { period: string; engagementRate: number | null; participationRate: number | null; avgKnowledge: number | null; retentionRate: number | null; featureAdoption: number | null; healthScore: number | null; activeUsers: number }[];
   industries: { industry: string; clients: number; current: DerivedMetrics; previous: DerivedMetrics }[];
   clients: ClientRowView[];
   csmBooks: { csmName: string; csmEmail: string; clients: number; current: DerivedMetrics; atRisk: number }[];
@@ -39,7 +40,7 @@ export interface PortfolioView {
   noDataClients: ClientSummary[];
 }
 
-/** Engagement drop (absolute, in ratio points) between periods that flags "declining". Provisional. */
+/** Participation drop (absolute, in ratio points) between periods that flags "declining"; matches the report's Team Trend (3 pts). */
 export const DECLINE_THRESHOLD = -0.03;
 
 export function scopeClients(clients: ClientSummary[], f: Pick<Filters, "client" | "industry">) {
@@ -67,7 +68,7 @@ export function buildPortfolio(clients: ClientSummary[], rows: ClientPeriodRow[]
     .filter((q) => scopedRows.some((r) => r.period === q))
     .map((q) => {
       const m = aggregate(scopedRows, [q]);
-      return { period: q, engagementRate: m.engagementRate, retentionRate: m.retentionRate, featureAdoption: m.featureAdoption, healthScore: m.healthScore, activeUsers: m.activeUsers };
+      return { period: q, engagementRate: m.engagementRate, participationRate: m.participationRate, avgKnowledge: m.avgKnowledge, retentionRate: m.retentionRate, featureAdoption: m.featureAdoption, healthScore: m.healthScore, activeUsers: m.activeUsers };
     });
 
   const hasData = (id: string, qs: string[]) => (byClient.get(id) ?? []).some((r) => qs.includes(r.period));
@@ -79,15 +80,15 @@ export function buildPortfolio(clients: ClientSummary[], rows: ClientPeriodRow[]
       const cr = byClient.get(client.id) ?? [];
       const current = aggregate(cr, cur);
       const previous = aggregate(cr, prev);
-      const engagementDelta = delta(current.engagementRate, previous.engagementRate);
+      const participationDelta = delta(current.participationRate, previous.participationRate);
       const factor = previous.healthScore != null ? contributingFactor(current, previous)[0] : null;
       return {
         client, current, previous,
         healthDelta: delta(current.healthScore, previous.healthScore),
-        engagementDelta,
+        participationDelta,
         topFactor: factor ? { label: factor.label, points: factor.points } : null,
         risk: current.risk,
-        declining: engagementDelta.abs != null && engagementDelta.abs <= DECLINE_THRESHOLD,
+        declining: participationDelta.abs != null && participationDelta.abs <= DECLINE_THRESHOLD,
       };
     });
 
@@ -104,11 +105,11 @@ export function buildPortfolio(clients: ClientSummary[], rows: ClientPeriodRow[]
     const rr = scopedRows.filter((r) => mine.some((m) => m.client.id === r.clientId));
     return {
       csmEmail: email, csmName: mine[0].client.csmName, clients: mine.length, current: aggregate(rr, cur),
-      atRisk: mine.filter((m) => m.risk === "critical" || m.risk === "warning").length,
+      atRisk: mine.filter((m) => m.risk === "critical" || m.risk === "at_risk").length,
     };
   });
 
-  const riskCounts: Record<RiskLevel, number> = { healthy: 0, warning: 0, critical: 0, unknown: 0 };
+  const riskCounts: Record<RiskLevel, number> = { healthy: 0, moderate: 0, at_risk: 0, critical: 0, unknown: 0 };
   clientViews.forEach((c) => riskCounts[c.risk]++);
 
   return { scopeClientCount: scoped.length, kpis, trend, industries, clients: clientViews, csmBooks, riskCounts, noDataClients };
@@ -130,11 +131,11 @@ export function deriveAlerts(view: PortfolioView, period: Period): DerivedAlert[
   for (const c of view.clients) {
     if (c.risk === "critical") {
       out.push({ key: `risk:${c.client.id}:${p}`, clientId: c.client.id, clientName: c.client.name, severity: "critical",
-        title: "Critical health score", detail: `Health ${c.current.healthScore?.toFixed(0)} is below the critical threshold.` });
+        title: "Critical health score", detail: `Health ${c.current.healthScore?.toFixed(0)} is in the Critical band (below ${RISK_THRESHOLDS.atRisk}).` });
     }
     if (c.declining) {
       out.push({ key: `decline:${c.client.id}:${p}`, clientId: c.client.id, clientName: c.client.name, severity: "warning",
-        title: "Declining engagement", detail: `Engagement fell ${Math.abs((c.engagementDelta.abs ?? 0) * 100).toFixed(1)} pts vs the previous period.` });
+        title: "Declining participation", detail: `Participation fell ${Math.abs((c.participationDelta.abs ?? 0) * 100).toFixed(1)} pts vs the previous period.` });
     }
   }
   return out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "critical" ? -1 : 1));

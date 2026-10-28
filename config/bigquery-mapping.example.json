@@ -1,17 +1,19 @@
 {
-  "_comment": "Copy to bigquery-mapping.json. Every value below is a PLACEHOLDER (TODO: confirm) — no real DataConnect/reporting table names are known. Point these at the optimized reporting tables described in docs/ARCHITECTURE.md, not at raw DataConnect views.",
+  "_comment": "Copy to bigquery-mapping.json. Replace SUMMARY_DATASET with the dataset where you created the views in config/bigquery-summary.example.sql (untested draft). Point at these summary views, not at raw DataConnect views.",
   "clients": {
-    "table": "TODO_project.TODO_dataset.TODO_dim_client",
+    "table": "cosmic-kite-473215-j8.SUMMARY_DATASET.dim_client",
     "columns": {
-      "id": "TODO", "name": "TODO", "industry": "TODO", "csmEmail": "TODO", "csmName": "TODO",
-      "axonifyTenantId": "TODO", "salesforceAccountId": "TODO"
+      "id": "id", "name": "name", "industry": "industry", "csmEmail": "csm_email", "csmName": "csm_name",
+      "axonifyTenantId": "axonify_tenant_id", "salesforceAccountId": "salesforce_account_id"
     }
   },
   "clientPeriod": {
-    "table": "TODO_project.TODO_dataset.TODO_rpt_client_period",
+    "table": "cosmic-kite-473215-j8.SUMMARY_DATASET.rpt_client_period",
     "columns": {
-      "clientId": "TODO", "period": "TODO (string like 2026-Q3)", "registeredUsers": "TODO", "activeUsers": "TODO",
-      "retainedUsers": "TODO", "previousActiveUsers": "TODO", "sessions": "TODO", "featuresAvailable": "TODO", "featuresUsed": "TODO"
+      "clientId": "client_id", "period": "period", "registeredUsers": "registered_users", "activeUsers": "active_users",
+      "trainingUsers": "training_users", "knowledgeLearners": "knowledge_learners", "avgKnowledge": "avg_knowledge",
+      "retainedUsers": "retained_users", "previousActiveUsers": "previous_active_users", "sessions": "sessions",
+      "featuresAvailable": "features_available", "featuresUsed": "features_used"
     }
   }
 }

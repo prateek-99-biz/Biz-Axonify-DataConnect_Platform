@@ -1,4 +1,4 @@
-import { Building2, Gauge, LayoutDashboard, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Building2, Gauge, LayoutDashboard, Presentation, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { Permission } from "@/server/auth/rbac";
 
 export interface NavItem { href: string; label: string; icon: LucideIcon; perm: Permission }
@@ -7,6 +7,7 @@ export interface NavItem { href: string; label: string; icon: LucideIcon; perm: 
 export const NAV: NavItem[] = [
   { href: "/portfolio", label: "Portfolio", icon: LayoutDashboard, perm: "portfolio:read" },
   { href: "/clients", label: "Clients", icon: Building2, perm: "clients:read" },
+  { href: "/qbr", label: "Client dashboards", icon: Presentation, perm: "dashboard:read" },
   { href: "/data-reliability", label: "Data reliability", icon: ShieldCheck, perm: "reliability:read" },
   { href: "/settings", label: "Settings", icon: Settings, perm: "settings:manage" },
 ];

@@ -1,0 +1,48 @@
+# Task List
+
+_Last updated: 2026-10-28. Scope and metric definitions: [PROJECT_SCOPE.md](PROJECT_SCOPE.md)._
+Legend: [x] done/verified, [ ] open. Priority: P0 wrong numbers on screen, P1 misleading, P2 polish.
+
+## A. Data accuracy findings (from the 2026-10-28 audit)
+Method: all 14 queries dry-run against live BigQuery (all valid); the full dashboard pipeline run read-only for all 16 tenants; Emirates (tenant 324) compared with the Power BI spec and with direct distinct-user SQL.
+
+- [x] **A1 (P0) FIXED 2026-10-28.** QBR user counts are about 2.9x too high.** `teamMonthly` sums `employee_count` over all team rows, but the team view is a hierarchy roll-up (parent and child both carry the same members, e.g. AMERICAS 10 and SAO PAULO 10). Emirates, Oct 2026: app shows active 8,104 / logged-in 2,806 / training 2,595; distinct users from `foundation_user_monthly_participation` are 2,774 / 963 / 889 (report sample: ~3K / 894 / 821). Participation % is unaffected (32.0% both ways) and so is the health score, but Active, Logged-in and Training user KPIs and the user weights behind frequency and time are wrong. Fix: take account-level counts from the distinct-user view; keep team rows for the team table only.
+- [x] **A2 (P0) FIXED 2026-10-28.** Team tree is not built.** `teamPath()` in `assemble.ts` splits on `" > "` or `"/"`, but DataConnect uses `" | "` ("Retail | AMERICAS | SAO PAULO"). Every team becomes a child of a node named by its whole hierarchy string (Emirates: 614 nodes for 289 teams), so the Teams slicer has no real hierarchy and "leaf" logic treats parent teams as leaves. Fix: split on `|`; then decide how roll-up rows are shown (A1).
+- [x] **A3 (P0) FIXED 2026-10-28.** Learner confidence is mis-scaled in the matrix.** The scale is 0-100 (max seen 860). The matrix SQL treats an average ≤ 5 as 0-5 and ≤ 10 as 0-10, so a learner at 3% confidence becomes 60%. Flydubai: 2,597 of 7,413 learners have a mean confidence in 1-10 and are inflated, which feeds the "Underconfident 1,407" bucket. Fix: treat `current_confidence` as 0-100 everywhere, as `knowledgeAccount` already does.
+- [ ] **A4 (P1) Confidence KPI is diluted by Not Started rows.** The average includes records at 0 for topics never started (Emirates: 223K of 300K rows). It matches the report (49%) but reads very low for other clients (flydubai 7.6%). Decide: keep to match the report, or average only started topics, and label accordingly.
+- [ ] **A5 (P1) Topic names fall back to "Topic <id>".** Name comes only from `analytics_SDE_topic_progress`; topics with no learner scores (Emirates: 246 of 294 released) show a placeholder and no knowledge. The join is correct (all 48 scored topics match on `external_id`). Fix: pull the name from the translatable-string tables or hide unscored topics in the knowledge chart.
+- [ ] **A6 (P1) Latest month and quarter are partial.** "Latest month" KPIs read the current in-progress month (Oct 2026 as of 28 Oct), so low-activity clients look worse (cbuae logged-in 6 of 401). Same for the latest quarter in the portfolio. Add a "month to date" marker or default to the last complete month.
+- [ ] **A7 (P1) "Avg Participation / Avg Frequency" KPIs are latest-month values, not averages over the range.** Confirm against the report's DAX (semantic model) and rename or recompute.
+- [ ] **A8 (P1) Parent teams with their own members are excluded from team tables** (only leaves are listed). Revisit once A1/A2 are decided.
+- [ ] **A9 (P1) Team query filters `current_team_status = 'active'`**, so history for since-closed teams drops out and past months can differ from the report. Confirm intended.
+- [ ] **A10 (P2) Inconsistent status filters:** usage totals use `status = 'Active'`, the hour chart uses `NOT IN ('Deleted','Cancelled')`. Equivalent today (Emirates: 14,754 Active, 2 Deleted) but should share one rule.
+- [ ] **A11 (P2) Knowledge, progress, matrix, features, platform and hour views ignore the date slicer** (snapshots / last 30 days). Label each on screen.
+- [ ] **A12 (P2) Provisional metrics need sign-off:** Experts (≥90), saturation (÷12), engagement rate, retention, feature adoption (no source, always empty), 72h stale SLA.
+- [ ] **A13 (P2) Spec typo:** the spec writes dataset `axonify__bizgroup_emea` (two underscores); the real name is `axonify___bizgroup_emea` (three). Code is right; fix the spec.
+
+### Verified correct
+- [x] All 14 SQL queries dry-run valid on live BigQuery (scans about 21 GB combined per sync).
+- [x] 38 unit tests pass; query views and qualified columns are checked against `config/bigquery-schema.json`.
+- [x] Emirates matches the report: participation 32%, baseline 71%, current 83%, confidence 49%, topic completion 14%, avg question pool 2,090, months to graduate 19.5 (report 18.5), content items 2.3K, active topics 294 (report 288), health 57% (report 59%, knowledge differs by data age).
+- [x] Health formula, health bands, team status and trend thresholds match the report as recorded.
+- [x] Content Delivery now shows real programs (Emirates: 19 of 51 groups have programs; the report showed zeros).
+- [x] Progression rows sum to 100% per level (the report's did not).
+
+## B. Not yet verified
+- [ ] **B1** Supabase database was unreachable from this machine during the audit, so whether `npm run sync` has populated `SyncDashboard` and what the live pages show is unconfirmed. Run the sync and compare the pages with section A.
+- [ ] **B2** Compare 2-3 other clients (e.g. flydubai, jlearning) with the Power BI report, not just Emirates.
+- [ ] **B3** Supabase sign-in against a real project (only the dev login was exercised).
+- [ ] **B4** Confirm the report's DAX for Experts, Avg Participation, Avg Knowledge (home shows 85% vs Knowledge page 83%).
+
+## C. Platform backlog (from docs/ROADMAP.md)
+- [ ] C1 Admin UI for `ClientMapping` (industry, CSM, Salesforce ID are unknown today).
+- [ ] C2 Salesforce adapter (Phase 3): accounts, contracts, renewals, licensing, ARR.
+- [ ] C3 Phase 2 modules: learning paths/SCORM, communications, MAX, checkpoints.
+- [ ] C4 Phase 4: Excel/PDF/QBR export, caching, monitoring, CI/CD, E2E tests.
+- [ ] C5 Schedule `npm run sync` daily (Task Scheduler / cron / GitHub Actions).
+- [ ] C6 Team, user and source-coverage views on synced data (currently mock-only).
+- [x] C7 Regression tests for A1-A3 added in `bigquery.test.ts` (roll-up rows, `|` hierarchy, 0-100 confidence).
+- [ ] C8 Commit the large working-tree change set (about 45 modified and several new directories are uncommitted).
+
+## D. Fix log
+- 2026-10-28 A1-A3: `topRows()`/`aggregateMonths(rows, teams)` in `calc.ts` add only top-most team rows; `teamPath()` splits on `|`; confidence is `/100` in the matrix SQL and `norm100()` in `assemble.ts`. Re-run on live data: Emirates Oct 2026 now active 2,754 / logged-in 963 / training 889 (distinct-user SQL: 2,774 / 963 / 889), team nodes 614 -> 309, flydubai "Experts" 283 -> 9. A sync is needed before the stored snapshots show the corrected numbers.

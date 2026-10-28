@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",
-    "sync": "tsx --env-file=.env scripts/sync.ts"
+    "sync": "tsx --env-file=.env scripts/sync.ts",
+    "bq:check": "tsx --env-file=.env scripts/bq-check.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^9.4.0",

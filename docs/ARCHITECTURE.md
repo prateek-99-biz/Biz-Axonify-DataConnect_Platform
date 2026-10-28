@@ -21,7 +21,7 @@ Each BigQuery query costs about a second or more and is billed by data scanned. 
 | Table | Grain | Columns consumed |
 |---|---|---|
 | client dimension | client | id, name, industry, csm email/name, Axonify tenant ID, Salesforce Account ID |
-| client-period summary | client × calendar quarter | registeredUsers, activeUsers, retainedUsers, previousActiveUsers, sessions, featuresAvailable, featuresUsed |
+| client-period summary | client × calendar quarter | registeredUsers, activeUsers, trainingUsers, knowledgeLearners, avgKnowledge, retainedUsers, previousActiveUsers, sessions, featuresAvailable, featuresUsed |
 
 Team hierarchy, user lists and source coverage are **not** in the synced summaries yet, so those tabs show “unavailable” on the synced adapter (they work on mock data). Adding them means extra summary tables, sync tables and adapter methods.
 
@@ -29,7 +29,7 @@ Team hierarchy, user lists and source coverage are **not** in the synced summari
 Single `SyncRun` row per attempt (running/ok/failed). Refuses concurrent runs and runs within 60 s of the last finish. Source errors or empty results leave existing data untouched. Replacement of summaries happens in one transaction.
 
 ## Metrics
-All formulas live in `src/server/metrics/definitions.ts` and are shown in the UI. They are **provisional**. Portfolio rates are ratio-of-sums. Full-year active users = mean of quarterly actives; registered users = latest quarter.
+All formulas live in `src/server/metrics/definitions.ts` and are shown in the UI. Participation, knowledge, health score and health bands mirror the Power BI report; engagement, retention and feature adoption are provisional. Portfolio rates are ratio-of-sums. Full-year active and training users = mean of quarterly values; registered users and knowledge = latest quarter.
 
 ## Security
 Supabase session cookies are verified with Supabase on each request (`getUser`). Middleware is only a redirect convenience; authorization is in server code. Only the public anon key is used in this app.

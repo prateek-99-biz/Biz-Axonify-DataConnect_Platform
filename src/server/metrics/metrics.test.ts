@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { aggregate, contributingFactor, delta, derive, healthScore, ratio, riskLevel } from "./calculations";
+import { aggregate, contributingFactor, delta, derive, healthScore, ratio, riskLevel, type Totals } from "./calculations";
 import { compareQuarterKeys, parsePeriodKey, periodKey, previousPeriod, quarterOf, quarterRange, quartersIn, yearAgo } from "./period";
 import type { ClientPeriodRow } from "@/server/data/ports";
 import { can, parseRole } from "@/server/auth/rbac";
 import { buildPortfolio } from "@/server/services/portfolio";
 
 const row = (o: Partial<ClientPeriodRow>): ClientPeriodRow => ({
-  clientId: "a", period: "2026-Q1", registeredUsers: 100, activeUsers: 50, retainedUsers: 40, previousActiveUsers: 50,
-  sessions: 500, featuresAvailable: 10, featuresUsed: 5, ...o,
+  clientId: "a", period: "2026-Q1", registeredUsers: 100, activeUsers: 50, trainingUsers: 40, knowledgeLearners: 40, avgKnowledge: 0.6,
+  retainedUsers: 40, previousActiveUsers: 50, sessions: 500, featuresAvailable: 10, featuresUsed: 5, ...o,
+});
+
+const totals = (o: Partial<Totals>): Totals => ({
+  registeredUsers: 0, activeUsers: 0, trainingUsers: 0, knowledgeLearners: 0, knowledgeWeighted: 0,
+  retainedUsers: 0, previousActiveUsers: 0, sessions: 0, featuresAvailable: 0, featuresUsed: 0, ...o,
 });
 
 describe("ratio / delta", () => {
@@ -23,26 +28,37 @@ describe("ratio / delta", () => {
 });
 
 describe("derived metrics", () => {
-  it("engagement, retention, adoption", () => {
-    const m = derive({ registeredUsers: 200, activeUsers: 100, retainedUsers: 60, previousActiveUsers: 80, sessions: 0, featuresAvailable: 10, featuresUsed: 4 });
+  it("engagement, participation, knowledge, retention, adoption", () => {
+    const m = derive(totals({ registeredUsers: 200, activeUsers: 100, trainingUsers: 80, knowledgeLearners: 50, knowledgeWeighted: 30, retainedUsers: 60, previousActiveUsers: 80, featuresAvailable: 10, featuresUsed: 4 }));
     expect(m.engagementRate).toBe(0.5);
+    expect(m.participationRate).toBe(0.8);
+    expect(m.avgKnowledge).toBeCloseTo(0.6, 10);
     expect(m.retentionRate).toBe(0.75);
     expect(m.featureAdoption).toBe(0.4);
-    expect(m.healthScore).toBeCloseTo(100 * (0.5 * 0.5 + 0.3 * 0.75 + 0.2 * 0.4), 6);
+    expect(m.healthScore).toBeCloseTo(100 * (0.5 * 0.8 + 0.5 * 0.6), 6);
+  });
+  it("normalises knowledge given as 0-100 and weights by learners", () => {
+    const m = aggregate([row({ clientId: "a", knowledgeLearners: 10, avgKnowledge: 80 }), row({ clientId: "b", knowledgeLearners: 30, avgKnowledge: 0.4 })], ["2026-Q1"]);
+    expect(m.avgKnowledge).toBeCloseTo((0.8 * 10 + 0.4 * 30) / 40, 10);
   });
   it("health is null (not 0) when any input is missing", () => {
-    expect(healthScore(0.5, null, 0.5)).toBeNull();
+    expect(healthScore(0.5, null)).toBeNull();
+    expect(healthScore(null, 0.5)).toBeNull();
+    expect(derive(totals({ activeUsers: 10, trainingUsers: 5 })).healthScore).toBeNull();
     expect(riskLevel(null)).toBe("unknown");
   });
-  it("risk bands", () => {
-    expect(riskLevel(39)).toBe("critical");
-    expect(riskLevel(50)).toBe("warning");
-    expect(riskLevel(80)).toBe("healthy");
+  it("health bands follow the report", () => {
+    expect(riskLevel(44.9)).toBe("critical");
+    expect(riskLevel(45)).toBe("at_risk");
+    expect(riskLevel(59.9)).toBe("at_risk");
+    expect(riskLevel(60)).toBe("moderate");
+    expect(riskLevel(74.9)).toBe("moderate");
+    expect(riskLevel(75)).toBe("healthy");
   });
   it("identifies the biggest weighted factor", () => {
-    const cur = derive({ registeredUsers: 100, activeUsers: 30, retainedUsers: 45, previousActiveUsers: 50, sessions: 0, featuresAvailable: 10, featuresUsed: 5 });
-    const prev = derive({ registeredUsers: 100, activeUsers: 50, retainedUsers: 45, previousActiveUsers: 50, sessions: 0, featuresAvailable: 10, featuresUsed: 5 });
-    expect(contributingFactor(cur, prev)[0].key).toBe("engagement");
+    const cur = derive(totals({ activeUsers: 100, trainingUsers: 40, knowledgeLearners: 40, knowledgeWeighted: 24 }));
+    const prev = derive(totals({ activeUsers: 100, trainingUsers: 70, knowledgeLearners: 40, knowledgeWeighted: 24 }));
+    expect(contributingFactor(cur, prev)[0].key).toBe("participation");
   });
 });
 
@@ -91,7 +107,7 @@ describe("portfolio view", () => {
     { id: "b", name: "B", industry: "Logistics", csmEmail: "x@y", csmName: "X", axonifyTenantId: "t2", salesforceAccountId: null },
   ];
   const rows = [
-    row({ clientId: "a", period: "2026-Q1" }), row({ clientId: "a", period: "2026-Q2", activeUsers: 20 }),
+    row({ clientId: "a", period: "2026-Q1" }), row({ clientId: "a", period: "2026-Q2", activeUsers: 20, trainingUsers: 8 }),
     row({ clientId: "b", period: "2026-Q1" }),
   ];
   it("filters by industry and reports clients without data separately", () => {

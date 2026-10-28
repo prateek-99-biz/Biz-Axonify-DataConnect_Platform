@@ -11,7 +11,7 @@ const SOURCE = "mock" as const;
 export const MOCK_AS_OF = "2026-10-20T06:00:00.000Z";
 const QUARTERS = quarterRange({ year: 2023, quarter: 1 }, { year: 2026, quarter: 3 });
 
-function rng(seed: string) {
+export function rng(seed: string) {
   let h = 1779033703 ^ seed.length;
   for (let i = 0; i < seed.length; i++) {
     h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
@@ -39,7 +39,7 @@ const NAMES = [
   "Greenleaf Grocers", "Skyline Hospitality", "Lumen Medical", "Transit Hub", "Granite Works", "Beacon Credit",
 ];
 
-interface Profile { base: number; engagement: number; trend: number; retention: number; adoption: number }
+interface Profile { base: number; engagement: number; trend: number; retention: number; adoption: number; participation: number; knowledge: number }
 
 const CLIENTS: (ClientSummary & { profile: Profile })[] = NAMES.map((name, i) => {
   const r = rng(`client-${i}`);
@@ -59,12 +59,15 @@ const CLIENTS: (ClientSummary & { profile: Profile })[] = NAMES.map((name, i) =>
       trend: (r() - 0.55) * 0.02,
       retention: 0.6 + r() * 0.3,
       adoption: 0.3 + r() * 0.5,
+      participation: 0.45 + r() * 0.45,
+      knowledge: 0.5 + r() * 0.35,
     },
   };
 });
 
 function rowsFor(c: (typeof CLIENTS)[number]): ClientPeriodRow[] {
   const r = rng(`rows-${c.id}`);
+  const r2 = rng(`rows-pk-${c.id}`);
   const out: ClientPeriodRow[] = [];
   let prevActive = 0;
   QUARTERS.forEach((period, qi) => {
@@ -74,11 +77,17 @@ function rowsFor(c: (typeof CLIENTS)[number]): ClientPeriodRow[] {
     const ret = Math.min(0.98, Math.max(0.2, c.profile.retention + c.profile.trend * qi * 0.6 + (r() - 0.5) * 0.04));
     const featuresAvailable = 14;
     const featuresUsed = Math.min(featuresAvailable, Math.max(1, Math.round(featuresAvailable * (c.profile.adoption + c.profile.trend * qi * 0.5 + (r() - 0.5) * 0.06))));
+    const part = Math.min(0.97, Math.max(0.1, c.profile.participation + c.profile.trend * qi + (r2() - 0.5) * 0.04));
+    const know = Math.min(0.98, Math.max(0.2, c.profile.knowledge + c.profile.trend * qi * 0.5 + (r2() - 0.5) * 0.03));
+    const trainingUsers = Math.round(active * part);
     out.push({
       clientId: c.id,
       period,
       registeredUsers: registered,
       activeUsers: active,
+      trainingUsers,
+      knowledgeLearners: Math.round(trainingUsers * 0.9),
+      avgKnowledge: Math.round(know * 1000) / 1000,
       previousActiveUsers: prevActive,
       retainedUsers: Math.round(prevActive * ret),
       sessions: Math.round(active * (6 + r() * 14)),

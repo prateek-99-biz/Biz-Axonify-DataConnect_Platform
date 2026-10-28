@@ -27,7 +27,7 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
       <section aria-label="Follow-up tasks">
         <h3 className="mb-2 text-sm font-semibold">Follow-up tasks</h3>
         {canWrite && (
-          <form className="mb-3 grid grid-cols-2 gap-2 rounded-lg border border-line p-3"
+          <form className="glass mb-3 grid grid-cols-2 gap-2 !rounded-xl p-3"
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
@@ -46,11 +46,11 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
             <Button variant="primary" className="col-span-2" disabled={busy}>Add task</Button>
           </form>
         )}
-        {err && <p role="alert" className="mb-2 text-xs text-red-700">{err}</p>}
+        {err && <p role="alert" className="mb-2 text-xs font-medium text-critical">{err}</p>}
         <ul className="space-y-2">
           {tasks.length === 0 && <li className="text-xs text-slate-500">No tasks yet for this client.</li>}
           {tasks.map((t) => (
-            <li key={t.id} className="rounded-lg border border-line p-3 text-sm">
+            <li key={t.id} className="glass !rounded-xl p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <p className={t.status === "DONE" || t.status === "CANCELLED" ? "text-slate-400 line-through" : "font-medium"}>{t.title}</p>
                 <Badge tone={t.priority === "URGENT" ? "critical" : t.priority === "HIGH" ? "warn" : "neutral"}>{t.priority.toLowerCase()}</Badge>
@@ -80,14 +80,14 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
               const body = String(new FormData(form).get("body") ?? "");
               run(async () => { await send(`/api/clients/${clientId}/notes`, "POST", { body }); form.reset(); });
             }}>
-            <textarea name="body" required maxLength={4000} rows={3} aria-label="Note" placeholder="Add a note about this account…" className="w-full rounded-md border border-line p-2 text-sm" />
+            <textarea name="body" required maxLength={4000} rows={3} aria-label="Note" placeholder="Add a note about this account…" className="field w-full p-2.5 text-sm" />
             <Button variant="primary" disabled={busy}>Add note</Button>
           </form>
         )}
         <ul className="space-y-2">
           {notes.length === 0 && <li className="text-xs text-slate-500">No notes yet for this client.</li>}
           {notes.map((n) => (
-            <li key={n.id} className="rounded-lg border border-line p-3 text-sm">
+            <li key={n.id} className="glass !rounded-xl p-3 text-sm">
               <p className="whitespace-pre-wrap">{n.body}</p>
               <p className="mt-1 text-xs text-slate-500">{n.author} · {n.createdAt.slice(0, 16).replace("T", " ")} UTC</p>
             </li>

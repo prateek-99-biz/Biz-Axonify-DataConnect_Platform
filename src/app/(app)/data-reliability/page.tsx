@@ -49,7 +49,7 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
 
   return (
     <div className="space-y-6">
-      <div><h1 className="text-xl font-semibold">Data reliability</h1>
+      <div><h1 className="text-2xl font-bold tracking-tight">Data reliability</h1>
         <p className="text-sm text-slate-500">Source: {cov.source}{cov.status === "ok" ? ` · as of ${cov.asOf.slice(0, 16).replace("T", " ")} UTC` : ""}</p></div>
       {coverageSection}
       <Card>
@@ -74,7 +74,7 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
       </Card>
       <Card>
         <div id="definitions" />
-        <CardHeader title="Metric definitions" subtitle="Shared by every page. All are provisional until approved by Biz Group." />
+        <CardHeader title="Metric definitions" subtitle="Shared by every page. Health, participation and knowledge follow the Power BI report; other metrics stay provisional until approved by Biz Group." />
         <ul className="divide-y divide-line">
           {METRIC_DEFINITIONS.map((d) => (
             <li key={d.key} className="px-4 py-3 text-sm">
@@ -84,8 +84,8 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
             </li>
           ))}
         </ul>
-        <p className="border-t border-line px-4 py-3 text-xs text-slate-500">
-          Health weights: engagement {HEALTH_WEIGHTS.engagement}, retention {HEALTH_WEIGHTS.retention}, adoption {HEALTH_WEIGHTS.adoption}. Risk bands: critical &lt; {RISK_THRESHOLDS.critical}, watch &lt; {RISK_THRESHOLDS.warning}. Quarters are calendar quarters.
+        <p className="border-t hairline px-4 py-3 text-xs text-slate-500">
+          Health weights: participation {HEALTH_WEIGHTS.participation}, knowledge {HEALTH_WEIGHTS.knowledge}. Health bands: Healthy ≥ {RISK_THRESHOLDS.healthy}, Moderate ≥ {RISK_THRESHOLDS.moderate}, At risk ≥ {RISK_THRESHOLDS.atRisk}, otherwise Critical. Quarters are calendar quarters.
         </p>
       </Card>
     </div>

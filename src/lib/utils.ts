@@ -10,6 +10,11 @@ export function fmtNumber(n: number | null | undefined, digits = 0) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(n);
 }
 
+export function fmtCompact(n: number | null | undefined) {
+  if (n == null || Number.isNaN(n)) return "—";
+  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+}
+
 export function fmtPct(n: number | null | undefined, digits = 1) {
   if (n == null || Number.isNaN(n)) return "—";
   return `${(n * 100).toFixed(digits)}%`;

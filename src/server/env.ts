@@ -6,6 +6,9 @@ const schema = z.object({
   DATA_ADAPTER: z.enum(["mock", "synced"]).default("mock"),
   AUTH_DEV_LOGIN: z.string().optional(),
   BQ_PROJECT_ID: z.string().optional(),
+  BQ_DATASET: z.string().optional(),
+  /** Comma-separated Axonify tenant ids to sync (the accounts the dashboards cover). */
+  BQ_TENANT_IDS: z.string().optional(),
   BQ_MAPPING_FILE: z.string().default("config/bigquery-mapping.json"),
 });
 

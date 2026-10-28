@@ -7,7 +7,7 @@ import { parseRole, type Role } from "./rbac";
 
 export const DEV_COOKIE = "ci_dev_user";
 
-export interface SessionUser { id: string; email: string; name: string | null; role: Role }
+export interface SessionUser { id: string; email: string; name: string | null; role: Role; clientId: string | null }
 export interface Session { user: SessionUser }
 
 const adminEmails = () => (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -22,11 +22,12 @@ export async function auth(): Promise<Session | null> {
   if (devLoginEnabled()) {
     const raw = store.get(DEV_COOKIE)?.value;
     if (raw) {
-      const [email, roleRaw] = decodeURIComponent(raw).split("|");
+      const [email, roleRaw, devClient] = decodeURIComponent(raw).split("|");
       const role = parseRole(roleRaw);
       if (email?.endsWith("@bizgroup.ae") && role) {
         const row = await upsertProfile(`dev-${email}`, email, email.split("@")[0], role);
-        return row.active ? { user: { id: row.id, email: row.email, name: row.name, role: row.role } } : null;
+        // Dev only: the cookie can name the client for CLIENT users without a stored assignment.
+        return row.active ? { user: { id: row.id, email: row.email, name: row.name, role: row.role, clientId: row.clientId ?? (devClient || null) } } : null;
       }
     }
   }
@@ -38,7 +39,7 @@ export async function auth(): Promise<Session | null> {
   const email = data.user.email.toLowerCase();
   const name = (data.user.user_metadata?.full_name as string | undefined) ?? null;
   const row = await upsertProfile(data.user.id, email, name, adminEmails().includes(email) ? "ADMIN" : "MEMBER");
-  return row.active ? { user: { id: row.id, email: row.email, name: row.name, role: row.role } } : null;
+  return row.active ? { user: { id: row.id, email: row.email, name: row.name, role: row.role, clientId: row.clientId } } : null;
 }
 
 /** Creates the profile on first sight. After that the stored role (managed in Settings) wins; ADMIN_EMAILS only seeds. */

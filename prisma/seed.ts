@@ -13,7 +13,7 @@ async function main() {
     await db.metricDefinition.upsert({
       where: { key: d.key },
       create: { key: d.key, name: d.name, description: d.description, formula: d.formula, unit: d.unit, status: d.status },
-      update: { name: d.name, description: d.description, formula: d.formula, unit: d.unit },
+      update: { name: d.name, description: d.description, formula: d.formula, unit: d.unit, status: d.status },
     });
   }
   if (process.env.NODE_ENV === "production") return;

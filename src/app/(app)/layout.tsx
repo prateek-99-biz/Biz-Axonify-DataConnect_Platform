@@ -10,13 +10,15 @@ import { Breadcrumbs, GlobalSearch, NotificationCentre, ProfileMenu, type Notifi
 import { FilterBar } from "@/components/filters/filter-bar";
 import { Badge } from "@/components/ui/primitives";
 import { RefreshButton } from "@/components/shell/refresh-button";
+import { ThemeToggle } from "@/components/shell/theme-toggle";
 
-const ALL_PERMS: Permission[] = ["portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run"];
+const ALL_PERMS: Permission[] = ["dashboard:read", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run"];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/signin");
   const user = session.user;
+  if (user.role === "CLIENT") redirect("/qbr");
   const allowed = ALL_PERMS.filter((p) => can(user.role, p));
 
   const loaded = await loadContext({});
@@ -35,23 +37,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Suspense fallback={<aside className="hidden w-60 bg-navy md:block" />}>
+    <div className="flex h-screen gap-3 overflow-hidden p-3">
+      <Suspense fallback={<aside className="glass-nav hidden w-64 md:block" />}>
         <Sidebar allowed={allowed} />
       </Suspense>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-white px-4 sm:px-6">
-          <div className="hidden min-w-0 flex-1 md:block"><Breadcrumbs /></div>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <header className="glass relative z-20 flex h-14 shrink-0 items-center gap-3 px-4">
+          <div className="hidden min-w-0 flex-1 overflow-hidden whitespace-nowrap lg:block"><Breadcrumbs /></div>
           <GlobalSearch />
           {loaded.ok && loaded.ctx.source === "mock" && (
             <Badge tone="warn" className="shrink-0" title="All figures are synthetic development data">MOCK DATA</Badge>
           )}
           {can(user.role, "sync:run") && <RefreshButton asOf={loaded.ok ? loaded.ctx.asOf : null} />}
+          <ThemeToggle />
           <NotificationCentre items={notifications} canAck />
           <ProfileMenu name={user.name ?? user.email} email={user.email} role={ROLE_LABEL[user.role]} signOutAction={doSignOut} />
         </header>
         {loaded.ok && (
-          <Suspense fallback={<div className="h-12 border-b border-line bg-white" />}>
+          <Suspense fallback={<div className="glass h-[52px] shrink-0" />}>
             <FilterBar
               options={{
                 clients: loaded.ctx.clients.map((c) => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name)),
@@ -65,7 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             />
           </Suspense>
         )}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <main className="-mx-1 flex-1 overflow-y-auto px-1 pb-6">{children}</main>
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ function Row({ node, all, depth, defaultOpen }: { node: TreeNode; all: TreeNode[
   const eng = node.registeredUsers > 0 ? node.activeUsers / node.registeredUsers : null;
   return (
     <>
-      <tr className="border-b border-line last:border-0">
+      <tr className="border-b hairline transition-colors last:border-0 hover:bg-brand/10">
         <td className="py-2 pr-4" style={{ paddingLeft: 16 + depth * 20 }}>
           {kids.length > 0 ? (
             <button className="inline-flex items-center gap-1 font-medium" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
@@ -43,7 +43,7 @@ export function TeamTree({ nodes }: { nodes: TreeNode[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-line bg-slate-50 text-xs text-slate-500">
+          <tr className="border-b hairline bg-slate-50/60 text-[11px] uppercase tracking-wider text-slate-500">
             <th scope="col" className="px-4 py-2 text-left font-medium">Team</th>
             <th scope="col" className="px-4 py-2 text-right font-medium">Registered</th>
             <th scope="col" className="px-4 py-2 text-right font-medium">Active</th>

@@ -9,6 +9,7 @@ import { Badge, Button, Card, CardHeader, Select } from "@/components/ui/primiti
 export default async function SettingsPage() {
   const me = await requirePagePermission("settings:manage");
   const users = await db.appUser.findMany({ orderBy: { email: "asc" } });
+  const clientOptions = await db.clientMapping.findMany({ select: { id: true, displayName: true }, orderBy: { displayName: "asc" } });
   const env = getEnv();
 
   async function setRole(form: FormData) {
@@ -17,10 +18,13 @@ export default async function SettingsPage() {
     const id = String(form.get("id"));
     const role = parseRole(form.get("role"));
     const active = form.get("active") === "on";
+    const clientId = role === "CLIENT" ? String(form.get("clientId") ?? "") || null : null;
     if (!role) return;
+    // A client user without a client would see nothing, so require the link.
+    if (role === "CLIENT" && !clientId) return;
     // Prevent an admin from locking themselves out.
     if (id === actor.id && (role !== "ADMIN" || !active)) return;
-    await db.appUser.update({ where: { id }, data: { role, active } });
+    await db.appUser.update({ where: { id }, data: { role, active, clientId } });
     revalidatePath("/settings");
   }
 
@@ -32,7 +36,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
       <Card>
         <CardHeader title="Configuration status" subtitle="Status only; secrets are never shown or sent to the browser" />
         <ul className="divide-y divide-line text-sm">
@@ -49,6 +53,10 @@ export default async function SettingsPage() {
                 <input type="hidden" name="id" value={u.id} />
                 <span className="min-w-0 flex-1 truncate">{u.name ?? u.email}<span className="ml-2 text-xs text-slate-500">{u.email}{u.id === me.id ? " (you)" : ""}</span></span>
                 <Select name="role" defaultValue={u.role} aria-label={`Role for ${u.email}`}>{(Object.keys(ROLE_LABEL) as (keyof typeof ROLE_LABEL)[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</Select>
+                <Select name="clientId" defaultValue={u.clientId ?? ""} aria-label={`Client for ${u.email} (Client role only)`} className="max-w-[12rem]">
+                  <option value="">No client</option>
+                  {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+                </Select>
                 <label className="flex items-center gap-1 text-xs"><input type="checkbox" name="active" defaultChecked={u.active} /> Active</label>
                 <Button size="sm">Save</Button>
               </form>

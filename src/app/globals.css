@@ -2,13 +2,148 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens are RGB channels so Tailwind opacity modifiers work. Contrast targets: body text >= 7:1, secondary >= 4.5:1. */
 @layer base {
   :root {
-    --brand: #82c657;
-    --navy: #1d2b43;
-    --pale: #eef6e8;
+    --brand: 121 199 83;          /* #79C753 Axonify green */
+    --brand-dark: 83 139 46;      /* #538B2E */
+    --brand-pale: 238 247 232;    /* #EEF7E8 */
+    --brand-accent: 0 170 97;     /* #00AA61 */
+    --brand-ink: 47 107 20;       /* green text on light surfaces */
+    --ink: 29 43 67;              /* #1D2B43 Axonify navy */
+    --surface: 255 255 255;
+    --line: 214 226 216;
+    --warn: 217 119 6;
+    --critical: 220 38 38;
+
+    --slate-50: 246 249 247;
+    --slate-100: 236 242 238;
+    --slate-200: 222 231 225;
+    --slate-300: 196 208 202;
+    --slate-400: 95 110 132;
+    --slate-500: 75 88 108;
+    --slate-600: 61 73 92;
+    --slate-700: 45 56 74;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+
+    --glass: 255 255 255;
+    --glass-alpha: 0.62;
+    --glass-strong-alpha: 0.86;
+    --glass-border: 255 255 255;
+    --glass-border-alpha: 0.75;
+    --glass-highlight: 255 255 255;
+    --glass-highlight-alpha: 0.9;
+    --glass-blur: 22px;
+    --shadow: 29 43 67;
+    --field: 255 255 255;
+    --field-alpha: 0.7;
+    --nav-top: 255 255 255;
+    --nav-bottom: 222 241 210;    /* pale Axonify green */
+    --nav-alpha: 0.74;
+
+    --page:
+      radial-gradient(60rem 40rem at -10% -15%, rgb(121 199 83 / 0.38), transparent 60%),
+      radial-gradient(50rem 36rem at 110% -5%, rgb(0 170 97 / 0.22), transparent 60%),
+      radial-gradient(60rem 42rem at 55% 120%, rgb(29 43 67 / 0.16), transparent 60%),
+      linear-gradient(180deg, #F3FAEE 0%, #EEF7E8 100%);
   }
+
+  .dark {
+    --brand: 139 216 102;         /* lifted green for dark backgrounds */
+    --brand-dark: 121 199 83;
+    --brand-pale: 30 52 40;
+    --brand-accent: 45 212 140;
+    --brand-ink: 166 224 127;
+    --ink: 236 241 247;
+    --surface: 22 33 52;
+    --line: 52 66 92;
+    --warn: 251 191 36;
+    --critical: 248 113 113;
+
+    --slate-50: 27 38 56;
+    --slate-100: 35 48 70;
+    --slate-200: 48 62 86;
+    --slate-300: 70 85 110;
+    --slate-400: 148 163 184;
+    --slate-500: 172 185 203;
+    --slate-600: 196 206 219;
+    --slate-700: 214 222 232;
+    --slate-800: 229 234 241;
+    --slate-900: 241 245 249;
+
+    --glass: 20 31 50;
+    --glass-alpha: 0.58;
+    --glass-strong-alpha: 0.9;
+    --glass-border: 255 255 255;
+    --glass-border-alpha: 0.09;
+    --glass-highlight: 255 255 255;
+    --glass-highlight-alpha: 0.07;
+    --shadow: 0 0 0;
+    --field: 255 255 255;
+    --field-alpha: 0.06;
+    --nav-top: 26 44 42;          /* green-tinted dark glass */
+    --nav-bottom: 14 22 36;
+    --nav-alpha: 0.7;
+
+    --page:
+      radial-gradient(60rem 40rem at -10% -15%, rgb(121 199 83 / 0.2), transparent 60%),
+      radial-gradient(50rem 36rem at 110% -5%, rgb(0 170 97 / 0.16), transparent 60%),
+      radial-gradient(60rem 45rem at 55% 120%, rgb(59 92 150 / 0.32), transparent 60%),
+      linear-gradient(180deg, #0B1322 0%, #09101C 100%);
+  }
+
+  /* Without blur, or when the user asks for less transparency, make glass nearly opaque so text stays legible. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root { --glass-alpha: 0.94; --nav-alpha: 0.97; }
+    .dark { --glass-alpha: 0.95; --nav-alpha: 0.97; }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    :root { --glass-alpha: 0.95; --nav-alpha: 0.98; }
+    .dark { --glass-alpha: 0.96; --nav-alpha: 0.98; }
+  }
+
   html { color-scheme: light; }
-  body { @apply bg-[#F7F9FB] text-navy antialiased; font-feature-settings: "tnum"; }
+  html.dark { color-scheme: dark; }
+  body {
+    @apply text-ink antialiased;
+    background: var(--page);
+    background-attachment: fixed;
+    font-feature-settings: "tnum", "cv11";
+    letter-spacing: -0.005em;
+  }
+  h1, h2, h3 { letter-spacing: -0.02em; }
   *:focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
+  ::selection { background: rgb(var(--brand) / 0.35); }
+  * { scrollbar-width: thin; scrollbar-color: rgb(var(--slate-300)) transparent; }
+}
+
+@layer components {
+  .glass {
+    @apply rounded-2xl border shadow-glass;
+    background-color: rgb(var(--glass) / var(--glass-alpha));
+    border-color: rgb(var(--glass-border) / var(--glass-border-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  }
+  .glass-strong {
+    @apply rounded-2xl border shadow-lift;
+    background-color: rgb(var(--glass) / var(--glass-strong-alpha));
+    border-color: rgb(var(--glass-border) / var(--glass-border-alpha));
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+  }
+  .glass-nav {
+    @apply relative overflow-hidden rounded-2xl border text-ink shadow-glass;
+    background-image: linear-gradient(180deg, rgb(var(--nav-top) / var(--nav-alpha)) 0%, rgb(var(--nav-bottom) / var(--nav-alpha)) 100%);
+    border-color: rgb(var(--glass-border) / var(--glass-border-alpha));
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+  .field {
+    @apply rounded-xl border border-line text-ink transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30;
+    background-color: rgb(var(--field) / var(--field-alpha));
+  }
+  .field option { @apply bg-surface text-ink; }
+  .hairline { @apply border-line/70; }
 }

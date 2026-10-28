@@ -28,6 +28,12 @@ export interface ClientPeriodRow {
   period: string;
   registeredUsers: number;
   activeUsers: number;
+  /** Active users with at least one training session in the period (numerator of participation). */
+  trainingUsers: number;
+  /** Learners that have knowledge scores (weight for averaging avgKnowledge across clients). */
+  knowledgeLearners: number;
+  /** Average current knowledge, 0-1 (values above 1 are treated as percentages). Null when no learner has a score. */
+  avgKnowledge: number | null;
   /** Users active in this quarter that were also active in the previous quarter. */
   retainedUsers: number;
   /** Active users in the previous quarter (denominator for retention). */

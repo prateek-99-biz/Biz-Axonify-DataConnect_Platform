@@ -4,7 +4,10 @@
  * A failed sync never touches existing data.
  */
 import { db } from "@/server/db";
+import type { Prisma } from "@prisma/client";
 import { bigqueryAnalytics } from "@/server/data/adapters/bigquery";
+import { bqConfig, fetchDashboards } from "@/server/dashboard/bigquery/load";
+import type { DashboardData } from "@/server/dashboard/types";
 
 const STALE_RUN_MS = 10 * 60_000;
 const COOLDOWN_MS = 60_000;
@@ -37,11 +40,25 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
     // Guard against wiping good data with an empty/broken source.
     if (clients.data.length === 0 || rows.data.length === 0) return fail("error", "The source returned no rows; existing data was kept.");
 
+    // Dashboard datasets are read before anything is written so a failed query leaves existing data untouched.
+    const cfg = bqConfig();
+    let dashboards: Map<string, DashboardData> | null = null;
+    if (cfg) {
+      const tenants = clients.data.flatMap((c) => { const id = Number(c.axonifyTenantId); return Number.isInteger(id) && id > 0 ? [{ tenantId: id, clientId: c.id, name: c.name }] : []; });
+      const res = await fetchDashboards(cfg, tenants);
+      if (res.status !== "ok") return fail("unavailable", res.reason);
+      dashboards = res.data;
+    }
+
     await db.$transaction(async (tx) => {
       await tx.syncClientPeriod.deleteMany();
       await tx.syncClient.deleteMany();
       await tx.syncClient.createMany({ data: clients.data });
       await tx.syncClientPeriod.createMany({ data: rows.data });
+      if (dashboards) {
+        await tx.syncDashboard.deleteMany();
+        await tx.syncDashboard.createMany({ data: [...dashboards].map(([clientId, d]) => ({ clientId, payload: d as unknown as Prisma.InputJsonValue })) });
+      }
       for (const c of clients.data) {
         await tx.clientMapping.upsert({
           where: { id: c.id },

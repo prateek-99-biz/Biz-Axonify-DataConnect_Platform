@@ -24,7 +24,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
       cells: {
         name: { v: c.client.name }, industry: { v: c.client.industry }, csm: { v: c.client.csmName },
         users: { v: c.current.registeredUsers, node: fmtNumber(c.current.registeredUsers) },
-        engagement: { v: c.current.engagementRate, node: fmtPct(c.current.engagementRate) },
+        engagement: { v: c.current.participationRate, node: fmtPct(c.current.participationRate) },
         health: { v: c.current.healthScore, node: c.current.healthScore?.toFixed(0) ?? "—" },
         risk: { v: c.risk, node: <RiskBadge risk={c.risk} /> },
         mapped: { v: c.client.salesforceAccountId ? "Mapped" : "No Salesforce account", node: c.client.salesforceAccountId ? <Badge tone="good">Mapped</Badge> : <Badge tone="warn">No Salesforce account</Badge> },
@@ -44,7 +44,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Client directory</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Client directory</h1>
           <p className="text-sm text-slate-500">{rows.length} clients · metrics for {periodLabel(ctx.filters.period)}</p>
         </div>
         <Link href={`/clients/compare?period=${p}`} className="text-sm underline">Compare clients</Link>
@@ -55,7 +55,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
           <DataTable canExport={can(user.role, "export:csv")} exportName={`clients-${p}`}
             columns={[
               { key: "name", header: "Client" }, { key: "industry", header: "Industry" }, { key: "csm", header: "CSM" },
-              { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Engagement", align: "right" },
+              { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Participation", align: "right" },
               { key: "health", header: "Health", align: "right" }, { key: "risk", header: "Risk" }, { key: "mapped", header: "CRM mapping" },
             ]} rows={rows} />
         )}

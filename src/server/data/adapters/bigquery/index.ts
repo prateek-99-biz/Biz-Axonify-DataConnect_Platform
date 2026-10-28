@@ -6,6 +6,9 @@
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import type { AnalyticsPort, ClientPeriodRow, ClientSummary, Result } from "../../ports";
+import { bqConfig, runQuery } from "@/server/dashboard/bigquery/load";
+
+const asNum = (v: unknown) => { const x = v && typeof v === "object" && "value" in v ? (v as { value: unknown }).value : v; const n = Number(x); return Number.isFinite(n) ? n : 0; };
 
 const col = z.string().min(1);
 const mappingSchema = z.object({
@@ -21,7 +24,8 @@ const mappingSchema = z.object({
     .object({
       table: col,
       columns: z.object({
-        clientId: col, period: col, registeredUsers: col, activeUsers: col, retainedUsers: col,
+        clientId: col, period: col, registeredUsers: col, activeUsers: col, trainingUsers: col,
+        knowledgeLearners: col, avgKnowledge: col, retainedUsers: col,
         previousActiveUsers: col, sessions: col, featuresAvailable: col, featuresUsed: col,
       }),
     })
@@ -60,7 +64,16 @@ export const bigqueryAnalytics: AnalyticsPort = {
 
   async listClients() {
     const m = loadMapping()?.clients;
-    if (!m) return unavailable("BigQuery client dimension is not mapped. Fill in `clients` in the BigQuery mapping file.");
+    if (!m) {
+      const cfg = bqConfig();
+      if (!cfg || cfg.tenants.length === 0) return unavailable("Set BQ_PROJECT_ID and BQ_TENANT_IDS, or fill in `clients` in the BigQuery mapping file.");
+      const rows = await runQuery(cfg, "clients", cfg.tenants);
+      const data: ClientSummary[] = rows.map((r) => ({
+        id: String(asNum(r.id)), name: String(r.name), industry: "Unknown", csmEmail: "", csmName: "",
+        axonifyTenantId: String(asNum(r.id)), salesforceAccountId: null,
+      }));
+      return { status: "ok", data, source: "bigquery", asOf: new Date().toISOString() };
+    }
     const c = m.columns;
     const rows = await query<Record<string, string | null>>(
       `SELECT ${Object.values(c).map(ident).join(", ")} FROM ${ident(m.table)}`,
@@ -75,7 +88,19 @@ export const bigqueryAnalytics: AnalyticsPort = {
 
   async getClientPeriodRows(clientIds) {
     const m = loadMapping()?.clientPeriod;
-    if (!m) return unavailable("BigQuery client-period reporting table is not mapped. Fill in `clientPeriod` in the BigQuery mapping file.");
+    if (!m) {
+      const cfg = bqConfig();
+      if (!cfg || cfg.tenants.length === 0) return unavailable("Set BQ_PROJECT_ID and BQ_TENANT_IDS, or fill in `clientPeriod` in the BigQuery mapping file.");
+      const tenants = clientIds?.length ? clientIds.map(Number).filter(Number.isInteger) : cfg.tenants;
+      const rows = await runQuery(cfg, "clientPeriod", tenants);
+      const data: ClientPeriodRow[] = rows.map((r) => ({
+        clientId: String(asNum(r.tenant_id)), period: String(r.period), registeredUsers: asNum(r.registered_users), activeUsers: asNum(r.active_users),
+        trainingUsers: asNum(r.training_users), knowledgeLearners: asNum(r.knowledge_learners),
+        avgKnowledge: r.avg_knowledge == null ? null : asNum(r.avg_knowledge), retainedUsers: asNum(r.retained_users),
+        previousActiveUsers: asNum(r.previous_active_users), sessions: asNum(r.sessions), featuresAvailable: 0, featuresUsed: 0,
+      }));
+      return { status: "ok", data, source: "bigquery", asOf: new Date().toISOString() };
+    }
     const c = m.columns;
     const select = (Object.keys(c) as (keyof typeof c)[]).map((k) => `${ident(c[k])} AS ${k}`).join(", ");
     const where = clientIds?.length ? `WHERE ${ident(c.clientId)} IN UNNEST(@ids)` : "";
