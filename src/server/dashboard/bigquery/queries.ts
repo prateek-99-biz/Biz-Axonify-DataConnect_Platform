@@ -15,6 +15,16 @@ type T = ReturnType<typeof make>;
 
 const TENANT = "tenant_id IN UNNEST(@tenants)";
 
+/**
+ * Row rules shared by every query so "active", "live" and "released" mean the same thing on every page.
+ * DataConnect statuses seen today: events are Active or Deleted; content is Released (any case); SDE users are Active or Deleted.
+ */
+const LIVE = "status NOT IN ('Deleted', 'Cancelled')"; // event rows (training, games, rewards, answers)
+const RELEASED = (alias = "") => `LOWER(TRIM(${alias}status)) = 'released'`; // content rows
+const ACTIVE_USER = (alias = "") => `${alias}user_is_active = TRUE`; // monthly participation rows
+const ACTIVE_LEARNER = "LOWER(user_status) = 'active'"; // SDE rows
+const SCORED = "current_score IS NOT NULL AND baseline_score IS NOT NULL"; // SDE rows with both scores
+
 export const QUERIES = {
   clients: (t: T) => `SELECT id, name FROM ${t("tenant")} WHERE id IN UNNEST(@tenants)`,
 
@@ -44,14 +54,14 @@ export const QUERIES = {
     WITH learner_knowledge AS (
       SELECT tenant_id, employee_id, AVG(current_score) AS learner_current
       FROM ${t("analytics_SDE_topic_progress")}
-      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL AND baseline_score IS NOT NULL
+      WHERE ${TENANT} AND ${ACTIVE_LEARNER} AND ${SCORED}
       GROUP BY tenant_id, employee_id
     ),
     -- Axonify's Knowledge Summary averages every user-topic-level score, not each learner's average
     score_rows AS (
       SELECT tenant_id, AVG(baseline_score) AS avg_baseline, AVG(current_score) AS avg_current
       FROM ${t("analytics_SDE_topic_progress")}
-      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL AND baseline_score IS NOT NULL
+      WHERE ${TENANT} AND ${ACTIVE_LEARNER} AND ${SCORED}
       GROUP BY tenant_id
     ),
     sde AS (
@@ -88,7 +98,7 @@ export const QUERIES = {
         COALESCE(NULLIF(CAST(external_id AS STRING), ''), CONCAT('INTERNAL-', CAST(id AS STRING))) AS topic_key,
         create_date
       FROM ${t("content_topic")}
-      WHERE ${TENANT} AND delete_date IS NULL AND LOWER(TRIM(status)) = 'released'
+      WHERE ${TENANT} AND delete_date IS NULL AND ${RELEASED()}
     ),
     sde AS (
       SELECT tenant_id, CAST(topic_id AS STRING) AS topic_key,
@@ -112,19 +122,19 @@ export const QUERIES = {
         COUNT(DISTINCT IF(level = 2, id, NULL)) AS l2,
         COUNT(DISTINCT IF(level = 3, id, NULL)) AS l3
       FROM ${t("content_question")}
-      WHERE ${TENANT} AND delete_date IS NULL AND LOWER(TRIM(status)) = 'released'
+      WHERE ${TENANT} AND delete_date IS NULL AND ${RELEASED()}
       GROUP BY tenant_id, topic_internal_id
     ),
     modules AS (
       SELECT tenant_id, topic_id AS topic_internal_id, COUNT(DISTINCT id) AS modules
       FROM ${t("content_training_module")}
-      WHERE ${TENANT} AND delete_date IS NULL AND LOWER(TRIM(status)) = 'released'
+      WHERE ${TENANT} AND delete_date IS NULL AND ${RELEASED()}
       GROUP BY tenant_id, topic_internal_id
     ),
     topic_program_items AS (
       SELECT DISTINCT tenant_id, object_id AS topic_internal_id, program_id, training_group_id
       FROM ${t("content_program_item")}
-      WHERE ${TENANT} AND LOWER(TRIM(status)) = 'released' AND LOWER(object_type) LIKE '%topic%'
+      WHERE ${TENANT} AND ${RELEASED()} AND LOWER(object_type) LIKE '%topic%'
     ),
     topic_group_links AS (
       SELECT tenant_id, topic_internal_id, training_group_id FROM topic_program_items WHERE training_group_id IS NOT NULL
@@ -149,7 +159,7 @@ export const QUERIES = {
       sde.subject, sde.category,
       sde.avg_baseline, sde.avg_current,
       COALESCE(sde.learners, 0) AS audience,
-      COALESCE(p.completion, 0) AS completion,
+      p.completion AS completion,
       COALESCE(g.target_groups, 0) AS target_groups,
       COALESCE(m.modules, 0) AS modules,
       COALESCE(q.l1, 0) AS l1, COALESCE(q.l2, 0) AS l2, COALESCE(q.l3, 0) AS l3,
@@ -166,7 +176,7 @@ export const QUERIES = {
     WITH latest_month AS (
       SELECT MAX(month) AS latest_month
       FROM ${t("foundation_user_monthly_participation")}
-      WHERE user_is_active = TRUE AND ${TENANT}
+      WHERE ${ACTIVE_USER()} AND ${TENANT}
     ),
     user_frequency AS (
       SELECT fump.tenant_id, fu.employee_id,
@@ -178,13 +188,13 @@ export const QUERIES = {
       FROM ${t("foundation_user_monthly_participation")} fump
       JOIN latest_month lm ON fump.month = lm.latest_month
       LEFT JOIN ${t("foundation_user")} fu ON fump.tenant_id = fu.tenant_id AND fump.user_id = fu.id
-      WHERE fump.user_is_active = TRUE AND fump.${TENANT}
+      WHERE ${ACTIVE_USER("fump.")} AND fump.${TENANT}
       GROUP BY fump.tenant_id, fu.employee_id
     ),
     user_knowledge AS (
       SELECT tenant_id, employee_id, baseline_score AS baseline, current_score
       FROM ${t("analytics_SDE_topic_progress")}
-      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL AND baseline_score IS NOT NULL
+      WHERE ${TENANT} AND ${ACTIVE_LEARNER} AND ${SCORED}
     )
     SELECT uf.tenant_id, uf.frequency_sort,
       COUNT(DISTINCT uf.employee_id) AS user_count,
@@ -220,12 +230,12 @@ export const QUERIES = {
     WITH latest_month AS (
       SELECT MAX(month) AS latest_month
       FROM ${t("foundation_user_monthly_participation")}
-      WHERE user_is_active = TRUE AND ${TENANT}
+      WHERE ${ACTIVE_USER()} AND ${TENANT}
     ),
     learner_knowledge AS (
       SELECT tenant_id, employee_id, AVG(current_score) AS avg_current
       FROM ${t("analytics_SDE_topic_progress")}
-      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL
+      WHERE ${TENANT} AND ${ACTIVE_LEARNER} AND current_score IS NOT NULL
       GROUP BY tenant_id, employee_id
     ),
     learner_confidence AS (
@@ -242,12 +252,12 @@ export const QUERIES = {
       FROM ${t("foundation_user_monthly_participation")} fump
       JOIN latest_month lm ON fump.month = lm.latest_month
       LEFT JOIN ${t("foundation_user")} fu ON fump.tenant_id = fu.tenant_id AND fump.user_id = fu.id
-      WHERE fump.user_is_active = TRUE AND fump.${TENANT} AND fu.employee_id IS NOT NULL
+      WHERE ${ACTIVE_USER("fump.")} AND fump.${TENANT} AND fu.employee_id IS NOT NULL
       GROUP BY fump.tenant_id, fu.employee_id
     ),
     base AS (
       SELECT k.tenant_id, k.employee_id,
-        CASE WHEN k.avg_current <= 1 THEN k.avg_current ELSE LEAST(k.avg_current / 100, 1) END AS knowledge,
+        LEAST(GREATEST(k.avg_current, 0) / 100, 1) AS knowledge,
         -- current_confidence is on a 0-100 scale, so a low average is a real low score, not a smaller scale
         CASE WHEN c.avg_confidence IS NULL THEN NULL ELSE LEAST(GREATEST(c.avg_confidence, 0) / 100, 1) END AS confidence,
         c.graduate_rate,
@@ -286,20 +296,20 @@ export const QUERIES = {
       FROM ${t("foundation_user_login_record")} WHERE ${TENANT} AND ${since} GROUP BY tenant_id, d
       UNION ALL
       SELECT tenant_id, DATE(create_date), 0, COUNT(*), SUM(COALESCE(time_spent, 0)), 0, 0, 0, 0
-      FROM ${t("content_user_training")} WHERE ${TENANT} AND ${since} AND status = 'Active' GROUP BY tenant_id, DATE(create_date)
+      FROM ${t("content_user_training")} WHERE ${TENANT} AND ${since} AND ${LIVE} GROUP BY tenant_id, DATE(create_date)
       UNION ALL
       SELECT tenant_id, DATE(complete_date), 0, 0, 0, COUNT(*), 0, 0, 0
       FROM ${t("content_user_completed_training")}
-      WHERE ${TENANT} AND complete_date IS NOT NULL AND status = 'Active'
+      WHERE ${TENANT} AND complete_date IS NOT NULL AND ${LIVE}
         AND DATE(complete_date) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 24 MONTH)
       GROUP BY tenant_id, DATE(complete_date)
       UNION ALL
       SELECT tenant_id, DATE(create_date), 0, 0, 0, 0, COUNT(*), 0, 0
-      FROM ${t("game_play")} WHERE ${TENANT} AND ${since} AND status = 'Active' AND is_game_played = TRUE GROUP BY tenant_id, DATE(create_date)
+      FROM ${t("game_play")} WHERE ${TENANT} AND ${since} AND ${LIVE} AND is_game_played = TRUE GROUP BY tenant_id, DATE(create_date)
       UNION ALL
       SELECT tenant_id, DATE(create_date), 0, 0, 0, 0, 0, SUM(ABS(COALESCE(points, 0))), 0
       FROM ${t("reward_point_transaction")}
-      WHERE ${TENANT} AND ${since} AND status = 'Active'
+      WHERE ${TENANT} AND ${since} AND ${LIVE}
         AND type IN ('Spin-to-Win Purchase', 'Raffle Ticket Purchase', 'Auction Won', 'Buy Now Purchase')
       GROUP BY tenant_id, DATE(create_date)
       UNION ALL
@@ -335,19 +345,19 @@ export const QUERIES = {
   hours: (t: T) => `
     SELECT tenant_id, EXTRACT(HOUR FROM create_date) AS hour, COUNT(*) AS activity_count
     FROM ${t("content_user_training")}
-    WHERE ${TENANT} AND DATE(create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND status NOT IN ('Deleted', 'Cancelled')
+    WHERE ${TENANT} AND DATE(create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND ${LIVE}
     GROUP BY tenant_id, hour`,
 
   /** Share of last-month active users who used each feature in the last 30 days (report: FactFeatureUsage). */
   features: (t: T) => `
     WITH latest AS (
-      SELECT MAX(month) AS month FROM ${t("foundation_user_monthly_participation")} WHERE user_is_active = TRUE AND ${TENANT}
+      SELECT MAX(month) AS month FROM ${t("foundation_user_monthly_participation")} WHERE ${ACTIVE_USER()} AND ${TENANT}
     ),
     au AS (
       SELECT m.tenant_id, COUNT(DISTINCT m.user_id) AS active_users,
         COUNT(DISTINCT IF(m.training_sessions_30_day > 0, m.user_id, NULL)) AS trained
       FROM ${t("foundation_user_monthly_participation")} m JOIN latest ON m.month = latest.month
-      WHERE m.user_is_active = TRUE AND m.${TENANT}
+      WHERE ${ACTIVE_USER("m.")} AND m.${TENANT}
       GROUP BY m.tenant_id
     ),
     games AS (
@@ -356,7 +366,7 @@ export const QUERIES = {
     ),
     rewards AS (
       SELECT tenant_id, COUNT(DISTINCT user_id) AS users FROM ${t("reward_point_transaction")}
-      WHERE ${TENANT} AND DATE(create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND status NOT IN ('Deleted', 'Cancelled') GROUP BY tenant_id
+      WHERE ${TENANT} AND DATE(create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND ${LIVE} GROUP BY tenant_id
     ),
     achievements AS (
       SELECT tenant_id, COUNT(DISTINCT user_id) AS users FROM ${t("foundation_user_achievement")}
@@ -382,12 +392,12 @@ export const QUERIES = {
       FROM ${t("content_program_item")} pi
       JOIN ${t("content_program")} p ON pi.tenant_id = p.tenant_id AND pi.program_id = p.id
       WHERE pi.${TENANT} AND pi.training_group_id IS NOT NULL
-        AND LOWER(TRIM(pi.status)) = 'released' AND LOWER(TRIM(p.status)) = 'released'
+        AND ${RELEASED("pi.")} AND ${RELEASED("p.")}
       UNION DISTINCT
       SELECT gl.tenant_id, gl.training_group_id, gl.program_id
       FROM ${t("content_program_fast_track_custom_audience_group_link")} gl
       JOIN ${t("content_program")} p ON gl.tenant_id = p.tenant_id AND gl.program_id = p.id
-      WHERE gl.${TENANT} AND LOWER(TRIM(p.status)) = 'released'
+      WHERE gl.${TENANT} AND ${RELEASED("p.")}
     ),
     programs_per_group AS (
       SELECT tenant_id, training_group_id, COUNT(DISTINCT program_id) AS programs FROM program_links GROUP BY tenant_id, training_group_id
@@ -397,7 +407,7 @@ export const QUERIES = {
       FROM ${t("content_program_fast_track_custom_audience_group_link")} gl
       JOIN ${t("content_program")} p ON gl.tenant_id = p.tenant_id AND gl.program_id = p.id
       JOIN ${t("content_program_fast_track_topic_link")} tl ON gl.tenant_id = tl.tenant_id AND gl.program_id = tl.program_id
-      WHERE gl.${TENANT} AND LOWER(TRIM(p.status)) = 'released'
+      WHERE gl.${TENANT} AND ${RELEASED("p.")}
       GROUP BY gl.tenant_id, gl.training_group_id
     )
     SELECT g.tenant_id, g.id AS group_id, g.name, g.status,
@@ -411,7 +421,7 @@ export const QUERIES = {
   deliverySummary: (t: T) => `
     WITH released AS (
       SELECT tenant_id, topic_id, COUNT(DISTINCT id) AS questions
-      FROM ${t("content_question")} WHERE ${TENANT} AND LOWER(TRIM(status)) = 'released' GROUP BY tenant_id, topic_id
+      FROM ${t("content_question")} WHERE ${TENANT} AND ${RELEASED()} GROUP BY tenant_id, topic_id
     ),
     pool AS (
       SELECT c.tenant_id, c.user_id, SUM(COALESCE(r.questions, 0)) AS assigned_pool
@@ -424,7 +434,7 @@ export const QUERIES = {
     answers AS (
       SELECT tenant_id, user_id, COUNT(*) AS answered
       FROM ${t("content_user_question_answer")}
-      WHERE ${TENANT} AND DATE(create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND status NOT IN ('Deleted', 'Cancelled')
+      WHERE ${TENANT} AND DATE(create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND ${LIVE}
       GROUP BY tenant_id, user_id
     ),
     answer_summary AS (SELECT tenant_id, AVG(answered) AS answered_per_user_30d FROM answers GROUP BY tenant_id)
@@ -464,7 +474,7 @@ export const QUERIES = {
     knowledge AS (
       SELECT tenant_id, COUNT(DISTINCT employee_id) AS learners, AVG(current_score) AS avg_current
       FROM ${t("analytics_SDE_topic_progress")}
-      WHERE ${TENANT} AND LOWER(user_status) = 'active' AND current_score IS NOT NULL
+      WHERE ${TENANT} AND ${ACTIVE_LEARNER} AND current_score IS NOT NULL
       GROUP BY tenant_id
     ),
     latest AS (SELECT MAX(quarter_start) AS quarter_start FROM q)

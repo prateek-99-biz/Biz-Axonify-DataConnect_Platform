@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { QUERIES, buildSql, viewsIn, type QueryName } from "./queries";
 import { aggregateMonths } from "../calc";
-import { assembleDashboard, norm01, norm100, teamPath, type RowSet } from "./assemble";
+import { assembleDashboard, norm100, ratio01, teamPath, type RowSet } from "./assemble";
 
 const schema = JSON.parse(readFileSync("config/bigquery-schema.json", "utf8")) as { dataset: string; tables: Record<string, Record<string, string>> };
 const src = { project: "proj", dataset: schema.dataset };
@@ -67,11 +67,23 @@ describe("assembling a dashboard from rows", () => {
     expect(teamPath("Admin", "")).toEqual(["Admin"]);
   });
 
-  it("normalises scores given as 0-1 or 0-100", () => {
-    expect(norm01(0.8)).toBe(0.8);
-    expect(norm01(80)).toBe(0.8);
-    expect(norm01(null)).toBeNull();
-    expect(norm01(250)).toBe(1);
+  it("reads scores on 0-100 and ratios on 0-1 without guessing", () => {
+    expect(norm100(80)).toBe(0.8);
+    expect(norm100(0.8)).toBeCloseTo(0.008, 10);
+    expect(norm100(250)).toBe(1);
+    expect(ratio01(0.8)).toBe(0.8);
+    expect(ratio01(null)).toBeNull();
+    expect(ratio01(1.4)).toBe(1);
+  });
+
+  it("keeps matrix ratios as they come from SQL and missing values as null", () => {
+    const rows = empty();
+    rows.matrix = [{ segment: "Experts", learners: 4, avg_knowledge: 0.95, avg_confidence: 0.4 }];
+    rows.topics = [{ topic_key: "T1", topic_name: "Safety", subject: "S", category: "C", avg_baseline: null, avg_current: null, audience: 0, completion: null, target_groups: 0, modules: 0, l1: 0, l2: 0, l3: 0, created_at: "2026-01-02" }];
+    const d = assembleDashboard("1", "T", rows, "2026-10-22T00:00:00.000Z");
+    expect(d.matrix[0]).toMatchObject({ avgKnowledge: 0.95, avgConfidence: 0.4 });
+    expect(d.topicStats[0].completion).toBeNull();
+    expect(d.delivery.avgQuestionPool).toBeNull();
   });
 
   it("reads confidence on a 0-100 scale, including low scores", () => {

@@ -20,8 +20,8 @@ export default async function ProgressionPage({ searchParams }: { searchParams: 
     <div className="space-y-6">
       <PageHeader icon={Layers} title="Content Progression" subtitle="Where are users in their learning journey across L1, L2 and L3?" />
       <KpiStrip cols={3}>
-        <KpiTile label="Graduate / Expert %" scope="snapshot" value={fmtPct(total ? (all.graduate + all.expert) / total : null, 0)} hint="Share of learner-topic records" />
-        <KpiTile label="Not Started %" scope="snapshot" value={fmtPct(total ? all.notStarted / total : null, 0)} />
+        <KpiTile label="Graduate / Expert %" metric="graduateExpert" scope="snapshot" value={fmtPct(total ? (all.graduate + all.expert) / total : null, 0)} hint="Share of learner-topic records" />
+        <KpiTile label="Not Started %" metric="notStarted" scope="snapshot" value={fmtPct(total ? all.notStarted / total : null, 0)} />
         <KpiTile label="User-Topic Records" scope="snapshot" value={fmtCompact(total)} />
       </KpiStrip>
       {internal && <InternalNote>Each row is a share of that level&apos;s own records and sums to 100%. The source report&apos;s matrix did not sum to 100%, which pointed at a wrong denominator.</InternalNote>}

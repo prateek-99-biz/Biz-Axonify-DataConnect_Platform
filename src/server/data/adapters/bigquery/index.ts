@@ -96,7 +96,7 @@ export const bigqueryAnalytics: AnalyticsPort = {
       const data: ClientPeriodRow[] = rows.map((r) => ({
         clientId: String(asNum(r.tenant_id)), period: String(r.period), registeredUsers: asNum(r.registered_users), activeUsers: asNum(r.active_users),
         trainingUsers: asNum(r.training_users), knowledgeLearners: asNum(r.knowledge_learners),
-        avgKnowledge: r.avg_knowledge == null ? null : asNum(r.avg_knowledge), retainedUsers: asNum(r.retained_users),
+        avgKnowledge: r.avg_knowledge == null ? null : Math.min(1, asNum(r.avg_knowledge) / 100), retainedUsers: asNum(r.retained_users),
         previousActiveUsers: asNum(r.previous_active_users), sessions: asNum(r.sessions), featuresAvailable: 0, featuresUsed: 0,
       }));
       return { status: "ok", data, source: "bigquery", asOf: new Date().toISOString() };

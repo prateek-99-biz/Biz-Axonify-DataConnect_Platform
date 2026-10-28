@@ -12,7 +12,7 @@ export interface MonthEngagement {
   activeUsers: number;
   loggedInUsers: number;
   trainingUsers: number;
-  /** Sessions per active user per month (account-level, user-weighted). */
+  /** Days active in the last 30 per logged-in user (account-level, weighted by logged-in users). */
   frequency: number;
   avgTimePerDayMin: number;
 }
@@ -37,7 +37,8 @@ export interface TopicStat {
   baseline: number | null;
   current: number | null;
   audience: number;
-  completion: number;
+  /** Null when no learner has a progress record for the topic. */
+  completion: number | null;
   targetGroups: number;
   modules: number;
   l1: number;
@@ -74,7 +75,7 @@ export type Segment = "Experts" | "Graduated" | "Intermediate" | "Needs coaching
 export interface MatrixPoint { segment: Segment; avgKnowledge: number; avgConfidence: number; learners: number }
 
 export interface TrainingGroup { id: string; name: string; status: "Active" | "Inactive"; programs: number; reinforcementTopics: number }
-export interface DeliverySummary { avgQuestionPool: number; estimatedMonthsToGraduate: number | null }
+export interface DeliverySummary { avgQuestionPool: number | null; estimatedMonthsToGraduate: number | null }
 
 export interface DashboardData {
   clientId: string;

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+import { KPI_DEFS, type KpiMetric } from "@/server/dashboard/definitions";
 
 export function PageHeader({ icon: Icon, title, subtitle, right }: { icon: LucideIcon; title: string; subtitle?: string; right?: ReactNode }) {
   return (
@@ -40,9 +41,9 @@ export function ScopeTag({ scope, label }: { scope: Scope; label?: string }) {
   );
 }
 
-export function KpiTile({ label, value, hint, scope, scopeLabel }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string }) {
+export function KpiTile({ label, value, hint, scope, scopeLabel, metric }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string; metric?: KpiMetric }) {
   return (
-    <Card className="relative py-4 pl-6 pr-4" title={hint}>
+    <Card className={cn("relative py-4 pl-6 pr-4", metric && "cursor-help")} title={metric ? KPI_DEFS[metric] : hint}>
       <span aria-hidden className="absolute bottom-4 left-3 top-4 w-1 rounded-full bg-gradient-to-b from-brand to-brand-accent" />
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">{value}</p>

@@ -15,10 +15,10 @@ const num = (v: unknown): number => { const x = raw(v); const n = typeof x === "
 const numOrNull = (v: unknown): number | null => { const x = raw(v); if (x == null) return null; const n = typeof x === "number" ? x : Number(x); return Number.isFinite(n) ? n : null; };
 const str = (v: unknown): string => { const x = raw(v); return x == null ? "" : String(x); };
 
-/** Scores arrive as 0-1 or 0-100 depending on the view; the report treats values above 1 as percentages. */
-export const norm01 = (v: unknown): number | null => { const n = numOrNull(v); return n == null ? null : Math.min(1, Math.max(0, n > 1 ? n / 100 : n)); };
+/** Ratios computed in SQL (0-1). Clamped, never rescaled. */
+export const ratio01 = (v: unknown): number | null => { const n = numOrNull(v); return n == null ? null : Math.min(1, Math.max(0, n)); };
 
-/** Confidence is stored on a 0-100 scale (no 0-1 or 0-5 variants), so it is always divided by 100. */
+/** Knowledge and confidence scores are 0-100 in every DataConnect view (checked across all tenants), so they are always divided by 100. */
 export const norm100 = (v: unknown): number | null => { const n = numOrNull(v); return n == null ? null : Math.min(1, Math.max(0, n / 100)); };
 
 /** Splits "A | B | C" (DataConnect's separator; "A > B" is accepted too) and makes sure the team itself is the last segment. */
@@ -70,26 +70,24 @@ export function assembleDashboard(clientId: string, clientName: string, rows: Ro
     const id = str(r.topic_key);
     topics.push({ id, name: str(r.topic_name), parentId, subject: str(r.subject) || "Unassigned" });
     topicStats.push({
-      topicId: id, baseline: norm01(r.avg_baseline), current: norm01(r.avg_current), audience: num(r.audience),
-      completion: norm01(r.completion) ?? 0, targetGroups: num(r.target_groups), modules: num(r.modules),
+      topicId: id, baseline: norm100(r.avg_baseline), current: norm100(r.avg_current), audience: num(r.audience),
+      completion: ratio01(r.completion), targetGroups: num(r.target_groups), modules: num(r.modules),
       l1: num(r.l1), l2: num(r.l2), l3: num(r.l3), createdAt: str(r.created_at),
     });
   }
 
   const k = rows.knowledgeAccount[0];
   const knowledge = {
-    baseline: norm01(k?.avg_baseline), current: norm01(k?.avg_current), confidence: norm100(k?.avg_confidence),
-    experts: num(k?.expert_users), topicCompletion: norm01(k?.topic_completion),
+    baseline: norm100(k?.avg_baseline), current: norm100(k?.avg_current), confidence: norm100(k?.avg_confidence),
+    experts: num(k?.expert_users), topicCompletion: ratio01(k?.topic_completion),
   };
 
   const freqTotal = rows.frequency.reduce((s, r) => s + num(r.user_count), 0) || 1;
   const frequency: FrequencyBucket[] = [...rows.frequency].sort((a, b) => num(a.frequency_sort) - num(b.frequency_sort)).map((r) => {
-    const cur = numOrNull(r.avg_current);
-    const scale = cur != null && cur > 1 ? 100 : 1;
     const lift = numOrNull(r.avg_lift);
     return {
       bucket: FREQUENCY_LABEL[num(r.frequency_sort)] ?? "Other", userShare: num(r.user_count) / freqTotal,
-      currentKnowledge: cur == null ? null : Math.min(1, cur / scale), knowledgeLift: lift == null ? null : lift / scale,
+      currentKnowledge: norm100(r.avg_current), knowledgeLift: lift == null ? null : lift / 100,
     };
   });
 
@@ -127,7 +125,7 @@ export function assembleDashboard(clientId: string, clientName: string, rows: Ro
 
   const matrix: MatrixPoint[] = rows.matrix
     .filter((r) => SEGMENTS.includes(str(r.segment) as Segment))
-    .map((r) => ({ segment: str(r.segment) as Segment, avgKnowledge: norm01(r.avg_knowledge) ?? 0, avgConfidence: norm100(r.avg_confidence) ?? 0, learners: num(r.learners) }));
+    .map((r) => ({ segment: str(r.segment) as Segment, avgKnowledge: ratio01(r.avg_knowledge) ?? 0, avgConfidence: ratio01(r.avg_confidence) ?? 0, learners: num(r.learners) }));
 
   const groups: TrainingGroup[] = rows.deliveryGroups.map((r) => ({
     id: str(r.group_id), name: str(r.name), status: str(r.status).toLowerCase() === "active" ? "Active" : "Inactive",
@@ -141,6 +139,6 @@ export function assembleDashboard(clientId: string, clientName: string, rows: Ro
     clientId, clientName, asOf, months: aggregateMonths(teamMonths, [...teams.values()]), teams: [...teams.values()], teamMonths, topics, topicStats, knowledge, frequency,
     content: { contentItems: questionsAndModules, trainingModules: topicStats.reduce((s, t) => s + t.modules, 0), lastUpdated: topicStats.map((t) => t.createdAt).filter(Boolean).sort().at(-1) ?? "" },
     subjects, progress, usageMonthly, platformAccess, hours, features, matrix, groups,
-    delivery: { avgQuestionPool: num(d?.avg_question_pool), estimatedMonthsToGraduate: numOrNull(d?.months_to_graduate) },
+    delivery: { avgQuestionPool: numOrNull(d?.avg_question_pool), estimatedMonthsToGraduate: numOrNull(d?.months_to_graduate) },
   };
 }

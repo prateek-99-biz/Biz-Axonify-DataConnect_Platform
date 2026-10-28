@@ -58,11 +58,11 @@ export function TopicsView({ topics, stats, canExport, internal }: { topics: Top
   return (
     <div className="space-y-6">
       <KpiStrip cols={4}>
-        <KpiTile label="Current Knowledge" scope="snapshot" value={fmtPct(current, 0)} />
-        <KpiTile label="Knowledge Lift" scope="snapshot" value={fmtPct(current != null && baseline != null ? current - baseline : null, 0)} hint="Current minus baseline" />
+        <KpiTile label="Current Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(current, 0)} />
+        <KpiTile label="Knowledge Lift" metric="lift" scope="snapshot" value={fmtPct(current != null && baseline != null ? current - baseline : null, 0)} hint="Current minus baseline" />
         <KpiTile label="Audience" scope="snapshot" value={fmtCompact(aud)} hint="Learners assigned to the selected topics" />
         <KpiTile label="Training Modules" scope="snapshot" value={fmtNumber(sum((t) => t.modules))} />
-        <KpiTile label="Topic Completion" scope="snapshot" value={fmtPct(weightedAvg(scoped, (t) => t.completion), 0)} />
+        <KpiTile label="Topic Completion (Graduate)" metric="topicCompletion" scope="snapshot" value={fmtPct(weightedAvg(scoped, (t) => t.completion), 0)} />
         <KpiTile label="Released Questions" scope="snapshot" value={fmtCompact(sum((t) => t.l1 + t.l2 + t.l3))} />
         <KpiTile label="Target Groups" scope="snapshot" value={fmtNumber(sum((t) => t.targetGroups))} />
         <KpiTile label="Latest Topic Created" scope="snapshot" value={latest ? new Date(latest).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "\u2014"} />

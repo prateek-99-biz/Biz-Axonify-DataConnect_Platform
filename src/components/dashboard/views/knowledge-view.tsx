@@ -40,11 +40,11 @@ export function KnowledgeView({ topics, stats, knowledge, frequency, canExport }
   return (
     <div className="space-y-6">
       <KpiStrip>
-        <KpiTile label="Baseline Knowledge" scope="snapshot" value={fmtPct(baseline, 0)} hint="Score at first attempt" />
-        <KpiTile label="Current Knowledge" scope="snapshot" value={fmtPct(current, 0)} hint="Latest score" />
-        <KpiTile label="Confidence Level" scope="snapshot" value={fmtPct(knowledge.confidence, 0)} hint="Self-reported confidence" />
-        <KpiTile label="Experts" scope="snapshot" value={fmtNumber(knowledge.experts)} hint="Learners at 90% or above" />
-        <KpiTile label="Topic Completion" scope="snapshot" value={fmtPct(completion, 0)} hint="Learner-topic records at Graduate" />
+        <KpiTile label="Baseline Knowledge" metric="baselineKnowledge" scope="snapshot" value={fmtPct(baseline, 0)} hint="Score at first attempt" />
+        <KpiTile label="Current Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(current, 0)} hint="Latest score" />
+        <KpiTile label="Confidence Level" metric="confidence" scope="snapshot" value={fmtPct(knowledge.confidence, 0)} hint="Includes topics not started (as 0)" />
+        <KpiTile label="Experts" metric="experts" scope="snapshot" value={fmtNumber(knowledge.experts)} hint="Learners at 90% or above" />
+        <KpiTile label="Topic Completion (Graduate)" metric="topicCompletion" scope="snapshot" value={fmtPct(completion, 0)} hint="Learner-topic records at Graduate" />
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">

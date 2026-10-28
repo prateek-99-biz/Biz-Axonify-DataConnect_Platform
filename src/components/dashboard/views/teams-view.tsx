@@ -15,7 +15,7 @@ const STATUS_DOT: Record<TeamStatus, string> = { High: "bg-brand", Medium: "bg-a
 
 const COLS = [
   { key: "team", header: "Team" },
-  { key: "participation", header: "Team participation", align: "right" as const },
+  { key: "participation", header: "Team training participation", align: "right" as const },
   { key: "frequency", header: "Team frequency", align: "right" as const },
   { key: "users", header: "Team active users", align: "right" as const },
   { key: "status", header: "Status" },

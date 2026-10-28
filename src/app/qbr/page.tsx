@@ -27,11 +27,11 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
       <PageHeader icon={House} title="Axonify Data Connect" subtitle={`${data.clientName} \u00b7 ${monthLabel(range.from)} to ${monthLabel(range.to)}`} />
 
       <KpiStrip>
-        <KpiTile label="Engagement Health" scope="month" scopeLabel="Month + snapshot" value={fmtPct(h.health, 0)} hint="50% participation + 50% knowledge" />
-        <KpiTile label="Avg Frequency" scope="month" value={h.latest ? `${h.latest.frequency.toFixed(1)}x` : "\u2014"} hint="Sessions per active user, latest month" />
-        <KpiTile label="Active Users" scope="month" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
-        <KpiTile label="Avg Participation" scope="month" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
-        <KpiTile label="Avg Knowledge" scope="snapshot" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />
+        <KpiTile label="Engagement Health" metric="health" scope="month" scopeLabel="Month + snapshot" value={fmtPct(h.health, 0)} hint="50% participation + 50% knowledge" />
+        <KpiTile label="Avg Frequency" metric="frequency" scope="month" value={h.latest ? `${h.latest.frequency.toFixed(1)}x` : "\u2014"} hint="Days active per logged-in user" />
+        <KpiTile label="Active Users" metric="activeUsers" scope="month" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
+        <KpiTile label="Training Participation" metric="participation" scope="month" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
+        <KpiTile label="Avg Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />
       </KpiStrip>
 
       <Card>
@@ -54,12 +54,12 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader title="Avg Frequency by Month" badge={<ScopeTag scope="range" />} subtitle="Sessions per active user" />
+          <CardHeader title="Avg Frequency by Month" badge={<ScopeTag scope="range" />} subtitle="Days active per logged-in user" />
           <div className="p-4"><SingleLine data={series} xKey="month" yKey="frequency" label="Avg frequency" format="decimal" /></div>
         </Card>
         <Card>
-          <CardHeader title="Avg Participation by Month" badge={<ScopeTag scope="range" />} subtitle="Training users ÷ active users" />
-          <div className="p-4"><SingleLine data={series} xKey="month" yKey="participation" label="Avg participation" format="pct" /></div>
+          <CardHeader title="Training Participation by Month" badge={<ScopeTag scope="range" />} subtitle="Training users ÷ active users" />
+          <div className="p-4"><SingleLine data={series} xKey="month" yKey="participation" label="Training participation" format="pct" /></div>
         </Card>
       </div>
     </div>
