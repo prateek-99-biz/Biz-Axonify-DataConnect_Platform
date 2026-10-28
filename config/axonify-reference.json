@@ -1,0 +1,82 @@
+{
+  "_comment": "Figures read from Axonify AdminZone (Reports > Participation, Knowledge Summary) on capturedOn. Compared by `npm run reconcile` only within 3 days of capture, because Axonify shows rolling 30-day windows. Recapture by reading the same reports and updating values and capturedOn.",
+  "references": [
+    {
+      "tenantId": 352,
+      "capturedOn": "2026-10-28",
+      "source": "nfxp.axonify.com Participation (Users in Active Training Programs), Knowledge Summary (Active Users)",
+      "values": {
+        "employees": {
+          "value": 8630,
+          "rel": 0.01
+        },
+        "loggedIn": {
+          "value": 1299,
+          "abs": 5
+        },
+        "completedTraining": {
+          "value": 934,
+          "abs": 5
+        },
+        "frequencyDays": {
+          "value": 13.1,
+          "abs": 0.15
+        },
+        "currentKnowledge": {
+          "value": 89.4,
+          "abs": 1
+        }
+      }
+    },
+    {
+      "tenantId": 324,
+      "capturedOn": "2026-10-28",
+      "source": "emirates.axonify.com Participation (Users in Active Training Programs), Knowledge Summary (Active Users)",
+      "values": {
+        "employees": {
+          "value": 2754,
+          "rel": 0.01
+        },
+        "loggedIn": {
+          "value": 963,
+          "abs": 5
+        },
+        "completedTraining": {
+          "value": 889,
+          "abs": 5
+        },
+        "frequencyDays": {
+          "value": 11.3,
+          "abs": 0.15
+        },
+        "currentKnowledge": {
+          "value": 85.9,
+          "abs": 1
+        }
+      }
+    },
+    {
+      "tenantId": 269,
+      "capturedOn": "2026-10-28",
+      "source": "boehringer.axonify.com Participation (Users in Active Training Programs). 'All Users' view: 926 employees, 425 logged in, 381 completed training = the user-level BigQuery view",
+      "values": {
+        "employees": {
+          "value": 700,
+          "rel": 0.01
+        },
+        "loggedIn": {
+          "value": 412,
+          "abs": 5
+        },
+        "completedTraining": {
+          "value": 378,
+          "abs": 5
+        },
+        "frequencyDays": {
+          "value": 15.2,
+          "abs": 0.15
+        }
+      }
+    }
+  ]
+}

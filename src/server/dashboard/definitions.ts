@@ -6,7 +6,7 @@
 export const KPI_DEFS = {
   participation: "Training users ÷ active users. Axonify's Participation report calls this 'Average Training Participation'; its 'Average Participation' counts logged-in users instead.",
   frequency: "Average days active in the last 30 days per logged-in user, weighted across teams by logged-in users (Axonify: 'Average Frequency (Days)').",
-  activeUsers: "Active employees in the account, as in Axonify's Participation report ('Number of Employees'). Distinct people: parent teams are not added to their sub-teams.",
+  activeUsers: "Employees in Axonify's default Participation view, 'Users in Active Training Programs' ('Number of Employees'). Axonify's 'All Users' view can be larger when some users are not in an active program. Parent teams are not added to their sub-teams.",
   loggedIn: "Active users with at least one session in the last 30 days (Axonify: 'Employees Logged In').",
   trainingUsers: "Active users who completed training in the last 30 days (Axonify: 'Employees Completed Training').",
   time: "Average minutes per day spent on the platform by logged-in users, weighted across teams by logged-in users.",

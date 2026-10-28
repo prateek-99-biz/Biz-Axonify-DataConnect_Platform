@@ -84,3 +84,6 @@ account or `gcloud auth application-default login`). Checks: `npm run typecheck 
 2. Each metric on screen has a definition users can read, and provisional ones are labelled.
 3. Sync is safe: failure keeps old data, runs daily, and the "as of" stamp is honest.
 4. Client users see only their own client.
+
+## 9. Checking the numbers
+`npm run reconcile` (after a sync, add `-- --snapshot` to test what the pages actually show) recomputes the headline numbers from BigQuery by a separate route and flags any gap beyond a small tolerance, plus invariants that must always hold. Figures read from Axonify AdminZone live in `config/axonify-reference.json` and are used only while fresh. Run `npm run bq:check` for query validity and `npm test` for logic.
