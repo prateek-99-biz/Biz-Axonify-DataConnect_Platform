@@ -93,6 +93,15 @@ describe("assembling a dashboard from rows", () => {
     expect(aggregateMonths(sel, d.teams)[0]).toMatchObject({ activeUsers: 10, trainingUsers: 4 });
   });
 
+  it("weights frequency and time by logged-in users, not all employees", () => {
+    const rows = empty();
+    const row = (team: string, n: number, li: number, f: number, t: number) => ({ tenant_id: 1, month: "2026-10", team, team_hierarchy: team, active_users: n, logged_in_users: li, training_users: 0, frequency: f, avg_time_per_day_min: t });
+    rows.teamMonthly = [row("A", 900, 100, 10, 4), row("B", 100, 100, 20, 8), row("Idle", 500, 0, 0, 0)];
+    const m = assembleDashboard("1", "T", rows, "x").months[0];
+    expect(m.frequency).toBeCloseTo(15, 10);
+    expect(m.avgTimePerDayMin).toBeCloseTo(6, 10);
+  });
+
   it("maps rows to the dashboard shapes", () => {
     const rows = empty();
     rows.teamMonthly = [

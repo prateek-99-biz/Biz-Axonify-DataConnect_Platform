@@ -52,13 +52,15 @@ export function topRows(rows: TeamMonth[], teams?: TreeNode[]): TeamMonth[] {
   });
 }
 
-/** Roll team-month rows up to account-month rows; frequency and time are user-weighted like the report. */
+/** Roll team-month rows up to account-month rows; frequency and time are weighted by logged-in users. */
 export function aggregateMonths(rows: TeamMonth[], teams?: TreeNode[]): MonthEngagement[] {
   const byMonth = new Map<string, TeamMonth[]>();
   for (const r of topRows(rows, teams)) byMonth.set(r.month, [...(byMonth.get(r.month) ?? []), r]);
   return [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, rs]) => {
     const active = rs.reduce((s, x) => s + x.activeUsers, 0);
-    const w = (f: (x: TeamMonth) => number) => (active ? rs.reduce((s, x) => s + f(x) * x.activeUsers, 0) / active : 0);
+    // Team frequency and time are averages over the team's logged-in users, so that is the weight (Axonify's report does the same).
+    const loggedIn = rs.reduce((s, x) => s + x.loggedInUsers, 0);
+    const w = (f: (x: TeamMonth) => number) => (loggedIn ? rs.reduce((s, x) => s + f(x) * x.loggedInUsers, 0) / loggedIn : 0);
     return {
       month, activeUsers: active, loggedInUsers: rs.reduce((s, x) => s + x.loggedInUsers, 0), trainingUsers: rs.reduce((s, x) => s + x.trainingUsers, 0),
       frequency: w((x) => x.frequency), avgTimePerDayMin: w((x) => x.avgTimePerDayMin),

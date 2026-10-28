@@ -8,3 +8,6 @@ coverage
 *.pbix
 *.pbit
 job_*.csv
+
+# Power BI report export
+Axonify-CSM-PowerBI-Dash*.pdf

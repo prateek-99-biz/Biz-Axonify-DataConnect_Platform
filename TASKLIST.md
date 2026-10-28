@@ -46,3 +46,24 @@ Method: all 14 queries dry-run against live BigQuery (all valid); the full dashb
 
 ## D. Fix log
 - 2026-10-28 A1-A3: `topRows()`/`aggregateMonths(rows, teams)` in `calc.ts` add only top-most team rows; `teamPath()` splits on `|`; confidence is `/100` in the matrix SQL and `norm100()` in `assemble.ts`. Re-run on live data: Emirates Oct 2026 now active 2,754 / logged-in 963 / training 889 (distinct-user SQL: 2,774 / 963 / 889), team nodes 614 -> 309, flydubai "Experts" 283 -> 9. A sync is needed before the stored snapshots show the corrected numbers.
+
+## E. Verification against the Axonify AdminZone (nfxp.axonify.com, tenant 352), 2026-10-28
+Source: AdminZone > Reports > Participation and Knowledge Summary, compared with BigQuery and the platform pipeline (post A1-A3).
+
+| Metric | Axonify report | Platform | Verdict |
+|---|---|---|---|
+| Employees (Oct) | 8,630 (1,299 + 7,331 not logged in) | active 8,630 | match |
+| Employees logged in | 1,299 | 1,299 | match |
+| Completed training | 934 | 934 | match |
+| Avg Training Participation | 11% | 10.8% ("Participation") | match (see E2) |
+| Avg Participation | 15% (= logged in ÷ employees) | not shown | naming gap (E2) |
+| Avg Frequency (days) | 13.1 | 13.8 | **mismatch (E1)** |
+| Current Knowledge | 89.4% | 85.7% | **mismatch (E3)** |
+| Knowledge lift vs baseline | +11 points | +6.3 points (79.4% to 85.7%) | **mismatch (E3)** |
+
+- [x] **E1 (P0) FIXED 2026-10-28.** Frequency is weighted by the wrong users.** `aggregateMonths` weights team `average_frequency` (and time per day) by `employee_count`, but the team average is over logged-in users. Weighting by `employee_logged_in_count` gives 13.13, which matches Axonify's 13.1 (13.83 today). Fix in `calc.ts` (`aggregateMonths`).
+- [ ] **E2 (P1) Naming differs from Axonify.** Axonify "Average Participation" is logged-in ÷ employees (15%), and "Average Training Participation" is training ÷ employees (11%). The platform's "Participation" (training ÷ active) equals Axonify's *Training* Participation, as in the Power BI report. Keep, but label it "Training participation" or show both.
+- [ ] **E3 (P1) Knowledge averaging differs.** Axonify averages across user-topic-level rows (88.7% current, 77.7% baseline, lift 11.0 in BigQuery; the report shows 89.4% and +11, the small gap is probably answer weighting). The platform averages each learner first, then learners (85.7% / 79.4%), which matches the Power BI report for Emirates (83% / 71%). Decide which definition clients should see (Power BI parity or Axonify-admin parity), then label it. Topic status filter (Current vs All-Time) made no difference to the Axonify figure.
+- [ ] **E4** Teams table lists leaf teams only; Axonify lists parents too (e.g. EPC 1 (CTJV): 5,655 employees, 656 logged in, 520 training, 11.6% / 9.2%, freq 15.8). Parent rows exist in the data; consider a toggle.
+- [ ] **E5** Not yet compared: Topic Progress, User Summary, Question Summary, Training Activities/Sessions (usage), Device Popularity, other clients.
+- 2026-10-28 E1: `aggregateMonths` weights frequency and time per day by logged-in users. NFXP Oct 2026 frequency 13.83 -> 13.13 (Axonify 13.1). Re-sync needed for stored snapshots.
