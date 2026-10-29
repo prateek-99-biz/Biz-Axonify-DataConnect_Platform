@@ -8,6 +8,7 @@ import type { Prisma } from "@prisma/client";
 import { bigqueryAnalytics } from "@/server/data/adapters/bigquery";
 import { bqConfig, fetchDashboards } from "@/server/dashboard/bigquery/load";
 import type { DashboardData } from "@/server/dashboard/types";
+import { SECTION_NAMES, splitDashboard } from "@/server/dashboard/sections";
 
 const STALE_RUN_MS = 10 * 60_000;
 const COOLDOWN_MS = 60_000;
@@ -60,7 +61,12 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
         // A tenant whose query returned nothing keeps its previous snapshot instead of being replaced by an empty one.
         const usable = [...dashboards].filter(([, d]) => d.months.length > 0);
         await tx.syncDashboard.deleteMany({ where: { clientId: { in: usable.map(([clientId]) => clientId) } } });
-        await tx.syncDashboard.createMany({ data: usable.map(([clientId, d]) => ({ clientId, payload: d as unknown as Prisma.InputJsonValue })) });
+        await tx.syncDashboardPart.deleteMany({ where: { clientId: { in: usable.map(([clientId]) => clientId) } } });
+        const split = usable.map(([clientId, d]) => ({ clientId, ...splitDashboard(d) }));
+        await tx.syncDashboard.createMany({ data: split.map((s) => ({ clientId: s.clientId, payload: s.core as unknown as Prisma.InputJsonValue })) });
+        await tx.syncDashboardPart.createMany({
+          data: split.flatMap((s) => SECTION_NAMES.map((section) => ({ clientId: s.clientId, section, payload: s.parts[section] as Prisma.InputJsonValue }))),
+        });
         skipped = dashboards.size - usable.length;
       }
       for (const c of clients.data) {

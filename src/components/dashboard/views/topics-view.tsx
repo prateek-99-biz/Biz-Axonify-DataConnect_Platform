@@ -7,11 +7,14 @@ import { KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
 import { TreeSlicer } from "@/components/dashboard/slicers";
 import { contentFlag, descendants, reviewPriority, saturation, weightedAvg } from "@/server/dashboard/calc";
 import type { TopicNode, TopicStat } from "@/server/dashboard/types";
+import { unpackRows, type PackedRows } from "@/server/dashboard/sections";
 import { cn, fmtCompact, fmtNumber, fmtPct } from "@/lib/utils";
 
 const WARN_CELL = "rounded-md bg-amber-100 px-2 py-0.5 font-semibold text-amber-900 dark:bg-amber-400/15 dark:text-amber-200";
 
-export function TopicsView({ topics, stats, canExport, internal }: { topics: TopicNode[]; stats: TopicStat[]; canExport: boolean; internal: boolean }) {
+export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal }: { topics: PackedRows<TopicNode>; stats: PackedRows<TopicStat>; canExport: boolean; internal: boolean }) {
+  const topics = useMemo(() => unpackRows(topicsP), [topicsP]);
+  const stats = useMemo(() => unpackRows(statsP), [statsP]);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const keep = useMemo(() => (sel.size ? descendants(topics, sel) : null), [topics, sel]);
   const byId = useMemo(() => new Map(topics.map((t) => [t.id, t])), [topics]);

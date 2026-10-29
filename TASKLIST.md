@@ -122,3 +122,14 @@ Source: AdminZone > Reports > Participation and Knowledge Summary, compared with
 - [ ] Medium: malformed JSON bodies return 500 not 400; `tasks/[taskId]` maps any DB error to "not found".
 - [ ] Low: `normKnowledge` threshold guess (portfolio); frequency bucket boundary (exactly 20 sessions); mapping-file parse errors are swallowed; `auth()` is not cached per request.
 - Housekeeping: `.claude/launch.json` (dev server config for the preview) was added and is untracked.
+
+## I. Slow or missing graphs on large clients (2026-10-29)
+**Cause:** client dashboards vary from 40 KB (adidas) to 4.6 MB (jlearning: 1,165 teams, 22,642 team-month rows). Every page read the whole snapshot from Postgres (about 2.2 s for jlearning; each query is about 190 ms from the dev machine) and the heavy pages sent raw rows to the browser (Engagement and Teams 5 MB for jlearning, Delivery 2 MB for chalhoubgroup, Topics and Knowledge 2 MB).
+- [x] Storage split: `SyncDashboard` is now a small core row and the large arrays live in `SyncDashboardPart` (sections `teams`, `topics`, `groups`, `progress`; migration `0005`). Team rows are stored packed. Helpers and tests in [src/server/dashboard/sections.ts](src/server/dashboard/sections.ts).
+- [x] `loadQbr(sp, sections)` loads only the sections a page shows; the others come back as empty arrays, so a new page that needs a section must ask for it. Snapshots written before the split still work.
+- [x] Session and client list are cached per request and fetched in parallel (the floor per page went from about 1.0 s to 0.75 s).
+- [x] Browser payloads are packed (`packRows`, `packTeamMonths`); Delivery builds its table rows in the browser.
+- Result (dev server): Matrix for jlearning 4.9 s to 1.0 s; Progression 3.3 s to 1.0 s; Delivery for chalhoubgroup 7.4 s and 2.0 MB to 1.2 s and 0.23 MB; Content for chalhoubgroup 1.0 MB to 0.45 MB; Engagement for jlearning 5.2 MB to 1.1 MB. Topics, Knowledge (chalhoubgroup) and Engagement, Teams (jlearning) are still about 2 to 3 s in the dev server, which adds large overhead; the data path itself is at most 0.5 s of database time and under 20 ms of CPU, with 0.3 to 0.65 MB of JSON.
+- Rounding: stored team frequency and time are rounded to 4 decimals.
+- [x] Existing snapshots were converted in place from Postgres (the BigQuery login had expired, `invalid_rapt`). The next `npm run sync` writes the split layout directly; that write path is covered by unit tests but has not run against BigQuery yet. Re-run `gcloud auth application-default login` first.
+- [ ] Not done: `reconcile --snapshot` against BigQuery (needs the same login). Topics and Knowledge could shrink further by rounding score floats.

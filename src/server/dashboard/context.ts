@@ -11,6 +11,7 @@ import type { SearchParams } from "@/server/services/context";
 import { resolveRange, type Range } from "./calc";
 import { mockDashboard } from "./mock";
 import type { DashboardData } from "./types";
+import { joinDashboard, SECTION_NAMES, type DashboardCore, type Section } from "./sections";
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
@@ -21,6 +22,16 @@ export function carryQuery(sp: SearchParams) {
   const s = q.toString();
   return s ? `?${s}` : "";
 }
+
+/** The layout and the page each resolve the same session, client list and snapshot in one request; do each once. */
+const getSession = cache(() => auth());
+const getClients = cache(() => getAdapters().analytics.listClients());
+const getCore = cache(async (clientId: string) => db.syncDashboard.findUnique({ where: { clientId } }));
+const getParts = cache(async (clientId: string, sections: string) => {
+  const wanted = sections ? sections.split(",") : [];
+  const rows = wanted.length ? await db.syncDashboardPart.findMany({ where: { clientId, section: { in: wanted } } }) : [];
+  return Object.fromEntries(rows.map((r) => [r.section, r.payload as Record<string, unknown>])) as Partial<Record<Section, Record<string, unknown>>>;
+});
 
 /** The layout and the page both resolve the dashboard in one request; build it once. */
 const buildMock = cache((id: string, name: string) => mockDashboard(id, name));
@@ -41,16 +52,16 @@ export type QbrResult = { ok: true; ctx: QbrContext } | { ok: false; reason: str
 
 /**
  * Resolves who is looking at which client's dashboard. A CLIENT user is pinned to their own client on the
- * server regardless of URL params; staff may switch clients.
+ * server regardless of URL params; staff may switch clients. Pass the large sections a page shows; the rest come back empty.
  */
-export async function loadQbr(sp: SearchParams): Promise<QbrResult> {
-  const session = await auth();
+export async function loadQbr(sp: SearchParams, sections: readonly Section[] = []): Promise<QbrResult> {
+  // Each lookup is a database round trip, so start both before waiting on either.
+  const [session, list] = await Promise.all([getSession(), getClients()]);
   if (!session?.user) redirect("/signin");
   const user = session.user;
   if (!can(user.role, "dashboard:read")) redirect("/forbidden");
 
   const internal = can(user.role, "dashboard:internal");
-  const list = await getAdapters().analytics.listClients();
   if (list.status !== "ok") return { ok: false, reason: list.reason, user };
 
   let clients = list.data.map((c) => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name));
@@ -64,9 +75,10 @@ export async function loadQbr(sp: SearchParams): Promise<QbrResult> {
   const client = user.role === "CLIENT" ? clients[0] : clients.find((c) => c.id === requested) ?? clients[0];
 
   if (getEnv().DATA_ADAPTER !== "mock") {
-    const snap = await db.syncDashboard.findUnique({ where: { clientId: client.id } });
+    const wanted = SECTION_NAMES.filter((s) => sections.includes(s));
+    const [snap, parts] = await Promise.all([getCore(client.id), getParts(client.id, wanted.join(","))]);
     if (!snap) return { ok: false, reason: "No dashboard data has been synced for this client yet. An admin can press “Refresh data” once BigQuery is connected.", user };
-    const data = { ...(snap.payload as unknown as DashboardData), asOf: snap.syncedAt.toISOString() };
+    const data = { ...joinDashboard(snap.payload as unknown as DashboardCore, parts, wanted), asOf: snap.syncedAt.toISOString() };
     const months = data.months.map((m) => m.month);
     const range = resolveRange(months, one(sp.from), one(sp.to));
     return { ok: true, ctx: { user, internal, canExport: can(user.role, "export:csv"), clients, data, range, months, source: "synced" } };

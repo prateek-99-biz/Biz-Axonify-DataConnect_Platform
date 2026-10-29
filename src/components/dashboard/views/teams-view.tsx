@@ -7,7 +7,8 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { StatusDot, TrendPill, ScopeTag } from "@/components/dashboard/primitives";
 import { ChecklistSlicer } from "@/components/dashboard/slicers";
 import { teamRows, type Range, type TeamRow, type TeamStatus } from "@/server/dashboard/calc";
-import type { TeamMonth, TeamNode } from "@/server/dashboard/types";
+import type { TeamNode } from "@/server/dashboard/types";
+import { unpackTeamMonths, type PackedTeamMonths } from "@/server/dashboard/sections";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 
 const STATUS_BG: Record<TeamStatus, string> = { High: "bg-brand text-navy", Medium: "bg-amber-400 text-navy", Low: "bg-red-600 text-white" };
@@ -33,9 +34,10 @@ const toRow = (r: TeamRow): TableRow => ({
   },
 });
 
-export function TeamsView({ teams, teamMonths, range, canExport, internal }: { teams: TeamNode[]; teamMonths: TeamMonth[]; range: Range; canExport: boolean; internal: boolean }) {
+export function TeamsView({ teams, packed, range, canExport, internal }: { teams: TeamNode[]; packed: PackedTeamMonths; range: Range; canExport: boolean; internal: boolean }) {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [all, setAll] = useState(false);
+  const teamMonths = useMemo(() => unpackTeamMonths(teams, packed), [teams, packed]);
 
   const all_ = useMemo(() => teamRows(teams, teamMonths, range), [teams, teamMonths, range]);
   const rows = useMemo(() => all_.filter((r) => sel.size === 0 || sel.has(r.team.name)), [all_, sel]);

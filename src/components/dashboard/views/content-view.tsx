@@ -7,11 +7,14 @@ import { ProgressStack } from "@/components/dashboard/dash-charts";
 import { ChecklistSlicer } from "@/components/dashboard/slicers";
 import { sumProgress } from "@/server/dashboard/calc";
 import type { SubjectProgress, TopicNode, TopicStat } from "@/server/dashboard/types";
+import { unpackRows, type PackedRows } from "@/server/dashboard/sections";
 import { fmtCompact, fmtNumber } from "@/lib/utils";
 
-export function ContentView({ subjects, topics, stats, progress, clientName }: {
-  subjects: string[]; topics: TopicNode[]; stats: TopicStat[]; progress: SubjectProgress[]; clientName: string;
+export function ContentView({ subjects, topics: topicsP, stats: statsP, progress, clientName }: {
+  subjects: string[]; topics: PackedRows<TopicNode>; stats: PackedRows<TopicStat>; progress: SubjectProgress[]; clientName: string;
 }) {
+  const topics = useMemo(() => unpackRows(topicsP), [topicsP]);
+  const stats = useMemo(() => unpackRows(statsP), [statsP]);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const subject = sel.size ? [...sel][0] : null;
 

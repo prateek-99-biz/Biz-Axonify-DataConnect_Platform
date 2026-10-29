@@ -156,6 +156,16 @@ model SyncDashboard {
   syncedAt DateTime @default(now())
 }
 
+/// The large arrays of a dashboard (teams, topics, groups, progress), stored apart from the SyncDashboard core so a page
+/// reads only the sections it shows. One row per client and section.
+model SyncDashboardPart {
+  clientId String
+  section  String
+  payload  Json
+
+  @@id([clientId, section])
+}
+
 model SyncRun {
   id          String    @id @default(cuid())
   startedAt   DateTime  @default(now())

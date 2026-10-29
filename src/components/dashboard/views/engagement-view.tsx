@@ -7,13 +7,15 @@ import { KpiStrip, KpiTile, ScopeTag, TrendPill } from "@/components/dashboard/p
 import { DualAxisLine } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
 import { aggregateMonths, descendants, inRange, monthAxisLabel, teamRows, type Range } from "@/server/dashboard/calc";
-import type { TeamMonth, TeamNode } from "@/server/dashboard/types";
+import type { TeamNode } from "@/server/dashboard/types";
+import { unpackTeamMonths, type PackedTeamMonths } from "@/server/dashboard/sections";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 
 const TREND_RANK = { Declining: 0, Stable: 1, "No prior data": 2, Rising: 3 } as const;
 
-export function EngagementView({ teams, teamMonths, range, canExport, asOf }: { teams: TeamNode[]; teamMonths: TeamMonth[]; range: Range; canExport: boolean; asOf: string }) {
+export function EngagementView({ teams, packed, range, canExport, asOf }: { teams: TeamNode[]; packed: PackedTeamMonths; range: Range; canExport: boolean; asOf: string }) {
   const [sel, setSel] = useState<Set<string>>(new Set());
+  const teamMonths = useMemo(() => unpackTeamMonths(teams, packed), [teams, packed]);
 
   const scoped = useMemo(() => {
     const keep = sel.size ? descendants(teams, sel) : null;

@@ -8,7 +8,7 @@ import type { SearchParams } from "@/server/services/context";
 import { fmtCompact, fmtPct } from "@/lib/utils";
 
 export default async function ProgressionPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const q = await loadQbr(await searchParams);
+  const q = await loadQbr(await searchParams, ["progress"]);
   if (!q.ok) return <SourceUnavailable reason={q.reason} />;
   const { data, internal } = q.ctx;
 

@@ -16,21 +16,21 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
   return (
     // The rail keeps a fixed 4.5rem slot in the layout; the panel grows over the page on hover or keyboard focus.
     <div className="relative z-30 hidden w-[4.5rem] shrink-0 md:block">
-    <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 focus-within:w-64" aria-label="Primary">
+    <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 has-[:focus-visible]:w-64" aria-label="Primary">
       <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
       <div className="relative flex h-16 items-center gap-3 px-4">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">
           <Brand className="h-5 w-5 text-navy" aria-hidden />
         </span>
-        <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">
+        <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">
           <span className="block text-sm font-bold tracking-tight">Biz Customer</span>
           <span className="block text-xs font-medium text-brand-ink">Intelligence · Axonify</span>
         </span>
       </div>
       <div className="relative mx-4 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" aria-hidden />
       <nav className="relative flex-1 space-y-1 px-3 py-4">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">Workspace</p>
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">Workspace</p>
         {NAV.filter((n) => allowed.includes(n.perm)).map((n) => {
           const active = path === n.href || path.startsWith(n.href + "/");
           return (
@@ -43,7 +43,7 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
                 active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                 <n.icon className="h-4 w-4" aria-hidden />
               </span>
-              <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">{n.label}</span>
+              <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">{n.label}</span>
             </Link>
           );
         })}

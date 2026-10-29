@@ -59,12 +59,12 @@ export function QbrShell(p: QbrShellProps) {
     <div className="flex h-screen gap-3 overflow-hidden p-3">
       {/* The rail keeps a fixed 4.5rem slot; the panel grows over the page on hover or keyboard focus. */}
       <div className="relative z-30 hidden w-[4.5rem] shrink-0 lg:block">
-      <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 focus-within:w-64" aria-label="Dashboard pages">
+      <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 has-[:focus-visible]:w-64" aria-label="Dashboard pages">
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
         <div className="relative flex h-16 items-center gap-3 px-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent text-sm font-extrabold text-navy shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">Ax</span>
-          <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">
+          <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">
             <span className="block text-sm font-bold tracking-tight">Axonify Data Connect</span>
             <span className="block text-xs font-medium text-brand-ink">{p.internal ? "Internal view" : "Quarterly business review"}</span>
           </span>
@@ -80,7 +80,7 @@ export function QbrShell(p: QbrShellProps) {
                 <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                   <n.icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className="truncate opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">{n.label}</span>
+                <span className="truncate opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">{n.label}</span>
               </Link>
             );
           })}
@@ -88,7 +88,7 @@ export function QbrShell(p: QbrShellProps) {
         {p.internal && (
           <Link href="/portfolio" aria-label="Back to team workspace" className="relative m-3 flex items-center gap-2 rounded-xl border border-line/60 bg-white/40 px-[10px] py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-ink dark:bg-white/5 dark:hover:bg-white/10">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center"><ArrowLeft className="h-4 w-4" aria-hidden /></span>
-            <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-focus-within/side:opacity-100">Back to team workspace</span>
+            <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">Back to team workspace</span>
           </Link>
         )}
       </aside>

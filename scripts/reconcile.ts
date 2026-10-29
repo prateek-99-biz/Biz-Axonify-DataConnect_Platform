@@ -8,6 +8,7 @@ import { BigQuery } from "@google-cloud/bigquery";
 import { bqConfig, fetchDashboards, runQuery } from "../src/server/dashboard/bigquery/load";
 import { compareAtMost, compareValue, invariantChecks, referenceIsFresh, summarize, type Check, type Reference } from "../src/server/dashboard/reconcile";
 import type { DashboardData } from "../src/server/dashboard/types";
+import { joinDashboard, SECTION_NAMES, type DashboardCore, type Section } from "../src/server/dashboard/sections";
 
 type Rows = Record<string, unknown>[];
 const arg = (k: string) => process.argv.find((a) => a.startsWith(`--${k}=`))?.split("=")[1];
@@ -35,7 +36,12 @@ async function main() {
   if (process.argv.includes("--snapshot")) {
     const { db } = await import("../src/server/db");
     const snaps = await db.syncDashboard.findMany({ where: { clientId: { in: tenants.map(String) } } });
-    dashboards = new Map(snaps.map((s) => [s.clientId, s.payload as unknown as DashboardData]));
+    const parts = await db.syncDashboardPart.findMany({ where: { clientId: { in: tenants.map(String) } } });
+    dashboards = new Map(snaps.map((s) => {
+      const mine: Partial<Record<Section, Record<string, unknown>>> = {};
+      for (const p of parts) if (p.clientId === s.clientId) mine[p.section as Section] = p.payload as Record<string, unknown>;
+      return [s.clientId, joinDashboard(s.payload as unknown as DashboardCore, mine, SECTION_NAMES)];
+    }));
     await db.$disconnect();
     console.log(`Comparing ${dashboards.size} stored snapshot(s) with BigQuery.`);
   } else {

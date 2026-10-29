@@ -1,14 +1,14 @@
 import { Package } from "lucide-react";
 import { Card, CardHeader, SourceUnavailable } from "@/components/ui/primitives";
 import { InternalNote, KpiStrip, KpiTile, PageHeader, ScopeTag } from "@/components/dashboard/primitives";
-import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { Badge } from "@/components/ui/primitives";
+import { DeliveryTable } from "@/components/dashboard/views/delivery-table";
+import { packRows } from "@/server/dashboard/sections";
 import { loadQbr } from "@/server/dashboard/context";
 import type { SearchParams } from "@/server/services/context";
 import { fmtNumber } from "@/lib/utils";
 
 export default async function DeliveryPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const q = await loadQbr(await searchParams);
+  const q = await loadQbr(await searchParams, ["groups"]);
   if (!q.ok) return <SourceUnavailable reason={q.reason} />;
   const { data, canExport, internal } = q.ctx;
   const active = data.groups.filter((g) => g.status === "Active");
@@ -16,16 +16,6 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
   const max = (f: (g: (typeof active)[number]) => number) => (active.length ? Math.max(...active.map(f)) : null);
   const dash = (n: number | null, d = 1) => (n == null ? "\u2014" : fmtNumber(n, d));
   const empty = active.length > 0 && active.every((g) => g.programs === 0 && g.reinforcementTopics === 0);
-
-  const rows: TableRow[] = data.groups.map((g) => ({
-    id: g.id,
-    cells: {
-      name: { v: g.name },
-      status: { v: g.status, node: <Badge tone={g.status === "Active" ? "good" : "neutral"}>{g.status}</Badge> },
-      programs: { v: g.programs, node: fmtNumber(g.programs) },
-      reinforcement: { v: g.reinforcementTopics, node: fmtNumber(g.reinforcementTopics) },
-    },
-  }));
 
   return (
     <div className="space-y-6">
@@ -41,9 +31,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
       {internal && empty && <InternalNote>Every active group shows 0 programs and 0 reinforcement topics. The source report had the same gap, so check the assignment data before presenting this page.</InternalNote>}
       <Card>
         <CardHeader title="Training groups" badge={<ScopeTag scope="snapshot" />} subtitle="Programs and reinforcement topics assigned per group" />
-        <DataTable canExport={canExport} exportName="training-groups" pageSize={12}
-          columns={[{ key: "name", header: "Training group" }, { key: "status", header: "Status" }, { key: "programs", header: "Programs assigned", align: "right" }, { key: "reinforcement", header: "Reinforcement topics assigned", align: "right" }]}
-          rows={rows} />
+        <DeliveryTable groups={packRows(data.groups)} canExport={canExport} />
       </Card>
     </div>
   );

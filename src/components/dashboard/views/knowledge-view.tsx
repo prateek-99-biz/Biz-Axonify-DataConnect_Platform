@@ -8,11 +8,14 @@ import { HBars } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
 import { descendants, weightedAvg } from "@/server/dashboard/calc";
 import type { FrequencyBucket, KnowledgeSummary, TopicNode, TopicStat } from "@/server/dashboard/types";
+import { unpackRows, type PackedRows } from "@/server/dashboard/sections";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 
-export function KnowledgeView({ topics, stats, knowledge, frequency, canExport }: {
-  topics: TopicNode[]; stats: TopicStat[]; knowledge: KnowledgeSummary; frequency: FrequencyBucket[]; canExport: boolean;
+export function KnowledgeView({ topics: topicsP, stats: statsP, knowledge, frequency, canExport }: {
+  topics: PackedRows<TopicNode>; stats: PackedRows<TopicStat>; knowledge: KnowledgeSummary; frequency: FrequencyBucket[]; canExport: boolean;
 }) {
+  const topics = useMemo(() => unpackRows(topicsP), [topicsP]);
+  const stats = useMemo(() => unpackRows(statsP), [statsP]);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const keep = useMemo(() => (sel.size ? descendants(topics, sel) : null), [topics, sel]);
   const byId = useMemo(() => new Map(topics.map((t) => [t.id, t])), [topics]);
