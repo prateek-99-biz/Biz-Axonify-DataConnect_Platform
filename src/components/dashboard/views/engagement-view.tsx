@@ -9,6 +9,7 @@ import { TreeSlicer } from "@/components/dashboard/slicers";
 import { aggregateMonths, descendants, inRange, monthAxisLabel, teamRows, type Range } from "@/server/dashboard/calc";
 import type { MonthEngagement } from "@/server/dashboard/types";
 import { fmtNumber, fmtPct } from "@/lib/utils";
+import { titleCase } from "@/lib/labels";
 import { teamMonthsOf, type HeavyTeams } from "./heavy";
 
 const TREND_RANK = { Declining: 0, Stable: 1, "No prior data": 2, Rising: 3 } as const;
@@ -39,8 +40,8 @@ export function EngagementView({ months: coreMonths, heavy, range, canExport, as
     <div className="space-y-6">
       <KpiStrip>
         <KpiTile label="Training Participation" metric="participation" scope="month" value={fmtPct(part, 0)} hint="Training users ÷ active users, latest month" />
-        <KpiTile label="Avg Time / Day" metric="time" scope="month" value={latest ? latest.avgTimePerDayMin.toFixed(1) : "—"} hint="Minutes per active user" />
-        <KpiTile label="Avg Frequency" metric="frequency" scope="month" value={latest ? latest.frequency.toFixed(1) : "—"} hint="Days active per logged-in user" />
+        <KpiTile label="Average Time per Day" metric="time" scope="month" value={latest ? latest.avgTimePerDayMin.toFixed(1) : "—"} hint="Minutes per active user" />
+        <KpiTile label="Average Frequency" metric="frequency" scope="month" value={latest ? latest.frequency.toFixed(1) : "—"} hint="Days active per logged-in user" />
         <KpiTile label="Logged-in Users" metric="loggedIn" scope="month" value={fmtNumber(latest?.loggedInUsers)} hint="Users with at least one session" />
         <KpiTile label="Training Users" metric="trainingUsers" scope="month" value={fmtNumber(latest?.trainingUsers)} hint="Active users with a training session" />
       </KpiStrip>
@@ -51,9 +52,9 @@ export function EngagementView({ months: coreMonths, heavy, range, canExport, as
         </Suspense>
         <div className="space-y-4">
           <Card>
-            <CardHeader title="Training Participation and Avg Frequency by Month" badge={<ScopeTag scope="range" />} subtitle={sel.size ? "Filtered to the selected teams" : "All teams"} />
+            <CardHeader title="Training Participation and Average Frequency by Month" badge={<ScopeTag scope="range" />} subtitle={sel.size ? "Filtered to the selected teams" : "All teams"} />
             <div className="p-4">
-              <DualAxisLine data={chart} xKey="month" left={{ key: "participation", label: "Training participation", format: "pct" }} right={{ key: "frequency", label: "Avg frequency", format: "decimal" }} />
+              <DualAxisLine data={chart} xKey="month" left={{ key: "participation", label: "Training Participation", format: "pct" }} right={{ key: "frequency", label: "Average Frequency", format: "decimal" }} />
             </div>
           </Card>
           <Suspense fallback={<SectionSkeleton className="h-80" />}>
@@ -83,7 +84,7 @@ function TeamTable({ heavy, sel, range, canExport }: { heavy: Promise<HeavyTeams
           team: { v: r.team.name },
           participation: { v: r.participation, node: fmtPct(r.participation, 0) },
           frequency: { v: r.frequency, node: r.frequency == null ? "—" : r.frequency.toFixed(1) },
-          trend: { v: r.trend, node: <TrendPill trend={r.trend} /> },
+          trend: { v: titleCase(r.trend), node: <TrendPill trend={r.trend} /> },
         },
       }));
   }, [h, range, sel]);
@@ -92,7 +93,7 @@ function TeamTable({ heavy, sel, range, canExport }: { heavy: Promise<HeavyTeams
     <Card>
       <CardHeader title="Teams" badge={<ScopeTag scope="month" />} subtitle="Latest month in range, month-over-month trend (±3 participation points)" />
       <DataTable canExport={canExport} exportName="engagement-teams" pageSize={12}
-        columns={[{ key: "team", header: "Team" }, { key: "participation", header: "Team training participation", align: "right" }, { key: "frequency", header: "Team frequency (days)", align: "right" }, { key: "trend", header: "Team trend" }]}
+        columns={[{ key: "team", header: "Team" }, { key: "participation", header: "Team Training Participation", align: "right" }, { key: "frequency", header: "Team Frequency (Days)", align: "right" }, { key: "trend", header: "Team Trend" }]}
         rows={rows} />
     </Card>
   );

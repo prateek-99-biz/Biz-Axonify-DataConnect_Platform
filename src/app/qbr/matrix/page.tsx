@@ -44,7 +44,7 @@ export default async function MatrixPage({ searchParams }: { searchParams: Promi
           <div className="p-4"><QuadrantBubbles points={data.matrix} /></div>
         </Card>
         <Card className="self-start">
-          <CardHeader title="Reading the matrix" />
+          <CardHeader title="Reading the Matrix" />
           <ul className="space-y-3 p-4 text-sm">
             <li><strong>Top right:</strong> knows it and trusts it. Keep reinforcing.</li>
             <li><strong>Bottom right:</strong> knows it but lacks confidence. Coach with practice and feedback.</li>
@@ -54,8 +54,8 @@ export default async function MatrixPage({ searchParams }: { searchParams: Promi
         </Card>
       </div>
       <Card>
-        <CardHeader title="Learner segments" badge={<ScopeTag scope="snapshot" />} subtitle={`${fmtNumber(total)} learners with knowledge and confidence data`} />
-        <DataTable searchable={false} columns={[{ key: "segment", header: "Segment" }, { key: "meaning", header: "What it means" }, { key: "learners", header: "Learners", align: "right" }, { key: "share", header: "Share", align: "right" }, { key: "knowledge", header: "Avg knowledge", align: "right" }, { key: "confidence", header: "Avg confidence", align: "right" }]} rows={rows} />
+        <CardHeader title="Learner Segments" badge={<ScopeTag scope="snapshot" />} subtitle={`${fmtNumber(total)} learners with knowledge and confidence data`} />
+        <DataTable searchable={false} columns={[{ key: "segment", header: "Segment" }, { key: "meaning", header: "What It Means" }, { key: "learners", header: "Learners", align: "right" }, { key: "share", header: "Share", align: "right" }, { key: "knowledge", header: "Average Knowledge", align: "right" }, { key: "confidence", header: "Average Confidence", align: "right" }]} rows={rows} />
       </Card>
     </div>
   );

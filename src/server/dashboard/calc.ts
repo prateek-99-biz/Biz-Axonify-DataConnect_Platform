@@ -4,7 +4,7 @@ import { HEALTH_WEIGHTS } from "@/server/metrics/definitions";
 
 export const PROGRESS_ORDER: ProgressStatus[] = ["notStarted", "beginner", "intermediate", "graduate", "expert"];
 export const PROGRESS_LABEL: Record<ProgressStatus, string> = {
-  notStarted: "Not started", beginner: "Beginner", intermediate: "Intermediate", graduate: "Graduate", expert: "Expert",
+  notStarted: "Not Started", beginner: "Beginner", intermediate: "Intermediate", graduate: "Graduate", expert: "Expert",
 };
 
 const div = (n: number, d: number) => (d > 0 ? n / d : null);

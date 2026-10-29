@@ -6,10 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronRight, LogOut, Search } from "lucide-react";
 import { Badge, Input } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+import { humanize } from "@/lib/labels";
 
 export interface NotificationItem { key: string; clientId: string; clientName: string; severity: "warning" | "critical"; title: string; detail: string }
 
-const LABELS: Record<string, string> = { portfolio: "Portfolio", clients: "Clients", "data-reliability": "Data reliability", settings: "Settings" };
+const LABELS: Record<string, string> = { portfolio: "Portfolio", clients: "Clients", "data-reliability": "Data Reliability", settings: "Settings", compare: "Compare Clients" };
 
 export function Breadcrumbs() {
   const path = usePathname();
@@ -109,7 +110,7 @@ export function NotificationCentre({ items, canAck }: { items: NotificationItem[
             {list.slice(0, 20).map((n) => (
               <li key={n.key} className="px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Badge tone={n.severity === "critical" ? "critical" : "warn"}>{n.severity}</Badge>
+                  <Badge tone={n.severity === "critical" ? "critical" : "warn"}>{humanize(n.severity)}</Badge>
                   <Link href={`/clients/${n.clientId}`} onClick={() => setOpen(false)} className="text-sm font-medium hover:underline">{n.clientName}</Link>
                 </div>
                 <p className="mt-1 text-xs"><span className="font-medium">{n.title}.</span> {n.detail}</p>

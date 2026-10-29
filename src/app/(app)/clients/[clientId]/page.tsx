@@ -16,9 +16,10 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { TeamTree } from "@/components/tables/team-tree";
 import { NotesTasks } from "@/components/tables/notes-tasks";
 import { cn, fmtNumber, fmtPct } from "@/lib/utils";
+import { humanize, lifecycleLabel } from "@/lib/labels";
 
 const TABS = [
-  ["overview", "Overview"], ["teams", "Teams"], ["users", "Users"], ["engagement", "Engagement"], ["commercial", "Contract & renewals"], ["activity", "Notes & tasks"],
+  ["overview", "Overview"], ["teams", "Teams"], ["users", "Users"], ["engagement", "Engagement"], ["commercial", "Contract & Renewals"], ["activity", "Notes & Tasks"],
 ] as const;
 
 export default async function ClientPage({ params, searchParams }: { params: Promise<{ clientId: string }>; searchParams: Promise<SearchParams> }) {
@@ -61,8 +62,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <Badge>{client.industry}</Badge><span>CSM: {client.csmName}</span>
-          <span>Axonify tenant: {client.axonifyTenantId ?? "unmapped"}</span>
-          <span>Salesforce account: {client.salesforceAccountId ?? <span className="font-medium text-amber-700 dark:text-amber-300">unmapped</span>}</span>
+          <span>Axonify tenant: {client.axonifyTenantId ?? "Not mapped"}</span>
+          <span>Salesforce account: {client.salesforceAccountId ?? <span className="font-medium text-amber-700 dark:text-amber-300">Not mapped</span>}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 text-sm"><span className="text-slate-500">{periodLabel(f.period)}</span><RiskBadge risk={hasData ? m.risk : "unknown"} /></div>
@@ -98,24 +99,24 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     body = (
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard label="Registered users" unit="pct" value={fmtNumber(m.registeredUsers)} vsPrev={delta(m.registeredUsers, mPrev.registeredUsers)} vsYear={delta(m.registeredUsers, mYa.registeredUsers)} />
+          <KpiCard label="Registered Users" unit="pct" value={fmtNumber(m.registeredUsers)} vsPrev={delta(m.registeredUsers, mPrev.registeredUsers)} vsYear={delta(m.registeredUsers, mYa.registeredUsers)} />
           <KpiCard label="Participation" value={fmtPct(m.participationRate)} vsPrev={delta(m.participationRate, mPrev.participationRate)} vsYear={delta(m.participationRate, mYa.participationRate)} />
           <KpiCard label="Knowledge" value={fmtPct(m.avgKnowledge)} vsPrev={delta(m.avgKnowledge, mPrev.avgKnowledge)} vsYear={delta(m.avgKnowledge, mYa.avgKnowledge)} />
-          <KpiCard label="Health score" unit="abs" value={m.healthScore?.toFixed(0) ?? "—"} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
+          <KpiCard label="Health Score" unit="abs" value={m.healthScore?.toFixed(0) ?? "—"} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
           <KpiCard label="Engagement" value={fmtPct(m.engagementRate)} vsPrev={delta(m.engagementRate, mPrev.engagementRate)} vsYear={delta(m.engagementRate, mYa.engagementRate)} />
           <KpiCard label="Retention" value={fmtPct(m.retentionRate)} vsPrev={delta(m.retentionRate, mPrev.retentionRate)} vsYear={delta(m.retentionRate, mYa.retentionRate)} />
-          <KpiCard label="Feature adoption" value={fmtPct(m.featureAdoption)} vsPrev={delta(m.featureAdoption, mPrev.featureAdoption)} vsYear={delta(m.featureAdoption, mYa.featureAdoption)} />
+          <KpiCard label="Feature Adoption" value={fmtPct(m.featureAdoption)} vsPrev={delta(m.featureAdoption, mPrev.featureAdoption)} vsYear={delta(m.featureAdoption, mYa.featureAdoption)} />
         </div>
         <div className="grid gap-4 xl:grid-cols-3">
-          <Card className="xl:col-span-2"><CardHeader title="Historical performance" subtitle="All available quarters" />
+          <Card className="xl:col-span-2"><CardHeader title="Historical Performance" subtitle="All available quarters" />
             <div className="p-4"><TrendChart data={trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Engagement" }]} /></div></Card>
-          <Card><CardHeader title="What changed" subtitle={`Weighted contribution to health score vs ${periodLabel(previousPeriod(f.period))}`} />
+          <Card><CardHeader title="What Changed" subtitle={`Weighted contribution to health score vs ${periodLabel(previousPeriod(f.period))}`} />
             <ul className="divide-y divide-line text-sm">
               {mPrev.healthScore == null ? <li className="p-4 text-xs text-slate-500">No previous-period data to compare.</li> :
                 factors.map((x) => <li key={x.key} className="flex justify-between px-4 py-3"><span>{x.label}</span><span className={cn("tabular-nums", x.points < -0.05 ? "text-critical" : x.points > 0.05 ? "text-brand-ink" : "text-slate-500")}>{x.points > 0 ? "+" : ""}{x.points.toFixed(1)} pts</span></li>)}
             </ul></Card>
         </div>
-        <Card><CardHeader title="Peer benchmark" subtitle={`This client vs ${client.industry} peers (${peerView.clients.length}) and the whole portfolio (${portfolioView.clients.length}), ${periodLabel(f.period)}`} />
+        <Card><CardHeader title="Peer Benchmark" subtitle={`This client vs ${client.industry} peers (${peerView.clients.length}) and the whole portfolio (${portfolioView.clients.length}), ${periodLabel(f.period)}`} />
           <div className="p-4"><CompareBars xKey="metric" series={[{ key: "client", label: client.name }, { key: "peers", label: `${client.industry} peers` }, { key: "portfolio", label: "Portfolio" }]}
             data={[
               { metric: "Participation", client: m.participationRate, peers: peerMetrics.participationRate, portfolio: portfolioView.kpis.current.participationRate },
@@ -133,7 +134,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       const teams = await analytics.getTeamTree(clientId, snapshotQuarter);
       if (teams.status !== "ok") body = <SourceUnavailable reason={teams.reason} />;
       else if (tab === "teams") {
-        body = <Card><CardHeader title="Team hierarchy" subtitle={`${periodLabel({ year: Number(snapshotQuarter.slice(0, 4)), quarter: Number(snapshotQuarter[6]) as 1 })} snapshot · expand regions to see teams`} />
+        body = <Card><CardHeader title="Team Hierarchy" subtitle={`${periodLabel({ year: Number(snapshotQuarter.slice(0, 4)), quarter: Number(snapshotQuarter[6]) as 1 })} snapshot · expand regions to see teams`} />
           {teams.data.length === 0 ? <EmptyState title="No team hierarchy available" /> : <TeamTree nodes={teams.data} />}</Card>;
       } else if (tab === "users") {
         const users = await analytics.getUsers(clientId, snapshotQuarter);
@@ -142,15 +143,15 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           const names = new Map(teams.data.map((t) => [t.id, t.name]));
           const counts = users.data.reduce<Record<string, number>>((a, u) => ({ ...a, [u.lifecycle]: (a[u.lifecycle] ?? 0) + 1 }), {});
           const tr: TableRow[] = users.data.map((u) => ({ id: u.id, cells: {
-            name: { v: u.displayName }, team: { v: names.get(u.teamId) ?? u.teamId }, lifecycle: { v: u.lifecycle, node: <Badge tone={u.lifecycle === "active" || u.lifecycle === "new" ? "good" : u.lifecycle === "at_risk" ? "warn" : "neutral"}>{u.lifecycle.replace("_", " ")}</Badge> },
+            name: { v: u.displayName }, team: { v: names.get(u.teamId) ?? u.teamId }, lifecycle: { v: lifecycleLabel(u.lifecycle), node: <Badge tone={u.lifecycle === "active" || u.lifecycle === "new" ? "good" : u.lifecycle === "at_risk" ? "warn" : "neutral"}>{lifecycleLabel(u.lifecycle)}</Badge> },
             registered: { v: u.registeredAt.slice(0, 10) }, last: { v: u.lastActiveAt?.slice(0, 10) ?? null }, sessions: { v: u.sessionsInPeriod },
           } }));
           body = (
             <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 text-xs">{Object.entries(counts).map(([k, v]) => <Badge key={k} tone="neutral">{k.replace("_", " ")}: {v}</Badge>)}</div>
+              <div className="flex flex-wrap gap-2 text-xs">{Object.entries(counts).map(([k, v]) => <Badge key={k} tone="neutral">{humanize(k)}: {v}</Badge>)}</div>
               <Card><CardHeader title="Users" subtitle={`${users.source === "mock" ? "Mock adapter returns a sample of up to 25 users per team. " : ""}Lifecycle bands are provisional.`} />
                 <DataTable canExport={can(user.role, "export:csv")} exportName={`${client.name}-users-${snapshotQuarter}`}
-                  columns={[{ key: "name", header: "User" }, { key: "team", header: "Team" }, { key: "lifecycle", header: "Lifecycle" }, { key: "registered", header: "Registered" }, { key: "last", header: "Last active" }, { key: "sessions", header: "Sessions", align: "right" }]} rows={tr} /></Card>
+                  columns={[{ key: "name", header: "User" }, { key: "team", header: "Team" }, { key: "lifecycle", header: "Lifecycle" }, { key: "registered", header: "Registered" }, { key: "last", header: "Last Active" }, { key: "sessions", header: "Sessions", align: "right" }]} rows={tr} /></Card>
             </div>
           );
         }
@@ -158,8 +159,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         const leaves = teams.data.filter((n) => !teams.data.some((x) => x.parentId === n.id));
         body = (
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card><CardHeader title="Active users and sessions" subtitle="Quarterly" /><div className="p-4"><TrendChart format="number" data={trend} series={[{ key: "activeUsers", label: "Active users" }, { key: "sessions", label: "Sessions" }]} /></div></Card>
-            <Card><CardHeader title="Engagement by team" subtitle={`Active ÷ registered, ${snapshotQuarter}`} /><div className="p-4"><CompareBars xKey="team" data={leaves.map((l) => ({ team: l.name, engagement: l.registeredUsers ? l.activeUsers / l.registeredUsers : null }))} series={[{ key: "engagement", label: "Engagement" }]} /></div></Card>
+            <Card><CardHeader title="Active Users and Sessions" subtitle="Quarterly" /><div className="p-4"><TrendChart format="number" data={trend} series={[{ key: "activeUsers", label: "Active Users" }, { key: "sessions", label: "Sessions" }]} /></div></Card>
+            <Card><CardHeader title="Engagement by Team" subtitle={`Active ÷ registered, ${snapshotQuarter}`} /><div className="p-4"><CompareBars xKey="team" data={leaves.map((l) => ({ team: l.name, engagement: l.registeredUsers ? l.activeUsers / l.registeredUsers : null }))} series={[{ key: "engagement", label: "Engagement" }]} /></div></Card>
           </div>
         );
       }

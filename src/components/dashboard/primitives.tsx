@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+import { titleCase } from "@/lib/labels";
 import { KPI_DEFS, type KpiMetric } from "@/server/dashboard/definitions";
 
 export function PageHeader({ icon: Icon, title, subtitle, right }: { icon: LucideIcon; title: string; subtitle?: string; right?: ReactNode }) {
@@ -26,9 +27,9 @@ export function PageHeader({ icon: Icon, title, subtitle, right }: { icon: Lucid
  * every KPI and card says which one it is.
  */
 export const SCOPES = {
-  range: { label: "Date range", help: "Follows the date range selected at the top of the page." },
-  month: { label: "Latest month", help: "The most recent month in the selected range (rolling 30 days to the last data refresh when it is the current month)." },
-  d30: { label: "Last 30 days", help: "Rolling 30 days to the last data refresh. Ignores the date range." },
+  range: { label: "Date Range", help: "Follows the date range selected at the top of the page." },
+  month: { label: "Latest Month", help: "The most recent month in the selected range (rolling 30 days to the last data refresh when it is the current month)." },
+  d30: { label: "Last 30 Days", help: "Rolling 30 days to the last data refresh. Ignores the date range." },
   snapshot: { label: "Snapshot", help: "Current state at the last data refresh. Ignores the date range." },
 } as const;
 export type Scope = keyof typeof SCOPES;
@@ -98,7 +99,7 @@ export function StatusDot({ status }: { status: "High" | "Medium" | "Low" | null
 export function TrendPill({ trend }: { trend: "Rising" | "Declining" | "Stable" | "No prior data" }) {
   const tone = trend === "Rising" ? "bg-brand/15 text-brand-ink" : trend === "Declining" ? "bg-critical/10 text-critical" : "bg-slate-100 text-slate-600";
   const arrow = trend === "Rising" ? "▲ " : trend === "Declining" ? "▼ " : trend === "Stable" ? "– " : "";
-  return <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-semibold", tone)}>{arrow}{trend}</span>;
+  return <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-semibold", tone)}>{arrow}{titleCase(trend)}</span>;
 }
 
 export function InternalNote({ children }: { children: ReactNode }) {

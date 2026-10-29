@@ -131,11 +131,11 @@ export function deriveAlerts(view: PortfolioView, period: Period): DerivedAlert[
   for (const c of view.clients) {
     if (c.risk === "critical") {
       out.push({ key: `risk:${c.client.id}:${p}`, clientId: c.client.id, clientName: c.client.name, severity: "critical",
-        title: "Critical health score", detail: `Health ${c.current.healthScore?.toFixed(0)} is in the Critical band (below ${RISK_THRESHOLDS.atRisk}).` });
+        title: "Critical Health Score", detail: `Health ${c.current.healthScore?.toFixed(0)} is in the Critical band (below ${RISK_THRESHOLDS.atRisk}).` });
     }
     if (c.declining) {
       out.push({ key: `decline:${c.client.id}:${p}`, clientId: c.client.id, clientName: c.client.name, severity: "warning",
-        title: "Declining participation", detail: `Participation fell ${Math.abs((c.participationDelta.abs ?? 0) * 100).toFixed(1)} pts vs the previous period.` });
+        title: "Declining Participation", detail: `Participation fell ${Math.abs((c.participationDelta.abs ?? 0) * 100).toFixed(1)} pts vs the previous period.` });
     }
   }
   return out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "critical" ? -1 : 1));

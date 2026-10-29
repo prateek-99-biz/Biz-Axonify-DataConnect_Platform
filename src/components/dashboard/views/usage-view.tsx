@@ -46,7 +46,7 @@ export function UsageView({ usageMonthly, platformAccess, hours, features, range
         </Card>
         <Card>
           <CardHeader title="Feature Usage % - Last 30 Days" badge={<ScopeTag scope="d30" />} subtitle="Share of active users" />
-          <div className="p-4"><HBars data={features.map((f) => ({ name: f.feature, share: f.share }))} nameKey="name" nameWidth={110} series={[{ key: "share", label: "Active users using feature", color: 0 }]} format="pct" maxHeight={260} /></div>
+          <div className="p-4"><HBars data={features.map((f) => ({ name: f.feature, share: f.share }))} nameKey="name" nameWidth={110} series={[{ key: "share", label: "Active Users Using Feature", color: 0 }]} format="pct" maxHeight={260} /></div>
         </Card>
       </div>
 

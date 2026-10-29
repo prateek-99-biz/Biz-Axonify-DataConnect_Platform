@@ -27,7 +27,7 @@ export default async function ProgressionPage({ searchParams }: { searchParams: 
       {internal && <InternalNote>Each row is a share of that level&apos;s own records and sums to 100%. The source report&apos;s matrix did not sum to 100%, which pointed at a wrong denominator.</InternalNote>}
 
       <Card>
-        <CardHeader title="Progress by question level" badge={<ScopeTag scope="snapshot" />} subtitle="Share of learner-topic records at each status" />
+        <CardHeader title="Progress by Question Level" badge={<ScopeTag scope="snapshot" />} subtitle="Share of learner-topic records at each status" />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

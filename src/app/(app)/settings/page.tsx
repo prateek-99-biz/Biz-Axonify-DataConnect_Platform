@@ -31,22 +31,22 @@ export default async function SettingsPage() {
   }
 
   const status = [
-    { name: "Data adapter", value: env.DATA_ADAPTER === "mock" ? "Mock (development only)" : "Synced summaries (Postgres)", ok: env.DATA_ADAPTER !== "mock" },
+    { name: "Data Adapter", value: env.DATA_ADAPTER === "mock" ? "Mock (development only)" : "Synced summaries (Postgres)", ok: env.DATA_ADAPTER !== "mock" },
     { name: "Supabase Auth", value: supabaseConfigured() ? "Configured" : "Not configured", ok: supabaseConfigured() },
-    { name: "BigQuery project", value: process.env.BQ_PROJECT_ID || "Not configured", ok: !!process.env.BQ_PROJECT_ID },
+    { name: "BigQuery Project", value: process.env.BQ_PROJECT_ID || "Not configured", ok: !!process.env.BQ_PROJECT_ID },
   ];
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
       <Card>
-        <CardHeader title="Configuration status" subtitle="Status only; secrets are never shown or sent to the browser" />
+        <CardHeader title="Configuration Status" subtitle="Status only; secrets are never shown or sent to the browser" />
         <ul className="divide-y divide-line text-sm">
-          {status.map((i) => <li key={i.name} className="flex items-center justify-between px-4 py-2"><span>{i.name}</span><span className="flex items-center gap-2 text-slate-600">{i.value}<Badge tone={i.ok ? "good" : "warn"}>{i.ok ? "ok" : "attention"}</Badge></span></li>)}
+          {status.map((i) => <li key={i.name} className="flex items-center justify-between px-4 py-2"><span>{i.name}</span><span className="flex items-center gap-2 text-slate-600">{i.value}<Badge tone={i.ok ? "good" : "warn"}>{i.ok ? "OK" : "Needs Attention"}</Badge></span></li>)}
         </ul>
       </Card>
       <Card>
-        <CardHeader title="Users and roles" subtitle="Create or remove login accounts in the Supabase dashboard (Authentication → Users). People appear here after their first sign-in." />
+        <CardHeader title="Users and Roles" subtitle="Create or remove login accounts in the Supabase dashboard (Authentication → Users). People appear here after their first sign-in." />
         <ul className="divide-y divide-line text-sm">
           {users.length === 0 && <li className="p-4 text-xs text-slate-500">No users have signed in yet.</li>}
           {users.map((u) => (

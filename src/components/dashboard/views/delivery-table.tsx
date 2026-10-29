@@ -21,7 +21,7 @@ export function DeliveryTable({ groups, canExport }: { groups: PackedRows<Traini
 
   return (
     <DataTable canExport={canExport} exportName="training-groups" pageSize={12}
-      columns={[{ key: "name", header: "Training group" }, { key: "status", header: "Status" }, { key: "programs", header: "Programs assigned", align: "right" }, { key: "reinforcement", header: "Reinforcement topics assigned", align: "right" }]}
+      columns={[{ key: "name", header: "Training Group" }, { key: "status", header: "Status" }, { key: "programs", header: "Programs Assigned", align: "right" }, { key: "reinforcement", header: "Reinforcement Topics Assigned", align: "right" }]}
       rows={rows} />
   );
 }

@@ -34,7 +34,7 @@ export function RefreshButton({ asOf }: { asOf: string | null }) {
     <div className="flex items-center gap-2">
       {msg && <span role="status" className={`hidden max-w-[16rem] truncate text-xs lg:inline ${msg.ok ? "text-brand-ink" : "text-critical"}`} title={msg.text}>{msg.text}</span>}
       <Button size="sm" onClick={run} disabled={busy} title={asOf ? `Last synced ${asOf.slice(0, 16).replace("T", " ")} UTC` : "Not synced yet"}>
-        <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden /> {busy ? "Refreshing…" : "Refresh data"}
+        <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden /> {busy ? "Refreshing…" : "Refresh Data"}
       </Button>
     </div>
   );

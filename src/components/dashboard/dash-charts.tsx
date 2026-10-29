@@ -164,10 +164,10 @@ export function QuadrantBubbles({ points, height = 480 }: {
     <Frame height={height} label="Learner segments by knowledge and confidence">
       <ScatterChart margin={{ top: 16, right: 24, bottom: 24, left: 8 }}>
         <CartesianGrid stroke={t.grid} />
-        <XAxis type="number" dataKey="avgKnowledge" name="Avg knowledge" domain={[0, 1]} tickFormatter={fmt("pct")} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false}
-          label={{ value: "Avg knowledge score", position: "bottom", offset: 4, fill: t.tick, fontSize: 12 }} />
-        <YAxis type="number" dataKey="avgConfidence" name="Avg confidence" domain={[0, 1]} tickFormatter={fmt("pct")} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} width={48}
-          label={{ value: "Avg confidence score", angle: -90, position: "insideLeft", fill: t.tick, fontSize: 12 }} />
+        <XAxis type="number" dataKey="avgKnowledge" name="Average Knowledge" domain={[0, 1]} tickFormatter={fmt("pct")} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false}
+          label={{ value: "Average Knowledge Score", position: "bottom", offset: 4, fill: t.tick, fontSize: 12 }} />
+        <YAxis type="number" dataKey="avgConfidence" name="Average Confidence" domain={[0, 1]} tickFormatter={fmt("pct")} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} width={48}
+          label={{ value: "Average Confidence Score", angle: -90, position: "insideLeft", fill: t.tick, fontSize: 12 }} />
         <ZAxis type="number" dataKey="learners" range={[220, 1500]} name="Learners" />
         <ReferenceLine x={0.5} stroke={mid} strokeDasharray="6 5" />
         <ReferenceLine y={0.5} stroke={mid} strokeDasharray="6 5" />

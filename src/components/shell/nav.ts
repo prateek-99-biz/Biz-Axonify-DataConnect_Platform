@@ -7,8 +7,8 @@ export interface NavItem { href: string; label: string; icon: LucideIcon; perm: 
 export const NAV: NavItem[] = [
   { href: "/portfolio", label: "Portfolio", icon: LayoutDashboard, perm: "portfolio:read" },
   { href: "/clients", label: "Clients", icon: Building2, perm: "clients:read" },
-  { href: "/qbr", label: "Client dashboards", icon: Presentation, perm: "dashboard:read" },
-  { href: "/data-reliability", label: "Data reliability", icon: ShieldCheck, perm: "reliability:read" },
+  { href: "/qbr", label: "Client Dashboards", icon: Presentation, perm: "dashboard:read" },
+  { href: "/data-reliability", label: "Data Reliability", icon: ShieldCheck, perm: "reliability:read" },
   { href: "/settings", label: "Settings", icon: Settings, perm: "settings:manage" },
 ];
 

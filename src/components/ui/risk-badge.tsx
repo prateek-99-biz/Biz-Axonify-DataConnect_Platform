@@ -1,14 +1,15 @@
 import { Badge } from "./primitives";
 import type { RiskLevel } from "@/server/metrics/calculations";
+import { riskLabel } from "@/lib/labels";
 
 export function RiskBadge({ risk }: { risk: RiskLevel }) {
   const map = {
-    healthy: { tone: "good", label: "Healthy" },
-    moderate: { tone: "neutral", label: "Moderate" },
-    at_risk: { tone: "warn", label: "At risk" },
-    critical: { tone: "critical", label: "Critical" },
-    unknown: { tone: "neutral", label: "No data" },
+    healthy: { tone: "good" },
+    moderate: { tone: "neutral" },
+    at_risk: { tone: "warn" },
+    critical: { tone: "critical" },
+    unknown: { tone: "neutral" },
   } as const;
   const m = map[risk];
-  return <Badge tone={m.tone}>{m.label}</Badge>;
+  return <Badge tone={m.tone}>{riskLabel(risk)}</Badge>;
 }

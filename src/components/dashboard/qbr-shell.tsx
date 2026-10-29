@@ -59,7 +59,7 @@ export function QbrShell(p: QbrShellProps) {
     <div className="flex h-screen gap-3 overflow-hidden p-3">
       {/* The rail keeps a fixed 4.5rem slot; the panel grows over the page on hover or keyboard focus. */}
       <div className="relative z-30 hidden w-[4.5rem] shrink-0 lg:block">
-      <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 has-[:focus-visible]:w-64" aria-label="Dashboard pages">
+      <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 has-[:focus-visible]:w-64" aria-label="Dashboard Pages">
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
         <div className="relative flex h-16 items-center gap-3 px-4">
@@ -86,9 +86,9 @@ export function QbrShell(p: QbrShellProps) {
           })}
         </nav>
         {p.internal && (
-          <Link href="/portfolio" aria-label="Back to team workspace" className="relative m-3 flex items-center gap-2 rounded-xl border border-line/60 bg-white/40 px-[10px] py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-ink dark:bg-white/5 dark:hover:bg-white/10">
+          <Link href="/portfolio" aria-label="Back to Team Workspace" className="relative m-3 flex items-center gap-2 rounded-xl border border-line/60 bg-white/40 px-[10px] py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-ink dark:bg-white/5 dark:hover:bg-white/10">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center"><ArrowLeft className="h-4 w-4" aria-hidden /></span>
-            <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">Back to team workspace</span>
+            <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">Back to Team Workspace</span>
           </Link>
         )}
       </aside>
@@ -138,7 +138,7 @@ export function QbrShell(p: QbrShellProps) {
           </div>
         </header>
 
-        <nav aria-label="Dashboard pages" className="glass flex shrink-0 gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none] lg:hidden">
+        <nav aria-label="Dashboard Pages" className="glass flex shrink-0 gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none] lg:hidden">
           {QBR_PAGES.map((n) => {
             const active = n.href === "/qbr" ? path === "/qbr" : path.startsWith(n.href);
             return (

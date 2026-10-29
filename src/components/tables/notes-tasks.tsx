@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Button, Input, Select } from "@/components/ui/primitives";
+import { humanize } from "@/lib/labels";
 
 export interface TaskView { id: string; title: string; detail: string | null; priority: string; status: string; dueDate: string | null; owner: string | null }
 export interface NoteView { id: string; body: string; author: string; createdAt: string }
@@ -24,8 +25,8 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section aria-label="Follow-up tasks">
-        <h3 className="mb-2 text-sm font-semibold">Follow-up tasks</h3>
+      <section aria-label="Follow-Up Tasks">
+        <h3 className="mb-2 text-sm font-semibold">Follow-Up Tasks</h3>
         {canWrite && (
           <form className="glass mb-3 grid grid-cols-2 gap-2 !rounded-xl p-3"
             onSubmit={(e) => {
@@ -39,10 +40,10 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
                 form.reset();
               });
             }}>
-            <Input name="title" placeholder="Task title" aria-label="Task title" required maxLength={200} className="col-span-2" />
+            <Input name="title" placeholder="Task title" aria-label="Task Title" required maxLength={200} className="col-span-2" />
             <Input name="detail" placeholder="Details (optional)" aria-label="Details" className="col-span-2" />
             <Select name="priority" aria-label="Priority" defaultValue="MEDIUM"><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></Select>
-            <Input name="dueDate" type="date" aria-label="Due date" />
+            <Input name="dueDate" type="date" aria-label="Due Date" />
             <Button variant="primary" className="col-span-2" disabled={busy}>Add task</Button>
           </form>
         )}
@@ -61,17 +62,17 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
                 <span>Due: {t.dueDate ? t.dueDate.slice(0, 10) : "—"}</span>
                 {canWrite ? (
                   <Select aria-label="Status" value={t.status} disabled={busy} className="h-7 text-xs" onChange={(e) => run(() => send(`/api/tasks/${t.id}`, "PATCH", { status: e.target.value }))}>
-                    <option value="OPEN">Open</option><option value="IN_PROGRESS">In progress</option><option value="DONE">Done</option><option value="CANCELLED">Cancelled</option>
+                    <option value="OPEN">Open</option><option value="IN_PROGRESS">In Progress</option><option value="DONE">Done</option><option value="CANCELLED">Cancelled</option>
                   </Select>
-                ) : <Badge>{t.status.toLowerCase().replace("_", " ")}</Badge>}
+                ) : <Badge>{humanize(t.status.toLowerCase())}</Badge>}
               </div>
             </li>
           ))}
         </ul>
       </section>
 
-      <section aria-label="Account notes">
-        <h3 className="mb-2 text-sm font-semibold">Account notes</h3>
+      <section aria-label="Account Notes">
+        <h3 className="mb-2 text-sm font-semibold">Account Notes</h3>
         {canWrite && (
           <form className="mb-3 space-y-2"
             onSubmit={(e) => {

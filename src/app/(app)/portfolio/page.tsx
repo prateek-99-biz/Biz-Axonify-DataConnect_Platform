@@ -11,6 +11,7 @@ import { RiskBadge } from "@/components/ui/risk-badge";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { cn, fmtNumber, fmtPct } from "@/lib/utils";
+import { humanize, riskLabel } from "@/lib/labels";
 
 export default async function PortfolioPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("portfolio:read");
@@ -46,7 +47,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       retention: { v: c.current.retentionRate, node: fmtPct(c.current.retentionRate) },
       adoption: { v: c.current.featureAdoption, node: fmtPct(c.current.featureAdoption) },
       health: { v: c.current.healthScore, node: c.current.healthScore?.toFixed(0) ?? "—" },
-      risk: { v: c.risk, node: <RiskBadge risk={c.risk} /> },
+      risk: { v: riskLabel(c.risk), node: <RiskBadge risk={c.risk} /> },
       driver: { v: c.topFactor ? `${c.topFactor.label} ${c.topFactor.points > 0 ? "+" : ""}${c.topFactor.points.toFixed(1)}` : null },
     },
   }));
@@ -69,13 +70,13 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Portfolio overview</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Portfolio Overview</h1>
           <p className="text-sm text-slate-500">
             {periodLabel(f.period)} · {view.clients.length} client{view.clients.length === 1 ? "" : "s"}
             {f.industry ? ` · ${f.industry}` : ""} · compared with {prevLabel} and {yaLabel}
           </p>
         </div>
-        <p className="text-xs text-slate-500">Source: {ctx.source} · as of {new Date(ctx.asOf).toISOString().slice(0, 16).replace("T", " ")} UTC · <Link href="/data-reliability#definitions" className="underline">metric definitions</Link></p>
+        <p className="text-xs text-slate-500">Source: {humanize(ctx.source)} · as of {new Date(ctx.asOf).toISOString().slice(0, 16).replace("T", " ")} UTC · <Link href="/data-reliability#definitions" className="underline">Metric Definitions</Link></p>
       </div>
 
       {view.noDataClients.length > 0 && (
@@ -85,25 +86,25 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       )}
 
       <section aria-label="Key indicators" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Registered users" unit="pct" value={fmtNumber(kpis.current.registeredUsers)} vsPrev={delta(kpis.current.registeredUsers, kpis.previous.registeredUsers)} vsYear={delta(kpis.current.registeredUsers, kpis.yearAgo.registeredUsers)} />
-        <KpiCard label="Active users" unit="pct" value={fmtNumber(kpis.current.activeUsers)} vsPrev={delta(kpis.current.activeUsers, kpis.previous.activeUsers)} vsYear={delta(kpis.current.activeUsers, kpis.yearAgo.activeUsers)} />
-        <KpiCard label="Participation" value={fmtPct(kpis.current.participationRate)} hint="training_users / active_users" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
+        <KpiCard label="Registered Users" unit="pct" value={fmtNumber(kpis.current.registeredUsers)} vsPrev={delta(kpis.current.registeredUsers, kpis.previous.registeredUsers)} vsYear={delta(kpis.current.registeredUsers, kpis.yearAgo.registeredUsers)} />
+        <KpiCard label="Active Users" unit="pct" value={fmtNumber(kpis.current.activeUsers)} vsPrev={delta(kpis.current.activeUsers, kpis.previous.activeUsers)} vsYear={delta(kpis.current.activeUsers, kpis.yearAgo.activeUsers)} />
+        <KpiCard label="Participation" value={fmtPct(kpis.current.participationRate)} hint="Training users ÷ active users" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
         <KpiCard label="Knowledge" value={fmtPct(kpis.current.avgKnowledge)} hint="Average current knowledge" vsPrev={delta(kpis.current.avgKnowledge, kpis.previous.avgKnowledge)} vsYear={delta(kpis.current.avgKnowledge, kpis.yearAgo.avgKnowledge)} />
-        <KpiCard label="Engagement rate" value={fmtPct(kpis.current.engagementRate)} hint="active_users / registered_users" vsPrev={delta(kpis.current.engagementRate, kpis.previous.engagementRate)} vsYear={delta(kpis.current.engagementRate, kpis.yearAgo.engagementRate)} />
-        <KpiCard label="Retention rate" value={fmtPct(kpis.current.retentionRate)} hint="retained_users / previous_active_users" vsPrev={delta(kpis.current.retentionRate, kpis.previous.retentionRate)} vsYear={delta(kpis.current.retentionRate, kpis.yearAgo.retentionRate)} />
-        <KpiCard label="Feature adoption" value={fmtPct(kpis.current.featureAdoption)} hint="features_used / features_available" vsPrev={delta(kpis.current.featureAdoption, kpis.previous.featureAdoption)} vsYear={delta(kpis.current.featureAdoption, kpis.yearAgo.featureAdoption)} />
-        <KpiCard label="Health score" unit="abs" value={kpis.current.healthScore?.toFixed(0) ?? "—"} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
+        <KpiCard label="Engagement Rate" value={fmtPct(kpis.current.engagementRate)} hint="Active users ÷ registered users" vsPrev={delta(kpis.current.engagementRate, kpis.previous.engagementRate)} vsYear={delta(kpis.current.engagementRate, kpis.yearAgo.engagementRate)} />
+        <KpiCard label="Retention Rate" value={fmtPct(kpis.current.retentionRate)} hint="Retained users ÷ previous active users" vsPrev={delta(kpis.current.retentionRate, kpis.previous.retentionRate)} vsYear={delta(kpis.current.retentionRate, kpis.yearAgo.retentionRate)} />
+        <KpiCard label="Feature Adoption" value={fmtPct(kpis.current.featureAdoption)} hint="Features used ÷ features available" vsPrev={delta(kpis.current.featureAdoption, kpis.previous.featureAdoption)} vsYear={delta(kpis.current.featureAdoption, kpis.yearAgo.featureAdoption)} />
+        <KpiCard label="Health Score" unit="abs" value={kpis.current.healthScore?.toFixed(0) ?? "—"} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
       </section>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
-          <CardHeader title="Portfolio trend" subtitle="Quarterly participation, knowledge and engagement (ratio of sums across clients in scope)" />
+          <CardHeader title="Portfolio Trend" subtitle="Quarterly participation, knowledge and engagement (ratio of sums across clients in scope)" />
           <div className="p-4"><TrendChart data={view.trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Engagement" }]} /></div>
         </Card>
         <Card>
-          <CardHeader title="Account risk" subtitle="Clients by health band (Healthy 75+, Moderate 60+, At risk 45+)" />
+          <CardHeader title="Account Risk" subtitle="Clients by health band (Healthy 75+, Moderate 60+, At Risk 45+)" />
           <div className="space-y-2 p-4 text-sm">
-            {([["critical", "Critical"], ["at_risk", "At risk"], ["moderate", "Moderate"], ["healthy", "Healthy"]] as const).map(([k, l]) => (
+            {([["critical", "Critical"], ["at_risk", "At Risk"], ["moderate", "Moderate"], ["healthy", "Healthy"]] as const).map(([k, l]) => (
               <div key={k} className="flex items-center justify-between"><RiskBadge risk={k} /><span className="tabular-nums">{view.riskCounts[k]} <span className="text-xs text-slate-400">{l}</span></span></div>
             ))}
           </div>
@@ -123,7 +124,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       </div>
 
       <Card>
-        <CardHeader title="Industry benchmark" subtitle={`Participation by industry, ${periodLabel(f.period)} vs ${prevLabel}`} />
+        <CardHeader title="Industry Benchmark" subtitle={`Participation by industry, ${periodLabel(f.period)} vs ${prevLabel}`} />
         <div className="p-4"><CompareBars data={industryChart} xKey="industry" series={[{ key: periodLabel(f.period), label: periodLabel(f.period) }, { key: prevLabel, label: prevLabel, color: "#1D2B43" }]} /></div>
       </Card>
 
@@ -135,15 +136,15 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
             { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Participation", align: "right" },
             { key: "change", header: `Δ vs ${prevLabel}`, align: "right" }, { key: "knowledge", header: "Knowledge", align: "right" }, { key: "retention", header: "Retention", align: "right" },
             { key: "adoption", header: "Adoption", align: "right" }, { key: "health", header: "Health", align: "right" },
-            { key: "risk", header: "Risk" }, { key: "driver", header: "Main driver (pts)", hint: "Factor with the largest weighted change in health score" },
+            { key: "risk", header: "Risk" }, { key: "driver", header: "Main Driver (pts)", hint: "Factor with the largest weighted change in health score" },
           ]}
           rows={rows} />
       </Card>
 
       <Card>
-        <CardHeader title="CSM books of business" subtitle="Clients in scope grouped by owner (CSM ownership is mock data in development)" />
+        <CardHeader title="CSM Books of Business" subtitle="Clients in scope grouped by owner (CSM ownership is mock data in development)" />
         <DataTable searchable={false} canExport={canExport} exportName={`csm-books-${periodKey(f.period)}`}
-          columns={[{ key: "csm", header: "CSM" }, { key: "clients", header: "Clients", align: "right" }, { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Participation", align: "right" }, { key: "health", header: "Health", align: "right" }, { key: "atRisk", header: "At risk / critical", align: "right" }]}
+          columns={[{ key: "csm", header: "CSM" }, { key: "clients", header: "Clients", align: "right" }, { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Participation", align: "right" }, { key: "health", header: "Health", align: "right" }, { key: "atRisk", header: "At Risk / Critical", align: "right" }]}
           rows={csmRows} />
       </Card>
     </div>

@@ -48,14 +48,14 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
 
   const columns = [
     { key: "topic", header: "Topic" },
-    { key: "groups", header: "Target groups", align: "right" as const },
+    { key: "groups", header: "Target Groups", align: "right" as const },
     { key: "modules", header: "Modules", align: "right" as const },
     { key: "l1", header: "L1", align: "right" as const },
     { key: "l2", header: "L2", align: "right" as const },
     { key: "l3", header: "L3", align: "right" as const },
-    { key: "total", header: "Total questions", align: "right" as const },
+    { key: "total", header: "Total Questions", align: "right" as const },
     { key: "saturation", header: "Saturation", align: "right" as const, hint: "Released questions against a 12-question target (provisional)" },
-    ...(internal ? [{ key: "flag", header: "Content flag" }, { key: "priority", header: "Priority", align: "right" as const, hint: "1 = review first, 7 = no issue" }] : []),
+    ...(internal ? [{ key: "flag", header: "Content Flag" }, { key: "priority", header: "Priority", align: "right" as const, hint: "1 = review first, 7 = no issue" }] : []),
   ];
 
   return (
@@ -72,9 +72,9 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[20rem_1fr]">
-        <TreeSlicer title="Topic selection" nodes={topics} selected={sel} onChange={setSel} />
+        <TreeSlicer title="Topic Selection" nodes={topics} selected={sel} onChange={setSel} />
         <Card className={cn("min-w-0")}>
-          <CardHeader title="Topic detail" badge={<ScopeTag scope="snapshot" />} subtitle={internal ? "Content flags and priority are shown to Biz Group staff only" : "Questions per difficulty level and coverage"} />
+          <CardHeader title="Topic Detail" badge={<ScopeTag scope="snapshot" />} subtitle={internal ? "Content flags and priority are shown to Biz Group staff only" : "Questions per difficulty level and coverage"} />
           <DataTable canExport={canExport} exportName="topic-coverage" columns={columns} rows={rows} pageSize={12} />
         </Card>
       </div>

@@ -55,9 +55,9 @@ export function KnowledgeView({ heavy, knowledge, frequency, canExport }: {
       </Suspense>
 
       <Card>
-        <CardHeader title="Knowledge by learning frequency" badge={<ScopeTag scope="snapshot" />} subtitle="Learners who train more often know more and gain more" />
+        <CardHeader title="Knowledge by Learning Frequency" badge={<ScopeTag scope="snapshot" />} subtitle="Learners who train more often know more and gain more" />
         <DataTable searchable={false} canExport={canExport} exportName="knowledge-by-frequency"
-          columns={[{ key: "bucket", header: "Frequency" }, { key: "users", header: "Frequency user %", align: "right" }, { key: "current", header: "Current knowledge", align: "right" }, { key: "lift", header: "Knowledge lift", align: "right" }]}
+          columns={[{ key: "bucket", header: "Frequency" }, { key: "users", header: "Frequency User %", align: "right" }, { key: "current", header: "Current Knowledge", align: "right" }, { key: "lift", header: "Knowledge Lift", align: "right" }]}
           rows={rows} />
       </Card>
     </div>
@@ -79,10 +79,10 @@ function TopicExplorer({ heavy, sel, onChange }: { heavy: Promise<HeavyTopics>; 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
       <Card>
-        <CardHeader title="Knowledge growth by topic" badge={<ScopeTag scope="snapshot" />} subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} · current vs baseline`} />
+        <CardHeader title="Knowledge Growth by Topic" badge={<ScopeTag scope="snapshot" />} subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} · current vs baseline`} />
         <div className="p-4">
           {bars.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No topics selected.</p> : (
-            <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current knowledge", color: 2 }, { key: "baseline", label: "Baseline knowledge", color: 5 }]} />
+            <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current Knowledge", color: 2 }, { key: "baseline", label: "Baseline Knowledge", color: 5 }]} />
           )}
         </div>
       </Card>

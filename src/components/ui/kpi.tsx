@@ -4,9 +4,9 @@ import { cn, fmtNumber, fmtPct } from "@/lib/utils";
 import type { Delta } from "@/server/metrics/calculations";
 
 export function DeltaChip({ d, unit = "pts", invert = false }: { d: Delta; unit?: "pts" | "pct" | "abs"; invert?: boolean }) {
-  if (d.abs == null) return <span className="text-xs text-slate-400">n/a</span>;
+  if (d.abs == null) return <span className="text-xs text-slate-400">N/A</span>;
   const val = unit === "pts" ? d.abs * 100 : unit === "abs" ? d.abs : d.pct != null ? d.pct * 100 : null;
-  if (val == null) return <span className="text-xs text-slate-400">n/a</span>;
+  if (val == null) return <span className="text-xs text-slate-400">N/A</span>;
   const flat = Math.abs(val) < 0.05;
   const good = invert ? val < 0 : val > 0;
   const Icon = flat ? Minus : val > 0 ? ArrowUpRight : ArrowDownRight;

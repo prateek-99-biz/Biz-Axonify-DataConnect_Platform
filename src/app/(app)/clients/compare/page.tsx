@@ -47,7 +47,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="space-y-4">
-      <div><h1 className="text-2xl font-bold tracking-tight">Compare clients and quarters</h1><p className="text-sm text-slate-500">Pick up to 5 clients; add a second quarter to compare periods. Primary period follows the global filter ({periodLabel(ctx.filters.period)}).</p></div>
+      <div><h1 className="text-2xl font-bold tracking-tight">Compare Clients and Quarters</h1><p className="text-sm text-slate-500">Pick up to 5 clients; add a second quarter to compare periods. Primary period follows the global filter ({periodLabel(ctx.filters.period)}).</p></div>
       <Card>
         <form method="get" className="space-y-3 p-4">
           <input type="hidden" name="period" value={periodKey(ctx.filters.period)} />
@@ -65,10 +65,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       {selected.length < 2 ? <Card><EmptyState title="Select at least two clients">Tick two or more clients above and press Compare.</EmptyState></Card> : (
         <>
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card><CardHeader title="Participation over time" /><div className="p-4"><TrendChart data={trend} series={selected.map((c) => ({ key: c.id, label: c.name }))} /></div></Card>
-            <Card><CardHeader title="Health score" subtitle={periods.join(" vs ")} /><div className="p-4"><CompareBars xKey="client" format="number" data={bars} series={periods.map((p) => ({ key: p, label: p }))} /></div></Card>
+            <Card><CardHeader title="Participation over Time" /><div className="p-4"><TrendChart data={trend} series={selected.map((c) => ({ key: c.id, label: c.name }))} /></div></Card>
+            <Card><CardHeader title="Health Score" subtitle={periods.join(" vs ")} /><div className="p-4"><CompareBars xKey="client" format="number" data={bars} series={periods.map((p) => ({ key: p, label: p }))} /></div></Card>
           </div>
-          <Card><CardHeader title="Side by side" />
+          <Card><CardHeader title="Side by Side" />
             <DataTable searchable={false} canExport={can(user.role, "export:csv")} exportName="client-comparison"
               columns={[{ key: "client", header: "Client" }, { key: "period", header: "Period" }, { key: "users", header: "Users", align: "right" }, { key: "participation", header: "Participation", align: "right" }, { key: "knowledge", header: "Knowledge", align: "right" }, { key: "engagement", header: "Engagement", align: "right" }, { key: "health", header: "Health", align: "right" }]}
               rows={tableRows} /></Card>

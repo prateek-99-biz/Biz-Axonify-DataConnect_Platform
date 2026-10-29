@@ -21,16 +21,16 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
     <div className="space-y-6">
       <PageHeader icon={Package} title="Content Delivery" subtitle="How much content is being assigned to people and groups?" />
       <KpiStrip cols={6}>
-        <KpiTile label="Avg Question Pool" metric="questionPool" scope="snapshot" value={fmtNumber(data.delivery.avgQuestionPool, 0)} hint="Released questions per assigned topic" />
-        <KpiTile label="Est. Months to Graduate" metric="monthsToGraduate" scope="snapshot" value={dash(data.delivery.estimatedMonthsToGraduate)} />
-        <KpiTile label="Avg Programs / Group" scope="snapshot" value={dash(avg((g) => g.programs))} hint="Active groups" />
-        <KpiTile label="Max Programs / Group" scope="snapshot" value={dash(max((g) => g.programs), 0)} />
-        <KpiTile label="Avg Reinforcement / Group" scope="snapshot" value={dash(avg((g) => g.reinforcementTopics))} hint="Active groups" />
-        <KpiTile label="Max Reinforcement / Group" scope="snapshot" value={dash(max((g) => g.reinforcementTopics), 0)} />
+        <KpiTile label="Average Question Pool" metric="questionPool" scope="snapshot" value={fmtNumber(data.delivery.avgQuestionPool, 0)} hint="Released questions per assigned topic" />
+        <KpiTile label="Estimated Months to Graduate" metric="monthsToGraduate" scope="snapshot" value={dash(data.delivery.estimatedMonthsToGraduate)} />
+        <KpiTile label="Average Programs per Group" scope="snapshot" value={dash(avg((g) => g.programs))} hint="Active groups" />
+        <KpiTile label="Maximum Programs per Group" scope="snapshot" value={dash(max((g) => g.programs), 0)} />
+        <KpiTile label="Average Reinforcement per Group" scope="snapshot" value={dash(avg((g) => g.reinforcementTopics))} hint="Active groups" />
+        <KpiTile label="Maximum Reinforcement per Group" scope="snapshot" value={dash(max((g) => g.reinforcementTopics), 0)} />
       </KpiStrip>
       {internal && empty && <InternalNote>Every active group shows 0 programs and 0 reinforcement topics. The source report had the same gap, so check the assignment data before presenting this page.</InternalNote>}
       <Card>
-        <CardHeader title="Training groups" badge={<ScopeTag scope="snapshot" />} subtitle="Programs and reinforcement topics assigned per group" />
+        <CardHeader title="Training Groups" badge={<ScopeTag scope="snapshot" />} subtitle="Programs and reinforcement topics assigned per group" />
         <DeliveryTable groups={packRows(data.groups)} canExport={canExport} />
       </Card>
     </div>

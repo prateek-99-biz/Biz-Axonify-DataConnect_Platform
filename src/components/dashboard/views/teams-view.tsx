@@ -10,15 +10,16 @@ import { teamRows, type Range, type TeamRow, type TeamStatus } from "@/server/da
 import type { TeamNode } from "@/server/dashboard/types";
 import { unpackTeamMonths, type PackedTeamMonths } from "@/server/dashboard/sections";
 import { fmtNumber, fmtPct } from "@/lib/utils";
+import { titleCase } from "@/lib/labels";
 
 const STATUS_BG: Record<TeamStatus, string> = { High: "bg-brand text-navy", Medium: "bg-amber-400 text-navy", Low: "bg-red-600 text-white" };
 const STATUS_DOT: Record<TeamStatus, string> = { High: "bg-brand", Medium: "bg-amber-400", Low: "bg-red-600" };
 
 const COLS = [
   { key: "team", header: "Team" },
-  { key: "participation", header: "Team training participation", align: "right" as const },
-  { key: "frequency", header: "Team frequency", align: "right" as const },
-  { key: "users", header: "Team active users", align: "right" as const },
+  { key: "participation", header: "Team Training Participation", align: "right" as const },
+  { key: "frequency", header: "Team Frequency", align: "right" as const },
+  { key: "users", header: "Team Active Users", align: "right" as const },
   { key: "status", header: "Status" },
 ];
 
@@ -30,7 +31,7 @@ const toRow = (r: TeamRow): TableRow => ({
     frequency: { v: r.frequency, node: r.frequency == null ? "\u2014" : r.frequency.toFixed(2) },
     users: { v: r.activeUsers, node: fmtNumber(r.activeUsers) },
     status: { v: r.status, node: <StatusDot status={r.status} /> },
-    trend: { v: r.trend, node: <TrendPill trend={r.trend} /> },
+    trend: { v: titleCase(r.trend), node: <TrendPill trend={r.trend} /> },
   },
 });
 
@@ -54,7 +55,7 @@ export function TeamsView({ teams, packed, range, canExport, internal }: { teams
 
   return (
     <div className="grid gap-4 xl:grid-cols-[16rem_1fr]">
-      <ChecklistSlicer title="Team name" options={names} selected={sel} onChange={setSel} />
+      <ChecklistSlicer title="Team Name" options={names} selected={sel} onChange={setSel} />
       <div className="space-y-4">
         <Card>
           <CardHeader title="Team Performance Distribution" badge={<ScopeTag scope="month" />} subtitle={`${rows.length} team${rows.length === 1 ? "" : "s"} \u00b7 status blends participation (\u2265 75% = full score) and frequency (\u2265 6x = full score)`} />
@@ -84,12 +85,12 @@ export function TeamsView({ teams, packed, range, canExport, internal }: { teams
         </div>
 
         <div className="flex justify-end">
-          <Button variant="primary" onClick={() => setAll((v) => !v)} aria-expanded={all}>{all ? "Hide details" : "More details"} <ArrowRight className="h-4 w-4" aria-hidden /></Button>
+          <Button variant="primary" onClick={() => setAll((v) => !v)} aria-expanded={all}>{all ? "Hide Details" : "More Details"} <ArrowRight className="h-4 w-4" aria-hidden /></Button>
         </div>
 
         {all && (
           <Card>
-            <CardHeader title="All teams" badge={<ScopeTag scope="month" />} subtitle={internal ? "Ranked by participation \u00b7 internal export available" : "Ranked by participation"} />
+            <CardHeader title="All Teams" badge={<ScopeTag scope="month" />} subtitle={internal ? "Ranked by participation \u00b7 internal export available" : "Ranked by participation"} />
             <DataTable canExport={canExport} exportName="team-performance" columns={detailCols} rows={ranked.map(toRow)} pageSize={15} />
           </Card>
         )}
