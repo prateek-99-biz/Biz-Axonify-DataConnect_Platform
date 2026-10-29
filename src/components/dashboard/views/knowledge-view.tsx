@@ -1,34 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, use, useMemo, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { DataBar, KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
+import { DataBar, KpiStrip, KpiTile, ScopeTag, SectionSkeleton } from "@/components/dashboard/primitives";
 import { HBars } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
 import { descendants, weightedAvg } from "@/server/dashboard/calc";
-import type { FrequencyBucket, KnowledgeSummary, TopicNode, TopicStat } from "@/server/dashboard/types";
-import { unpackRows, type PackedRows } from "@/server/dashboard/sections";
+import type { FrequencyBucket, KnowledgeSummary } from "@/server/dashboard/types";
 import { fmtNumber, fmtPct } from "@/lib/utils";
+import { topicsOf, type HeavyTopics } from "./heavy";
 
-export function KnowledgeView({ topics: topicsP, stats: statsP, knowledge, frequency, canExport }: {
-  topics: PackedRows<TopicNode>; stats: PackedRows<TopicStat>; knowledge: KnowledgeSummary; frequency: FrequencyBucket[]; canExport: boolean;
+/**
+ * The tiles and the frequency table come from the account-level summary in the first response. The per-topic chart and
+ * the topic tree need the topic rows, which follow as a promise; a selection can only be made once the tree is on screen.
+ */
+export function KnowledgeView({ heavy, knowledge, frequency, canExport }: {
+  heavy: Promise<HeavyTopics>; knowledge: KnowledgeSummary; frequency: FrequencyBucket[]; canExport: boolean;
 }) {
-  const topics = useMemo(() => unpackRows(topicsP), [topicsP]);
-  const stats = useMemo(() => unpackRows(statsP), [statsP]);
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const keep = useMemo(() => (sel.size ? descendants(topics, sel) : null), [topics, sel]);
-  const byId = useMemo(() => new Map(topics.map((t) => [t.id, t])), [topics]);
+  const loaded = sel.size ? topicsOf(use(heavy)) : null;
 
-  const scoped = useMemo(() => stats.filter((s) => !keep || keep.has(s.topicId)), [stats, keep]);
-  const baseline = sel.size ? weightedAvg(scoped, (t) => t.baseline) : knowledge.baseline;
-  const current = sel.size ? weightedAvg(scoped, (t) => t.current) : knowledge.current;
-  const completion = sel.size ? weightedAvg(scoped, (t) => t.completion) : knowledge.topicCompletion;
-
-  const bars = scoped
-    .filter((s) => s.current != null && s.baseline != null)
-    .map((s) => ({ name: byId.get(s.topicId)?.name ?? s.topicId, current: s.current as number, baseline: s.baseline as number }))
-    .sort((a, b) => b.current - a.current);
+  const scoped = useMemo(() => {
+    if (!loaded) return [];
+    const keep = descendants(loaded.topics, sel);
+    return loaded.stats.filter((s) => keep.has(s.topicId));
+  }, [loaded, sel]);
+  const baseline = loaded ? weightedAvg(scoped, (t) => t.baseline) : knowledge.baseline;
+  const current = loaded ? weightedAvg(scoped, (t) => t.current) : knowledge.current;
+  const completion = loaded ? weightedAvg(scoped, (t) => t.completion) : knowledge.topicCompletion;
 
   const rows: TableRow[] = frequency.map((f) => ({
     id: f.bucket,
@@ -50,17 +50,9 @@ export function KnowledgeView({ topics: topicsP, stats: statsP, knowledge, frequ
         <KpiTile label="Topic Completion (Graduate)" metric="topicCompletion" scope="snapshot" value={fmtPct(completion, 0)} hint="Learner-topic records at Graduate" />
       </KpiStrip>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
-        <Card>
-          <CardHeader title="Knowledge growth by topic" badge={<ScopeTag scope="snapshot" />} subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} \u00b7 current vs baseline`} />
-          <div className="p-4">
-            {bars.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No topics selected.</p> : (
-              <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current knowledge", color: 2 }, { key: "baseline", label: "Baseline knowledge", color: 5 }]} />
-            )}
-          </div>
-        </Card>
-        <TreeSlicer title="Topics" nodes={topics} selected={sel} onChange={setSel} />
-      </div>
+      <Suspense fallback={<div className="grid gap-4 xl:grid-cols-[1fr_22rem]"><SectionSkeleton className="h-96" /><SectionSkeleton className="h-96" /></div>}>
+        <TopicExplorer heavy={heavy} sel={sel} onChange={setSel} />
+      </Suspense>
 
       <Card>
         <CardHeader title="Knowledge by learning frequency" badge={<ScopeTag scope="snapshot" />} subtitle="Learners who train more often know more and gain more" />
@@ -68,6 +60,33 @@ export function KnowledgeView({ topics: topicsP, stats: statsP, knowledge, frequ
           columns={[{ key: "bucket", header: "Frequency" }, { key: "users", header: "Frequency user %", align: "right" }, { key: "current", header: "Current knowledge", align: "right" }, { key: "lift", header: "Knowledge lift", align: "right" }]}
           rows={rows} />
       </Card>
+    </div>
+  );
+}
+
+function TopicExplorer({ heavy, sel, onChange }: { heavy: Promise<HeavyTopics>; sel: Set<string>; onChange: (s: Set<string>) => void }) {
+  const { topics, stats } = topicsOf(use(heavy));
+  const byId = useMemo(() => new Map(topics.map((t) => [t.id, t])), [topics]);
+  const bars = useMemo(() => {
+    const keep = sel.size ? descendants(topics, sel) : null;
+    return stats
+      .filter((s) => !keep || keep.has(s.topicId))
+      .filter((s) => s.current != null && s.baseline != null)
+      .map((s) => ({ name: byId.get(s.topicId)?.name ?? s.topicId, current: s.current as number, baseline: s.baseline as number }))
+      .sort((a, b) => b.current - a.current);
+  }, [topics, stats, byId, sel]);
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
+      <Card>
+        <CardHeader title="Knowledge growth by topic" badge={<ScopeTag scope="snapshot" />} subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} · current vs baseline`} />
+        <div className="p-4">
+          {bars.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No topics selected.</p> : (
+            <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current knowledge", color: 2 }, { key: "baseline", label: "Baseline knowledge", color: 5 }]} />
+          )}
+        </div>
+      </Card>
+      <TreeSlicer title="Topics" nodes={topics} selected={sel} onChange={onChange} />
     </div>
   );
 }

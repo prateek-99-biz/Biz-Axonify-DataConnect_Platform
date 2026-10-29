@@ -43,3 +43,64 @@ describe("cached", () => {
     expect(load).toHaveBeenCalledTimes(3);
   });
 });
+
+describe("cached with staleMs", () => {
+  it("serves the old value at once after the TTL and refreshes in the background", async () => {
+    vi.useFakeTimers();
+    let n = 0;
+    const load = vi.fn(async () => ++n);
+    expect(await cached("s", 1000, load, 10_000)).toBe(1);
+    vi.advanceTimersByTime(1500);
+    expect(await cached("s", 1000, load, 10_000)).toBe(1);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(await cached("s", 1000, load, 10_000)).toBe(2);
+  });
+
+  it("starts only one background refresh for concurrent callers", async () => {
+    vi.useFakeTimers();
+    const load = vi.fn(() => new Promise<number>((r) => setTimeout(() => r(Date.now()), 50)));
+    const first = cached("t", 1000, load, 10_000);
+    await vi.advanceTimersByTimeAsync(50);
+    await first;
+    vi.advanceTimersByTime(1500);
+    const [a, b] = await Promise.all([cached("t", 1000, load, 10_000), cached("t", 1000, load, 10_000)]);
+    expect(a).toBe(b);
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("makes callers wait for fresh data once the entry is older than staleMs", async () => {
+    vi.useFakeTimers();
+    let n = 0;
+    const load = vi.fn(async () => ++n);
+    await cached("u", 1000, load, 5000);
+    vi.advanceTimersByTime(6000);
+    expect(await cached("u", 1000, load, 5000)).toBe(2);
+  });
+
+  it("keeps the old copy when a background refresh fails", async () => {
+    vi.useFakeTimers();
+    const load = vi.fn().mockResolvedValueOnce("old").mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce("new");
+    expect(await cached("v", 1000, load, 10_000)).toBe("old");
+    vi.advanceTimersByTime(1500);
+    expect(await cached("v", 1000, load, 10_000)).toBe("old");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await cached("v", 1000, load, 10_000)).toBe("old");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await cached("v", 1000, load, 10_000)).toBe("new");
+  });
+});
+
+describe("clearCache during a load", () => {
+  it("does not keep a result that was loaded before the clear", async () => {
+    let release!: (v: string) => void;
+    const slow = vi.fn(() => new Promise<string>((r) => { release = r; }));
+    const first = cached("w", 1000, slow);
+    clearCache("w");
+    release("before-sync");
+    expect(await first).toBe("before-sync");
+    const fresh = vi.fn(async () => "after-sync");
+    expect(await cached("w", 1000, fresh)).toBe("after-sync");
+    expect(fresh).toHaveBeenCalledTimes(1);
+  });
+});

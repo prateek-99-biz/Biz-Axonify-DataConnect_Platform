@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/server/auth";
 import { can, ROLE_LABEL, type Permission } from "@/server/auth/rbac";
-import { db } from "@/server/db";
+import { ackedAlertKeys } from "@/server/services/alert-acks";
 import { loadContext } from "@/server/services/context";
 import { buildPortfolio, deriveAlerts } from "@/server/services/portfolio";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -25,13 +25,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Independent queries: start both so the layout waits for one round trip, not two.
   const [loaded, ackRows] = await Promise.all([
     loadContext({}),
-    db.alertAck.findMany({ where: { userId: user.id }, select: { alertKey: true } }),
+    ackedAlertKeys(user.id),
   ]);
   let notifications: NotificationItem[] = [];
   if (loaded.ok) {
     const { ctx } = loaded;
     const view = buildPortfolio(ctx.clients, ctx.rows, { ...ctx.filters, client: null, industry: null });
-    const acked = new Set(ackRows.map((a) => a.alertKey));
+    const acked = new Set(ackRows);
     notifications = deriveAlerts(view, ctx.filters.period).filter((a) => !acked.has(a.key));
   }
 

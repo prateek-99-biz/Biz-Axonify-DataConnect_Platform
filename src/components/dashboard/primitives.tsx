@@ -53,6 +53,21 @@ export function KpiTile({ label, value, hint, scope, scopeLabel, metric }: { lab
   );
 }
 
+/** Placeholder for a section that is still on its way. */
+export function SectionSkeleton({ className }: { className?: string }) {
+  return <div className={cn("glass animate-pulse", className)} aria-busy="true" aria-label="Loading" />;
+}
+
+/** Stand-in for a whole page body (tiles and a large block) while its data streams in. */
+export function BodySkeleton() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Loading">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{[0, 1, 2, 3, 4].map((i) => <SectionSkeleton key={i} className="h-24" />)}</div>
+      <SectionSkeleton className="h-96" />
+    </div>
+  );
+}
+
 export function KpiStrip({ children, cols = 5 }: { children: ReactNode; cols?: 3 | 4 | 5 | 6 | 8 }) {
   const map = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5", 6: "lg:grid-cols-6", 8: "lg:grid-cols-4 xl:grid-cols-8" } as const;
   return <section className={cn("grid gap-4 sm:grid-cols-2", map[cols])}>{children}</section>;

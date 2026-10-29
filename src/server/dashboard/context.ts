@@ -7,7 +7,7 @@ import { getAdapters } from "@/server/data";
 import type { SourceKind } from "@/server/data/ports";
 import { getEnv } from "@/server/env";
 import { db } from "@/server/db";
-import { cached, SNAPSHOT_TTL_MS } from "@/server/cache";
+import { cached, SNAPSHOT_STALE_MS, SNAPSHOT_TTL_MS } from "@/server/cache";
 import type { SearchParams } from "@/server/services/context";
 import { resolveRange, type Range } from "./calc";
 import { mockDashboard } from "./mock";
@@ -27,11 +27,11 @@ export function carryQuery(sp: SearchParams) {
 /** The layout and the page each resolve the same session, client list and snapshot in one request; do each once. */
 const getSession = cache(() => auth());
 const getClients = cache(() => getAdapters().analytics.listClients());
-const getCore = cache((clientId: string) => cached(`snap:core:${clientId}`, SNAPSHOT_TTL_MS, () => db.syncDashboard.findUnique({ where: { clientId } })));
+const getCore = cache((clientId: string) => cached(`snap:core:${clientId}`, SNAPSHOT_TTL_MS, () => db.syncDashboard.findUnique({ where: { clientId } }), SNAPSHOT_STALE_MS));
 const getParts = cache(async (clientId: string, sections: string) => {
   const wanted = sections ? sections.split(",") : [];
   // One cache entry per section, so a page that needs topics does not wait on, or evict, the team rows.
-  const rows = await Promise.all(wanted.map((section) => cached(`snap:part:${clientId}:${section}`, SNAPSHOT_TTL_MS, () => db.syncDashboardPart.findUnique({ where: { clientId_section: { clientId, section } } }))));
+  const rows = await Promise.all(wanted.map((section) => cached(`snap:part:${clientId}:${section}`, SNAPSHOT_TTL_MS, () => db.syncDashboardPart.findUnique({ where: { clientId_section: { clientId, section } } }), SNAPSHOT_STALE_MS)));
   return Object.fromEntries(rows.flatMap((r) => (r ? [[r.section, r.payload as Record<string, unknown>]] : []))) as Partial<Record<Section, Record<string, unknown>>>;
 });
 
