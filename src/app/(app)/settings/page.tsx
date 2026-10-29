@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { requirePagePermission, requirePermission } from "@/server/auth/guard";
 import { parseRole, ROLE_LABEL } from "@/server/auth/rbac";
 import { db } from "@/server/db";
+import { clearCache } from "@/server/cache";
 import { getEnv } from "@/server/env";
 import { supabaseConfigured } from "@/lib/supabase/server";
 import { Badge, Button, Card, CardHeader, Select } from "@/components/ui/primitives";
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
     // Prevent an admin from locking themselves out.
     if (id === actor.id && (role !== "ADMIN" || !active)) return;
     await db.appUser.update({ where: { id }, data: { role, active, clientId } });
+    clearCache("user:");
     revalidatePath("/settings");
   }
 

@@ -6,6 +6,7 @@ import { db } from "@/server/db";
 import { loadContext } from "@/server/services/context";
 import { buildPortfolio, deriveAlerts } from "@/server/services/portfolio";
 import { Sidebar } from "@/components/shell/sidebar";
+import { MobileNav } from "@/components/shell/mobile-nav";
 import { Breadcrumbs, GlobalSearch, NotificationCentre, ProfileMenu, type NotificationItem } from "@/components/shell/topbar";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { Badge } from "@/components/ui/primitives";
@@ -21,12 +22,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (user.role === "CLIENT") redirect("/qbr");
   const allowed = ALL_PERMS.filter((p) => can(user.role, p));
 
-  const loaded = await loadContext({});
+  // Independent queries: start both so the layout waits for one round trip, not two.
+  const [loaded, ackRows] = await Promise.all([
+    loadContext({}),
+    db.alertAck.findMany({ where: { userId: user.id }, select: { alertKey: true } }),
+  ]);
   let notifications: NotificationItem[] = [];
   if (loaded.ok) {
     const { ctx } = loaded;
     const view = buildPortfolio(ctx.clients, ctx.rows, { ...ctx.filters, client: null, industry: null });
-    const acked = new Set((await db.alertAck.findMany({ where: { userId: user.id }, select: { alertKey: true } })).map((a) => a.alertKey));
+    const acked = new Set(ackRows.map((a) => a.alertKey));
     notifications = deriveAlerts(view, ctx.filters.period).filter((a) => !acked.has(a.key));
   }
 
@@ -53,6 +58,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <NotificationCentre items={notifications} canAck />
           <ProfileMenu name={user.name ?? user.email} email={user.email} role={ROLE_LABEL[user.role]} signOutAction={doSignOut} />
         </header>
+        <Suspense fallback={null}>
+          <MobileNav allowed={allowed} />
+        </Suspense>
         {loaded.ok && (
           <Suspense fallback={<div className="glass h-[52px] shrink-0" />}>
             <FilterBar

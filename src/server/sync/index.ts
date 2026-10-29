@@ -4,6 +4,7 @@
  * A failed sync never touches existing data.
  */
 import { db } from "@/server/db";
+import { clearCache } from "@/server/cache";
 import type { Prisma } from "@prisma/client";
 import { bigqueryAnalytics } from "@/server/data/adapters/bigquery";
 import { bqConfig, fetchDashboards } from "@/server/dashboard/bigquery/load";
@@ -78,6 +79,7 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
       }
     }, { timeout: 120_000 });
 
+    clearCache("snap:");
     const finishedAt = new Date();
     await db.syncRun.update({ where: { id: run.id }, data: { status: "ok", finishedAt, clientCount: clients.data.length, rowCount: rows.data.length, message: skipped ? `${skipped} client dashboard(s) had no data; their previous snapshot was kept.` : null } });
     return { ok: true, clients: clients.data.length, rows: rows.data.length, finishedAt: finishedAt.toISOString() };

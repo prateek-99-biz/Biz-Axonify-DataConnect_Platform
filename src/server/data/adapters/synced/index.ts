@@ -3,13 +3,16 @@
  * pages never hit BigQuery. Capabilities not covered by the summaries return `unavailable` honestly.
  */
 import { db } from "@/server/db";
+import { cached, SNAPSHOT_TTL_MS } from "@/server/cache";
 import type { AnalyticsPort, ClientPeriodRow, ClientSummary, Result } from "../../ports";
 
 const unavailable = (reason: string): Result<never> => ({ status: "unavailable", reason, source: "synced" });
 
-async function lastSync(): Promise<Date | null> {
-  const run = await db.syncRun.findFirst({ where: { status: "ok" }, orderBy: { finishedAt: "desc" } });
-  return run?.finishedAt ?? null;
+function lastSync(): Promise<Date | null> {
+  return cached("snap:lastSync", SNAPSHOT_TTL_MS, async () => {
+    const run = await db.syncRun.findFirst({ where: { status: "ok" }, orderBy: { finishedAt: "desc" } });
+    return run?.finishedAt ?? null;
+  });
 }
 
 const NO_SYNC = "No data has been synced yet. An admin can press “Refresh data” once the BigQuery mapping is configured.";
@@ -18,17 +21,16 @@ export const syncedAnalytics: AnalyticsPort = {
   kind: "synced",
 
   async listClients() {
-    const at = await lastSync();
+    // Independent queries: start both, so this costs one round trip instead of two.
+    const [at, rows] = await Promise.all([lastSync(), cached("snap:clients", SNAPSHOT_TTL_MS, () => db.syncClient.findMany({ orderBy: { name: "asc" } }))]);
     if (!at) return unavailable(NO_SYNC);
-    const rows = await db.syncClient.findMany({ orderBy: { name: "asc" } });
     const data: ClientSummary[] = rows.map((r) => ({ ...r }));
     return { status: "ok", data, source: "synced", asOf: at.toISOString() };
   },
 
   async getClientPeriodRows(clientIds) {
-    const at = await lastSync();
+    const [at, rows] = await Promise.all([lastSync(), cached(`snap:periods:${clientIds ? [...clientIds].sort().join(",") : "*"}`, SNAPSHOT_TTL_MS, () => db.syncClientPeriod.findMany({ where: clientIds ? { clientId: { in: clientIds } } : undefined }))]);
     if (!at) return unavailable(NO_SYNC);
-    const rows = await db.syncClientPeriod.findMany({ where: clientIds ? { clientId: { in: clientIds } } : undefined });
     return { status: "ok", data: rows as ClientPeriodRow[], source: "synced", asOf: at.toISOString() };
   },
 

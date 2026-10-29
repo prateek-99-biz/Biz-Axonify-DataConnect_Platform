@@ -133,3 +133,20 @@ Source: AdminZone > Reports > Participation and Knowledge Summary, compared with
 - Rounding: stored team frequency and time are rounded to 4 decimals.
 - [x] Existing snapshots were converted in place from Postgres (the BigQuery login had expired, `invalid_rapt`). The next `npm run sync` writes the split layout directly; that write path is covered by unit tests but has not run against BigQuery yet. Re-run `gcloud auth application-default login` first.
 - [ ] Not done: `reconcile --snapshot` against BigQuery (needs the same login). Topics and Knowledge could shrink further by rounding score floats.
+
+## J. Full visual test (2026-10-29)
+Dev server, Chrome pane. All 19 routes at 1440 px light; QBR Home, Engagement, Matrix, Delivery and Portfolio in dark; every page at 375 px; plus an automatic scan per page for error screens, NaN/undefined text and horizontal overflow. Large clients (jlearning, chalhoubgroup) used for the heavy pages.
+- [x] Clean: no error screens, no console errors, no bad values, no page overflow, charts and tables render, scope tags and KPI tooltips present, hover sidebar works.
+- [x] Fixed: the main app had no navigation on a phone (sidebar hidden below 768 px, nothing replaced it). Added `MobileNav` ([src/components/shell/mobile-nav.tsx](src/components/shell/mobile-nav.tsx)), same pages and filter carry-over as the sidebar.
+- [x] Fixed: a long failed-sync message (BigQuery error JSON) ran off the screen on Data reliability at phone width.
+- [ ] Known and unchanged: topic names show as "Topic TE…" for topics without scores (A5); Content shows "2026-10-22" while Topics shows "22 Oct 2026"; Client directory shows industry "Unknown", no CSM and "No Salesforce account" for every client (mapping not filled in).
+- Not covered: tablet widths, the CLIENT role's own view (only the admin was used), keyboard-only use, and a production build (dev login is off there).
+
+## K. Default role and speed, round 2 (2026-10-29)
+- [x] **New users no longer get staff access.** `seedRole` in [src/server/auth/rbac.ts](src/server/auth/rbac.ts): listed admins and other `@bizgroup.ae` emails get ADMIN / MEMBER only when Supabase has confirmed the email; everyone else starts as an unlinked CLIENT who sees only "not linked to a client yet" until an admin links them in Settings. Existing profiles keep their stored role (only the two dev users exist today). Tests in `rbac.test.ts`.
+- [x] **In-process cache** ([src/server/cache.ts](src/server/cache.ts)): client list, period rows, last-sync time, dashboard core and sections (60 s) and user profiles (15 s). Cleared after a sync and after a role change in Settings; concurrent requests share one load; failures are not cached. Other server instances and the CLI sync pick up changes when entries expire.
+- [x] Independent queries now run together: last-sync + data in the synced adapter, alert acknowledgements + context in the app layout.
+- Result (dev server, per request): Portfolio 1.06 s to 0.50 s; Clients 1.0 s to 0.40 s; Client 360 1.05 s to 0.42 s; Data reliability 0.96 s to 0.40 s; QBR Home 0.8 s to 0.28 s; QBR Usage 0.77 s to 0.19 s.
+- Still slow in the dev server (2 to 3 s, 1.1 to 1.5 MB): QBR Engagement/Teams for jlearning and Topics/Knowledge for chalhoubgroup. The server work is about 0.5 s; the rest is Next's dev-mode rendering of the large props. Not measured in a production build (dev login is off there).
+- Cached values are shared between requests and must be treated as read-only (checked: no code sorts or mutates them).
+- [ ] Not done: stale-data warning banner / sync-failure alerts, schemaVersion on snapshots, sync lock and timeouts, lazy-loading charts, virtualised team and topic lists.
