@@ -10,6 +10,7 @@ import { bigqueryAnalytics } from "@/server/data/adapters/bigquery";
 import { bqConfig, fetchDashboards } from "@/server/dashboard/bigquery/load";
 import type { DashboardData } from "@/server/dashboard/types";
 import { SECTION_NAMES, splitDashboard } from "@/server/dashboard/sections";
+import { carryKnowledge } from "./knowledge-history";
 
 const STALE_RUN_MS = 10 * 60_000;
 const COOLDOWN_MS = 60_000;
@@ -52,12 +53,16 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
       dashboards = res.data;
     }
 
+    // Knowledge only exists for the latest quarter in BigQuery. Keep what was recorded for quarters that have since ended.
+    const saved = await db.syncClientPeriod.findMany({ where: { avgKnowledge: { not: null } }, select: { clientId: true, period: true, knowledgeLearners: true, avgKnowledge: true } });
+    const { rows: periodRows, carried } = carryKnowledge(rows.data, saved);
+
     let skipped = 0;
     await db.$transaction(async (tx) => {
       await tx.syncClientPeriod.deleteMany();
       await tx.syncClient.deleteMany();
       await tx.syncClient.createMany({ data: clients.data });
-      await tx.syncClientPeriod.createMany({ data: rows.data });
+      await tx.syncClientPeriod.createMany({ data: periodRows });
       if (dashboards) {
         // A tenant whose query returned nothing keeps its previous snapshot instead of being replaced by an empty one.
         const usable = [...dashboards].filter(([, d]) => d.months.length > 0);
@@ -81,7 +86,11 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
 
     clearCache("snap:");
     const finishedAt = new Date();
-    await db.syncRun.update({ where: { id: run.id }, data: { status: "ok", finishedAt, clientCount: clients.data.length, rowCount: rows.data.length, message: skipped ? `${skipped} client dashboard(s) had no data; their previous snapshot was kept.` : null } });
+    const notes = [
+      skipped ? `${skipped} client dashboard(s) had no data; their previous snapshot was kept.` : "",
+      carried ? `Knowledge kept for ${carried} past client quarter(s).` : "",
+    ].filter(Boolean);
+    await db.syncRun.update({ where: { id: run.id }, data: { status: "ok", finishedAt, clientCount: clients.data.length, rowCount: rows.data.length, message: notes.length ? notes.join(" ") : null } });
     return { ok: true, clients: clients.data.length, rows: rows.data.length, finishedAt: finishedAt.toISOString() };
   } catch (e) {
     return fail("error", e instanceof Error ? e.message : "Unknown error");

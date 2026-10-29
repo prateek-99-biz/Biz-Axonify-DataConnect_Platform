@@ -2,7 +2,8 @@ import { requirePagePermission } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { loadContext, type SearchParams } from "@/server/services/context";
 import { aggregate } from "@/server/metrics/calculations";
-import { periodKey, periodLabel, quartersIn, quarterRange } from "@/server/metrics/period";
+import { parsePeriodKey, periodKey, periodLabel, quartersIn, quarterRange } from "@/server/metrics/period";
+import { firstKnowledgePeriod } from "@/server/sync/knowledge-history";
 import { Button, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
@@ -33,6 +34,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     } };
   }));
 
+  // Health needs knowledge, which is recorded only from the first refresh that saw it. Say so instead of showing bare dashes.
+  const healthMissing = tableRows.some((r) => r.cells.users.v != null && r.cells.health.v == null);
+  const knowledgeFrom = firstKnowledgePeriod(ctx.rows);
+  const knowledgeFromLabel = knowledgeFrom ? periodLabel(parsePeriodKey(knowledgeFrom)!) : null;
+
   const quarters = quarterRange({ year: Number(ctx.availablePeriods[0].slice(0, 4)), quarter: 1 }, { year: Number(ctx.availablePeriods.at(-1)!.slice(0, 4)), quarter: Number(ctx.availablePeriods.at(-1)![6]) as 1 });
   const trend = quarters.map((q) => {
     const point: Record<string, number | string | null> = { period: q };
@@ -44,6 +50,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     periods.forEach((p) => { o[p] = aggregate(rowsFor(c.id), quartersIn({ year: Number(p.slice(0, 4)), quarter: p.length > 4 ? (Number(p[6]) as 1) : null })).healthScore; });
     return o;
   });
+
+  // The health chart only draws quarters that have a score; the others are named in its subtitle instead of showing empty bars.
+  const healthPeriods = periods.filter((p) => bars.some((b) => b[p] != null));
+  const noHealthPeriods = periods.filter((p) => !healthPeriods.includes(p));
+  const healthSubtitle = [healthPeriods.join(" vs "), noHealthPeriods.length ? `${noHealthPeriods.join(", ")} ${noHealthPeriods.length === 1 ? "has" : "have"} no health score yet` : ""].filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-4">
@@ -64,9 +75,15 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       </Card>
       {selected.length < 2 ? <Card><EmptyState title="Select at least two clients">Tick two or more clients above and press Compare.</EmptyState></Card> : (
         <>
+          {healthMissing && (
+            <p role="note" className="glass !rounded-xl px-4 py-2 text-xs text-slate-600">
+              Health Score is blank for some quarters because it needs knowledge, and Axonify keeps each learner’s current score, not their past scores.
+              {knowledgeFromLabel ? ` The platform saves knowledge at every refresh, so health is available from ${knowledgeFromLabel} onward.` : " The platform saves knowledge at every refresh, so health will appear once the first refresh has recorded it."}
+            </p>
+          )}
           <div className="grid gap-4 xl:grid-cols-2">
             <Card><CardHeader title="Participation over Time" /><div className="p-4"><TrendChart data={trend} series={selected.map((c) => ({ key: c.id, label: c.name }))} /></div></Card>
-            <Card><CardHeader title="Health Score" subtitle={periods.join(" vs ")} /><div className="p-4"><CompareBars xKey="client" format="number" data={bars} series={periods.map((p) => ({ key: p, label: p }))} /></div></Card>
+            <Card><CardHeader title="Health Score" subtitle={healthSubtitle} /><div className="p-4">{healthPeriods.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No health score is available for the selected quarters.</p> : <CompareBars xKey="client" format="number" data={bars} series={healthPeriods.map((p) => ({ key: p, label: p }))} />}</div></Card>
           </div>
           <Card><CardHeader title="Side by Side" />
             <DataTable searchable={false} canExport={can(user.role, "export:csv")} exportName="client-comparison"
