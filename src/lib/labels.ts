@@ -10,7 +10,7 @@
 const SMALL_WORDS = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "in", "of", "on", "or", "per", "the", "to", "vs", "via"]);
 
 // Written in capitals wherever they appear.
-const ACRONYMS = new Set(["csm", "crm", "qbr", "kpi", "csv", "yoy", "uae", "ksa", "cx", "hr", "it", "gm", "km", "dx", "utc", "id", "ui", "l1", "l2", "l3"]);
+const ACRONYMS = new Set(["csm", "crm", "qbr", "kpi", "csv", "yoy", "uae", "ksa", "cx", "hr", "gm", "km", "dx", "utc", "id", "ui", "l1", "l2", "l3"]);
 
 function capitalise(word: string): string {
   const lower = word.toLowerCase();

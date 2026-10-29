@@ -42,7 +42,7 @@ export function EngagementView({ months: coreMonths, heavy, range, canExport, as
         <KpiTile label="Training Participation" metric="participation" scope="month" value={fmtPct(part, 0)} hint="Training users ÷ active users, latest month" />
         <KpiTile label="Average Time per Day" metric="time" scope="month" value={latest ? latest.avgTimePerDayMin.toFixed(1) : "—"} hint="Minutes per active user" />
         <KpiTile label="Average Frequency" metric="frequency" scope="month" value={latest ? latest.frequency.toFixed(1) : "—"} hint="Days active per logged-in user" />
-        <KpiTile label="Logged-in Users" metric="loggedIn" scope="month" value={fmtNumber(latest?.loggedInUsers)} hint="Users with at least one session" />
+        <KpiTile label="Logged-In Users" metric="loggedIn" scope="month" value={fmtNumber(latest?.loggedInUsers)} hint="Users with at least one session" />
         <KpiTile label="Training Users" metric="trainingUsers" scope="month" value={fmtNumber(latest?.trainingUsers)} hint="Active users with a training session" />
       </KpiStrip>
 

@@ -11,3 +11,6 @@ job_*.csv
 
 # Power BI report export
 Axonify-CSM-PowerBI-Dash*.pdf
+
+# Extra build folders from NEXT_DIST_DIR
+.next-*

@@ -21,6 +21,7 @@ describe("titleCase", () => {
   it("writes known acronyms in capitals", () => {
     expect(titleCase("csm books of business")).toBe("CSM Books of Business");
     expect(titleCase("crm mapping")).toBe("CRM Mapping");
+    expect(titleCase("what it means")).toBe("What It Means");
     expect(titleCase("last loaded (utc)")).toBe("Last Loaded (UTC)");
   });
 

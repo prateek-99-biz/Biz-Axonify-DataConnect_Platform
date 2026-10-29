@@ -44,7 +44,7 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
             <Input name="detail" placeholder="Details (optional)" aria-label="Details" className="col-span-2" />
             <Select name="priority" aria-label="Priority" defaultValue="MEDIUM"><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></Select>
             <Input name="dueDate" type="date" aria-label="Due Date" />
-            <Button variant="primary" className="col-span-2" disabled={busy}>Add task</Button>
+            <Button variant="primary" className="col-span-2" disabled={busy}>Add Task</Button>
           </form>
         )}
         {err && <p role="alert" className="mb-2 text-xs font-medium text-critical">{err}</p>}
@@ -82,7 +82,7 @@ export function NotesTasks({ clientId, notes, tasks, canWrite }: { clientId: str
               run(async () => { await send(`/api/clients/${clientId}/notes`, "POST", { body }); form.reset(); });
             }}>
             <textarea name="body" required maxLength={4000} rows={3} aria-label="Note" placeholder="Add a note about this account…" className="field w-full p-2.5 text-sm" />
-            <Button variant="primary" disabled={busy}>Add note</Button>
+            <Button variant="primary" disabled={busy}>Add Note</Button>
           </form>
         )}
         <ul className="space-y-2">
