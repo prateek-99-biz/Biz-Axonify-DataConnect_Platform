@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateMonths, contentFlag, isCurrentMonth, monthAxisLabel, descendants, engagementHealth, resolveRange, reviewPriority, saturation, teamStatus, teamTrend } from "./calc";
+import { aggregateMonths, contentFlag, isCurrentMonth, monthAxisLabel, descendants, engagementHealth, withCoveredParents, resolveRange, reviewPriority, saturation, teamStatus, teamTrend } from "./calc";
 import { mockDashboard } from "./mock";
 import { can, parseRole } from "@/server/auth/rbac";
 
@@ -87,5 +87,21 @@ describe("client role", () => {
     expect(can("CLIENT", "dashboard:read")).toBe(true);
     for (const p of ["dashboard:internal", "portfolio:read", "clients:read", "export:csv", "settings:manage", "sync:run"] as const) expect(can("CLIENT", p)).toBe(false);
     expect(can("MEMBER", "dashboard:internal")).toBe(true);
+  });
+});
+
+describe("selecting a parent team", () => {
+  const tree = [
+    { id: "root", parentId: null }, { id: "a", parentId: "root" }, { id: "b", parentId: "root" },
+    { id: "a1", parentId: "a" }, { id: "a2", parentId: "a" },
+  ];
+  it("adds a team once every leaf under it is selected, so people assigned straight to it are counted", () => {
+    expect([...withCoveredParents(tree, new Set(["a1", "a2"]))].sort()).toEqual(["a", "a1", "a2"]);
+  });
+  it("adds nothing for a partial selection", () => {
+    expect([...withCoveredParents(tree, new Set(["a1"]))]).toEqual(["a1"]);
+  });
+  it("adds every ancestor when all leaves are selected", () => {
+    expect([...withCoveredParents(tree, new Set(["a1", "a2", "b"]))].sort()).toEqual(["a", "a1", "a2", "b", "root"]);
   });
 });

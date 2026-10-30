@@ -137,6 +137,23 @@ export function descendants(nodes: { id: string; parentId: string | null }[], id
   return out;
 }
 
+/**
+ * The team slicer holds leaf teams. A team's own row also counts people assigned straight to it rather than to one of
+ * its sub-teams, so summing only its leaves comes up short (a parent at 397 users against 384 across its leaves).
+ * Whenever every leaf under a team is selected, the team itself is added so that totals use its roll-up row.
+ */
+export function withCoveredParents(nodes: { id: string; parentId: string | null }[], leaves: Set<string>) {
+  const kids = new Map<string, string[]>();
+  for (const n of nodes) if (n.parentId) kids.set(n.parentId, [...(kids.get(n.parentId) ?? []), n.id]);
+  const out = new Set(leaves);
+  const covered = (id: string): boolean => {
+    const c = kids.get(id);
+    return c ? c.every(covered) : leaves.has(id);
+  };
+  for (const id of kids.keys()) if (covered(id)) out.add(id);
+  return out;
+}
+
 /** Report: Content Flag rules (first match wins). */
 export function contentFlag(t: Pick<TopicStat, "l1" | "l2" | "l3" | "modules" | "targetGroups">): string {
   const q = t.l1 + t.l2 + t.l3;

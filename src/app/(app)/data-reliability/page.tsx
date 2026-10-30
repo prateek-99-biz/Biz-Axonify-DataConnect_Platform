@@ -60,7 +60,7 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
           {runs.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
               <span className="flex items-center gap-2"><Badge tone={r.status === "ok" ? "good" : r.status === "failed" ? "critical" : "warn"}>{statusLabel(r.status)}</Badge>{r.startedAt.toISOString().slice(0, 16).replace("T", " ")} UTC · {r.triggeredBy ?? "—"}</span>
-              <span className="max-w-full text-xs text-slate-500 [overflow-wrap:anywhere]">{r.status === "ok" ? `${r.clientCount} clients · ${r.rowCount} rows` : r.message ?? ""}</span>
+              <span className="max-w-full text-xs text-slate-500 [overflow-wrap:anywhere]">{r.status === "ok" ? `${r.clientCount} clients · ${r.rowCount} rows` : (user.role === "ADMIN" ? r.message : "The sync did not finish. An administrator can see the details.") ?? ""}</span>
             </li>
           ))}
         </ul>

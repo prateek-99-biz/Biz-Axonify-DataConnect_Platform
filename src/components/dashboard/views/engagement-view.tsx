@@ -6,7 +6,7 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { KpiStrip, KpiTile, ScopeTag, SectionSkeleton, TrendPill } from "@/components/dashboard/primitives";
 import { DualAxisLine } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
-import { aggregateMonths, descendants, inRange, monthAxisLabel, teamRows, type Range } from "@/server/dashboard/calc";
+import { aggregateMonths, descendants, inRange, monthAxisLabel, teamRows, withCoveredParents, type Range } from "@/server/dashboard/calc";
 import type { MonthEngagement } from "@/server/dashboard/types";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 import { titleCase } from "@/lib/labels";
@@ -27,7 +27,7 @@ export function EngagementView({ months: coreMonths, heavy, range, canExport, as
 
   const months = useMemo(() => {
     if (!loaded) return coreMonths.filter((m) => inRange(m.month, range.from, range.to)).sort((a, b) => a.month.localeCompare(b.month));
-    const keep = descendants(loaded.teams, sel);
+    const keep = withCoveredParents(loaded.teams, sel);
     const scoped = teamMonthsOf(loaded).filter((t) => inRange(t.month, range.from, range.to) && keep.has(t.teamId));
     return aggregateMonths(scoped, loaded.teams);
   }, [loaded, coreMonths, range, sel]);

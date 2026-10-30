@@ -17,8 +17,8 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "registered_users",
     name: "Registered Users",
-    description: "Users registered in the client's Axonify tenant at the end of the period.",
-    formula: "Users registered at the end of the period",
+    description: "Users registered in the client's Axonify tenant at any point in the period, including people who left during it, so that everyone counted as active is also counted as registered.",
+    formula: "Users on the books at any point in the period",
     unit: "count",
     status: "provisional",
   },

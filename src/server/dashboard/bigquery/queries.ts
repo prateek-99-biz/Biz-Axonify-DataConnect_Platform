@@ -441,7 +441,12 @@ export const QUERIES = {
     SELECT p.tenant_id, p.avg_question_pool, SAFE_DIVIDE(p.avg_question_pool, NULLIF(a.answered_per_user_30d, 0)) AS months_to_graduate
     FROM pool_summary p LEFT JOIN answer_summary a USING (tenant_id)`,
 
-  /** Quarterly client rows for the portfolio (registered, active, training, retained, sessions, knowledge snapshot). */
+  /**
+   * Quarterly client rows for the portfolio (registered, active, training, retained, sessions, knowledge snapshot).
+   * Registered = on the books at any point in the quarter (created by its end, not removed before its start). Counting
+   * only users still present on the last day dropped people who were active and then left within the quarter, which
+   * pushed engagement above 100% (chalhoubgroup 2026-Q3 showed 109%).
+   */
   clientPeriod: (t: T) => `
     WITH uq AS (
       SELECT tenant_id, user_id, DATE_TRUNC(month, QUARTER) AS quarter_start,
@@ -460,8 +465,8 @@ export const QUERIES = {
       SELECT q.tenant_id, q.quarter_start, COUNT(*) AS registered_users
       FROM q JOIN ${t("foundation_user")} u ON u.tenant_id = q.tenant_id
         AND DATE(u.create_date) <= LAST_DAY(q.quarter_start, QUARTER)
-        AND (u.terminate_date IS NULL OR DATE(u.terminate_date) > LAST_DAY(q.quarter_start, QUARTER))
-        AND (u.delete_date IS NULL OR DATE(u.delete_date) > LAST_DAY(q.quarter_start, QUARTER))
+        AND (u.terminate_date IS NULL OR DATE(u.terminate_date) >= q.quarter_start)
+        AND (u.delete_date IS NULL OR DATE(u.delete_date) >= q.quarter_start)
       GROUP BY q.tenant_id, q.quarter_start
     ),
     retained AS (
@@ -480,7 +485,7 @@ export const QUERIES = {
     latest AS (SELECT MAX(quarter_start) AS quarter_start FROM q)
     SELECT q.tenant_id,
       CONCAT(CAST(EXTRACT(YEAR FROM q.quarter_start) AS STRING), '-Q', CAST(EXTRACT(QUARTER FROM q.quarter_start) AS STRING)) AS period,
-      COALESCE(r.registered_users, q.active_users) AS registered_users,
+      GREATEST(COALESCE(r.registered_users, 0), q.active_users) AS registered_users,
       q.active_users, q.training_users,
       IF(q.quarter_start = latest.quarter_start, COALESCE(k.learners, 0), 0) AS knowledge_learners,
       IF(q.quarter_start = latest.quarter_start, k.avg_current, NULL) AS avg_knowledge,
