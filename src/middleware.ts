@@ -35,4 +35,4 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ["/((?!api|signin|_next|favicon.ico).*)"] };
+export const config = { matcher: ["/((?!api|signin|signup|forgot-password|set-password|auth|_next|favicon.ico).*)"] };

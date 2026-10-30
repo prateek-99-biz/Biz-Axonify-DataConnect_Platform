@@ -46,7 +46,14 @@ export async function auth(): Promise<Session | null> {
 /** Creates the profile on first sight. After that the stored role (managed in Settings) wins; ADMIN_EMAILS and the company domain only seed the first role. */
 async function upsertProfile(id: string, email: string, name: string | null, initialRole: Role) {
   const existing = await cached(`user:${id}`, PROFILE_TTL_MS, () => db.appUser.findUnique({ where: { id } }));
-  if (existing) return existing;
+  if (existing) {
+    // An invited person's profile is created before they sign in; the first sign-in is what ends "invited".
+    if (!existing.lastLogin) {
+      await db.appUser.update({ where: { id }, data: { lastLogin: new Date() } });
+      clearCache(`user:${id}`);
+    }
+    return existing;
+  }
   try {
     const created = await db.appUser.create({ data: { id, email, name, role: initialRole, lastLogin: new Date() } });
     clearCache(`user:${id}`);

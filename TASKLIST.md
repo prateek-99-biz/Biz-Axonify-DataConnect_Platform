@@ -191,3 +191,22 @@ Everything committed today was re-tested end to end on the final code; separate 
 - **Performance (production build, warm):** every page 14 to 398 ms on the server; heaviest transfer 162 KB gzip; browser main-thread blocking on the heaviest page 552 ms (was 8,687 ms).
 - **Found and fixed during testing:** "Participation over Time" heading, "Add task" / "Add note" buttons, "Logged-in Users" label consistency, and a bug where the Title Case helper turned "it" into "IT". New automated wording test (fails if a heading, KPI label or table header is not Title Case).
 - **Test artefact, not a bug:** the sidebar appeared to stay open after a click when focus was set from a script; with a real mouse click it collapses correctly (keyboard focus keeps it open on purpose).
+
+## P. Fixes from the test report (root causes)
+
+- **Engagement above 100%.** Active users came from the monthly participation table, but registered users counted only people still on the books on the quarter's last day. Anyone active who then left (deleted or terminated) within the quarter was in the numerator and not the denominator (chalhoubgroup 2026-Q3: 540 active, 495 registered, 109%). Registered now means on the books at any point in the quarter, and is never below active. Checked against BigQuery: 275 client-quarters, none above 100%. Needs one sync to refresh stored numbers; Registered Users for past quarters rises slightly.
+- **Team selection 384 vs 397.** The slicer holds leaf teams, and totals summed only those. People assigned straight to a parent team (not to a sub-team) are in the parent's roll-up but in no leaf. Selecting a whole team now adds the team itself, so the total equals its roll-up row. Partial selections still sum the chosen leaves, as before.
+- **Raw sync error text.** Data Reliability shows the full error only to administrators; others see a short plain message.
+- **Not fixed (needs you):** AdminZone reference numbers must be re-captured after you log in.
+
+## Q. Sign-up, password reset and user invitations
+
+- New pages: `/signup`, `/forgot-password`, `/set-password`, plus `/auth/confirm` (where email links land). Sign-in links to the first two.
+- Settings > User Management: Add User (email, role, client for Client users). It creates the login in Supabase, which emails a link to `/set-password`, and stores the chosen role. People who have not signed in yet show an Invited badge with Resend Link.
+- Rules: Admin and Member need a @bizgroup.ae email; Client needs a client. Sign-up by anyone else gives an account with no access until an admin links it (existing rule). Passwords: 10+ characters with letters and numbers. Forgot Password and Sign Up give the same answer whether or not the address exists.
+- **Setup needed in Supabase (once):**
+  1. Add `SUPABASE_SERVICE_ROLE_KEY` to the server environment (Project Settings > API). Without it Add User says so and does nothing.
+  2. Authentication > URL Configuration: set Site URL to the live address and add `<site>/auth/confirm` to Redirect URLs (also the local address while testing).
+  3. Authentication > Email Templates (Invite, Reset Password, Confirm Signup): the default links work. Better for reliability, change each link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite` (use `recovery` and `signup` for the other two) with `&next=/set-password` on the first two.
+  4. Production sending: Supabase's built-in mailer is limited to a few emails an hour; set up custom SMTP (Authentication > SMTP Settings) before inviting many people.
+- Not tested end to end: no emails were sent (no service-role key locally). Form checks, redirects, bad-link handling and the Settings screen were tested.

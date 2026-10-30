@@ -6,6 +6,7 @@ import { parseRole } from "@/server/auth/rbac";
 import { devLoginEnabled } from "@/server/env";
 import { Button, CALLOUT_CRITICAL, Card, Input, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { AuthLink } from "@/components/auth/auth-card";
 import { Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeCallbackUrl } from "@/lib/safe-redirect";
@@ -39,6 +40,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
   const errors: Record<string, string> = {
     invalid: "Sign-in failed. Check your email and password.",
     config: "Supabase is not configured on the server (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY).",
+    link: "That link has expired or was already used. Request a new one with Forgot Password.",
   };
 
   return (
@@ -55,6 +57,10 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
           <Input name="email" type="email" aria-label="Email" placeholder="Email" autoComplete="username" required />
           <Input name="password" type="password" aria-label="Password" placeholder="Password" autoComplete="current-password" required />
           <Button variant="primary" className="w-full">Sign in</Button>
+          <p className="flex items-center justify-between pt-1 text-xs text-slate-500">
+            <AuthLink href="/forgot-password">Forgot password?</AuthLink>
+            <span>New here? <AuthLink href="/signup">Create an account</AuthLink></span>
+          </p>
         </form>
         {devLoginEnabled() && (
           <form action={dev} className="mt-6 space-y-2 border-t hairline pt-4">
