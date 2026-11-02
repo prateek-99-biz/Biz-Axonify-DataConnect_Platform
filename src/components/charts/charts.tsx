@@ -44,7 +44,7 @@ function ChartFrame({ height, label, children }: { height: number; label: string
   useEffect(() => setReady(true), []);
   return (
     <div style={{ height }} role="img" aria-label={label} aria-busy={!ready}>
-      {ready ? children : <div aria-hidden className="h-full w-full animate-pulse rounded-xl bg-slate-200/50 dark:bg-white/5" />}
+      {ready ? children : <div aria-hidden className="h-full w-full animate-pulse rounded-xl bg-slate-300/40 dark:bg-white/10" />}
     </div>
   );
 }

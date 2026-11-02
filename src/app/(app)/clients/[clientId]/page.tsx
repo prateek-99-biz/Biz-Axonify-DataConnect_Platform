@@ -49,6 +49,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const peerView = buildPortfolio(ctx.clients.filter((c) => c.id !== clientId && c.industry === client.industry), ctx.rows, { client: null, industry: null, period: f.period });
   const portfolioView = buildPortfolio(ctx.clients, ctx.rows, { client: null, industry: null, period: f.period });
   const peerMetrics = peerView.kpis.current;
+  // With no industry on record the "peers" are simply everyone else, which the portfolio bars already show.
+  const industryKnown = client.industry !== "Unknown";
 
   const { analytics, crm } = getAdapters();
   const trend = rows.sort((a, b) => a.period.localeCompare(b.period)).map((r) => {
@@ -116,15 +118,15 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
                 factors.map((x) => <li key={x.key} className="flex justify-between px-4 py-3"><span>{x.label}</span><span className={cn("tabular-nums", x.points < -0.05 ? "text-critical" : x.points > 0.05 ? "text-brand-ink" : "text-slate-500")}>{x.points > 0 ? "+" : ""}{x.points.toFixed(1)} pts</span></li>)}
             </ul></Card>
         </div>
-        <Card><CardHeader title="Peer Benchmark" subtitle={`This client vs ${client.industry} peers (${peerView.clients.length}) and the whole portfolio (${portfolioView.clients.length}), ${periodLabel(f.period)}`} />
-          <div className="p-4"><CompareBars xKey="metric" series={[{ key: "client", label: client.name }, { key: "peers", label: `${client.industry} peers` }, { key: "portfolio", label: "Portfolio" }]}
+        <Card><CardHeader title="Peer Benchmark" subtitle={industryKnown ? `This client vs ${client.industry} peers (${peerView.clients.length}) and the whole portfolio (${portfolioView.clients.length}), ${periodLabel(f.period)}` : `This client vs the whole portfolio (${portfolioView.clients.length} clients), ${periodLabel(f.period)}`} />
+          <div className="p-4"><CompareBars xKey="metric" series={[{ key: "client", label: client.name }, ...(industryKnown ? [{ key: "peers", label: `${client.industry} peers` }] : []), { key: "portfolio", label: "Portfolio" }]}
             data={[
               { metric: "Participation", client: m.participationRate, peers: peerMetrics.participationRate, portfolio: portfolioView.kpis.current.participationRate },
               { metric: "Knowledge", client: m.avgKnowledge, peers: peerMetrics.avgKnowledge, portfolio: portfolioView.kpis.current.avgKnowledge },
               { metric: "Engagement", client: m.engagementRate, peers: peerMetrics.engagementRate, portfolio: portfolioView.kpis.current.engagementRate },
               { metric: "Retention", client: m.retentionRate, peers: peerMetrics.retentionRate, portfolio: portfolioView.kpis.current.retentionRate },
               { metric: "Adoption", client: m.featureAdoption, peers: peerMetrics.featureAdoption, portfolio: portfolioView.kpis.current.featureAdoption },
-            ]} /></div></Card>
+            ].filter((d) => d.client != null || d.peers != null || d.portfolio != null)} /></div></Card>
       </div>
     );
   } else if (tab === "teams" || tab === "users" || tab === "engagement") {
