@@ -61,9 +61,9 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          <Badge>{client.industry}</Badge><span>CSM: {client.csmName}</span>
-          <span>Axonify tenant: {client.axonifyTenantId ?? "Not mapped"}</span>
-          <span>Salesforce account: {client.salesforceAccountId ?? <span className="font-medium text-amber-700 dark:text-amber-300">Not mapped</span>}</span>
+          {client.industry !== "Unknown" && <Badge>{client.industry}</Badge>}<span>CSM: {client.csmName}</span>
+          {client.axonifyTenantId && <span>Axonify tenant: {client.axonifyTenantId}</span>}
+          {client.salesforceAccountId && <span>Salesforce account: {client.salesforceAccountId}</span>}
         </div>
       </div>
       <div className="flex items-center gap-2 text-sm"><span className="text-slate-500">{periodLabel(f.period)}</span><RiskBadge risk={hasData ? m.risk : "unknown"} /></div>

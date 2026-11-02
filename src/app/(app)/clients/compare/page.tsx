@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePagePermission } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { loadContext, type SearchParams } from "@/server/services/context";
@@ -40,7 +41,13 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const knowledgeFromLabel = knowledgeFrom ? periodLabel(parsePeriodKey(knowledgeFrom)!) : null;
 
   const quarters = quarterRange({ year: Number(ctx.availablePeriods[0].slice(0, 4)), quarter: 1 }, { year: Number(ctx.availablePeriods.at(-1)!.slice(0, 4)), quarter: Number(ctx.availablePeriods.at(-1)![6]) as 1 });
-  const trend = quarters.map((q) => {
+  // Most clients have only a few recent quarters, so the chart shows the last eight unless the whole history is asked for.
+  const showAll = (Array.isArray(sp.history) ? sp.history[0] : sp.history) === "all";
+  const historyQuery = new URLSearchParams({ period: periodKey(ctx.filters.period), ...(compareQ ? { vs: compareQ } : {}), ...(showAll ? {} : { history: "all" }) });
+  picked.forEach((id) => historyQuery.append("ids", id));
+  const historyHref = `/clients/compare?${historyQuery}`;
+  const shownQuarters =showAll ? quarters : quarters.slice(-8);
+  const trend = shownQuarters.map((q) => {
     const point: Record<string, number | string | null> = { period: q };
     selected.forEach((c) => { point[c.id] = aggregate(rowsFor(c.id), [q]).participationRate; });
     return point;
@@ -82,7 +89,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
             </p>
           )}
           <div className="grid gap-4 xl:grid-cols-2">
-            <Card><CardHeader title="Participation Over Time" /><div className="p-4"><TrendChart data={trend} series={selected.map((c) => ({ key: c.id, label: c.name }))} /></div></Card>
+            <Card><CardHeader title="Participation Over Time" subtitle={showAll ? "Full history" : "Last 8 quarters"} action={quarters.length > 8 ? <Link href={historyHref} className="text-xs underline">{showAll ? "Show last 8 quarters" : "Show all history"}</Link> : undefined} /><div className="p-4"><TrendChart data={trend} series={selected.map((c) => ({ key: c.id, label: c.name }))} /></div></Card>
             <Card><CardHeader title="Health Score" subtitle={healthSubtitle} /><div className="p-4">{healthPeriods.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No health score is available for the selected quarters.</p> : <CompareBars xKey="client" format="number" data={bars} series={healthPeriods.map((p) => ({ key: p, label: p }))} />}</div></Card>
           </div>
           <Card><CardHeader title="Side by Side" />

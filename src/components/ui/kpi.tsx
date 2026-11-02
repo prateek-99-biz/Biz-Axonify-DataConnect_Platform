@@ -22,6 +22,10 @@ export function DeltaChip({ d, unit = "pts", invert = false }: { d: Delta; unit?
 export function KpiCard({
   label, value, vsPrev, vsYear, hint, unit = "pts",
 }: { label: string; value: string; vsPrev?: Delta; vsYear?: Delta; hint?: string; unit?: "pts" | "pct" | "abs" }) {
+  // A tile with no value and no comparison says nothing, so it is left out until there is data.
+  if (value === "—") return null;
+  vsPrev = vsPrev?.abs == null ? undefined : vsPrev;
+  vsYear = vsYear?.abs == null ? undefined : vsYear;
   return (
     <Card className="group relative p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift" title={hint}>
       <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-brand/25 blur-2xl transition-opacity group-hover:opacity-80 dark:bg-brand/15" />

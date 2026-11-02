@@ -62,7 +62,9 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
     },
   }));
 
-  const industryChart = view.industries.map((i) => ({
+  // Until industries are mapped everything is "Unknown", so the benchmark chart and column would only repeat that word.
+  const showIndustry = view.clients.some((c) => c.client.industry !== "Unknown");
+  const industryChart =view.industries.map((i) => ({
     industry: i.industry, [periodLabel(f.period)]: i.current.participationRate, [prevLabel]: i.previous.participationRate,
   }));
 
@@ -123,19 +125,21 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
         </Card>
       </div>
 
-      <Card>
-        <CardHeader title="Industry Benchmark" subtitle={`Participation by industry, ${periodLabel(f.period)} vs ${prevLabel}`} />
-        <div className="p-4"><CompareBars data={industryChart} xKey="industry" series={[{ key: periodLabel(f.period), label: periodLabel(f.period) }, { key: prevLabel, label: prevLabel, color: "#1D2B43" }]} /></div>
-      </Card>
+      {showIndustry && (
+        <Card>
+          <CardHeader title="Industry Benchmark" subtitle={`Participation by industry, ${periodLabel(f.period)} vs ${prevLabel}`} />
+          <div className="p-4"><CompareBars data={industryChart} xKey="industry" series={[{ key: periodLabel(f.period), label: periodLabel(f.period) }, { key: prevLabel, label: prevLabel, color: "#1D2B43" }]} /></div>
+        </Card>
+      )}
 
       <Card>
         <CardHeader title="Clients" subtitle="Select a client to drill into teams, users and engagement" action={<Link href={`/clients/compare?period=${periodKey(f.period)}`} className="text-xs underline">Compare clients</Link>} />
         <DataTable canExport={canExport} exportName={`portfolio-${periodKey(f.period)}`}
           columns={[
-            { key: "name", header: "Client" }, { key: "industry", header: "Industry" }, { key: "csm", header: "CSM" },
-            { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Participation", align: "right" },
-            { key: "change", header: `Δ vs ${prevLabel}`, align: "right" }, { key: "knowledge", header: "Knowledge", align: "right" }, { key: "retention", header: "Retention", align: "right" },
-            { key: "adoption", header: "Adoption", align: "right" }, { key: "health", header: "Health", align: "right" },
+            { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), { key: "csm", header: "CSM" },
+            { key: "users", header: "Users", align: "right" as const }, { key: "engagement", header: "Participation", align: "right" as const },
+            { key: "change", header: `Δ vs ${prevLabel}`, align: "right" as const }, { key: "knowledge", header: "Knowledge", align: "right" as const }, { key: "retention", header: "Retention", align: "right" as const },
+            { key: "adoption", header: "Adoption", align: "right" as const }, { key: "health", header: "Health", align: "right" as const },
             { key: "risk", header: "Risk" }, { key: "driver", header: "Main Driver (pts)", hint: "Factor with the largest weighted change in health score" },
           ]}
           rows={rows} />

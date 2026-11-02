@@ -18,6 +18,11 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
   const view = buildPortfolio(ctx.clients, ctx.rows, ctx.filters);
   const p = periodKey(ctx.filters.period);
 
+  // One notice beats the same badge on every row, and a column that reads "Unknown" throughout adds nothing.
+  const everyone = [...view.clients.map((c) => c.client), ...view.noDataClients];
+  const noneMapped = everyone.length > 0 && everyone.every((c) => !c.salesforceAccountId);
+  const showIndustry = everyone.some((c) => c.industry !== "Unknown");
+
   const rows: TableRow[] = view.clients.length + view.noDataClients.length === 0 ? [] : [
     ...view.clients.map((c) => ({
       id: c.client.id,
@@ -50,14 +55,15 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         </div>
         <Link href={`/clients/compare?period=${p}`} className="text-sm underline">Compare Clients</Link>
       </div>
+      {noneMapped && <p role="note" className="glass !rounded-xl px-4 py-2.5 text-xs text-slate-600">No client is linked to a Salesforce account yet, so CRM mapping is hidden from the table.</p>}
       <Card>
         <CardHeader title="Clients" subtitle="Search and sort; open a client for its 360 profile" />
         {rows.length === 0 ? <EmptyState title="No clients match these filters" /> : (
           <DataTable canExport={can(user.role, "export:csv")} exportName={`clients-${p}`}
             columns={[
-              { key: "name", header: "Client" }, { key: "industry", header: "Industry" }, { key: "csm", header: "CSM" },
-              { key: "users", header: "Users", align: "right" }, { key: "engagement", header: "Participation", align: "right" },
-              { key: "health", header: "Health", align: "right" }, { key: "risk", header: "Risk" }, { key: "mapped", header: "CRM Mapping" },
+              { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), { key: "csm", header: "CSM" },
+              { key: "users", header: "Users", align: "right" as const }, { key: "engagement", header: "Participation", align: "right" as const },
+              { key: "health", header: "Health", align: "right" as const }, { key: "risk", header: "Risk" }, ...(noneMapped ? [] : [{ key: "mapped", header: "CRM Mapping" }]),
             ]} rows={rows} />
         )}
       </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type CSSProperties } from "react";
+import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useIsDark } from "@/components/shell/theme-toggle";
 
@@ -38,6 +38,17 @@ export function useChartTheme() {
   };
 }
 
+/** Holds the chart's space with a pulsing placeholder until the browser has drawn it, so cards are never blank. */
+function ChartFrame({ height, label, children }: { height: number; label: string; children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  return (
+    <div style={{ height }} role="img" aria-label={label} aria-busy={!ready}>
+      {ready ? children : <div aria-hidden className="h-full w-full animate-pulse rounded-xl bg-slate-200/50 dark:bg-white/5" />}
+    </div>
+  );
+}
+
 export function TrendChart({
   data, series, xKey = "period", format = "pct", height = 260,
 }: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey?: string; format?: "pct" | "number" | "score"; height?: number }) {
@@ -45,7 +56,7 @@ export function TrendChart({
   const uid = "g" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const f = (v: number) => (format === "pct" ? pctFmt(v) : format === "score" ? v.toFixed(0) : new Intl.NumberFormat("en-US").format(v));
   return (
-    <div style={{ height }} role="img" aria-label={`Trend of ${series.map((s) => s.label).join(", ")}`}>
+    <ChartFrame height={height} label={`Trend of ${series.map((s) => s.label).join(", ")}`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
           <defs>
@@ -67,7 +78,7 @@ export function TrendChart({
           ))}
         </AreaChart>
       </ResponsiveContainer>
-    </div>
+    </ChartFrame>
   );
 }
 
@@ -77,7 +88,7 @@ export function CompareBars({
   const t = useChartTheme();
   const f = (v: number) => (format === "pct" ? pctFmt(v) : new Intl.NumberFormat("en-US").format(v));
   return (
-    <div style={{ height }} role="img" aria-label={`Comparison of ${series.map((s) => s.label).join(", ")} by ${xKey}`}>
+    <ChartFrame height={height} label={`Comparison of ${series.map((s) => s.label).join(", ")} by ${xKey}`}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }} barGap={4}>
           <CartesianGrid stroke={t.grid} vertical={false} />
@@ -90,6 +101,6 @@ export function CompareBars({
           ))}
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartFrame>
   );
 }
