@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useIsDark } from "@/components/shell/theme-toggle";
 
-/** Axonify palette; the dark set is lifted so every series keeps >= 3:1 contrast against the dark glass. */
+/** Axonify green leads, then Biz Group purple and orange from the logo. The dark set is lifted so every series keeps >= 3:1 contrast against the dark glass. */
 export const PALETTE = {
-  light: ["#79C753", "#1D2B43", "#00AA61", "#D97706", "#3B6FD8", "#8A97AB"],
-  dark: ["#8BD866", "#8CB8FF", "#2DD48C", "#FBBF24", "#C4B5FD", "#CBD5E1"],
+  light: ["#79C753", "#682685", "#EF7922", "#00AA61", "#3B6FD8", "#8A97AB"],
+  dark: ["#8BD866", "#B67CD6", "#F79646", "#2DD48C", "#8CB8FF", "#CBD5E1"],
 };
 const NAVY = "#1D2B43";
 
@@ -19,8 +19,8 @@ export function useChartTheme() {
   const dark = useIsDark();
   const colors = dark ? PALETTE.dark : PALETTE.light;
   return {
-    // Navy disappears on dark glass, so explicit navy series are swapped for the dark palette's second colour.
-    color: (s: SeriesDef, i: number) => (s.color && !(dark && s.color.toUpperCase() === NAVY) ? s.color : colors[i % colors.length]),
+    // Pages that ask for navy get the palette's second colour (Biz purple), which also stays visible on dark glass.
+    color: (s: SeriesDef, i: number) => (s.color && s.color.toUpperCase() !== NAVY ? s.color : s.color ? colors[1] : colors[i % colors.length]),
     grid: dark ? "rgba(255,255,255,0.08)" : "rgba(29,43,67,0.08)",
     tick: dark ? "#ACB9CB" : "#4B586C",
     tooltip: {
@@ -82,19 +82,26 @@ export function TrendChart({
   );
 }
 
+/** Dashed guide lines at fixed values, such as the Health band thresholds, so a bar's meaning shows without a legend lookup. */
+export interface RefLine { y: number; label: string }
+
 export function CompareBars({
-  data, series, xKey, format = "pct", height = 260,
-}: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey: string; format?: "pct" | "number"; height?: number }) {
+  data, series, xKey, format = "pct", height = 260, refLines,
+}: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey: string; format?: "pct" | "number"; height?: number; refLines?: RefLine[] }) {
   const t = useChartTheme();
   const f = (v: number) => (format === "pct" ? pctFmt(v) : new Intl.NumberFormat("en-US").format(v));
   return (
     <ChartFrame height={height} label={`Comparison of ${series.map((s) => s.label).join(", ")} by ${xKey}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }} barGap={4}>
+        <BarChart data={data} margin={{ top: 8, right: refLines ? 76 : 12, bottom: 0, left: 0 }} barGap={4}>
           <CartesianGrid stroke={t.grid} vertical={false} />
           <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} interval={0} dy={6} />
-          <YAxis tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} width={44} />
+          <YAxis tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} width={44} domain={refLines ? [0, 100] : undefined} />
           <Tooltip formatter={(v) => f(Number(v))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} cursor={{ fill: t.cursor }} />
+          {refLines?.map((r) => (
+            <ReferenceLine key={r.y} y={r.y} stroke={t.tick} strokeDasharray="4 4" strokeOpacity={0.55} ifOverflow="extendDomain"
+              label={{ value: `${r.label} ${r.y}`, position: "right", fontSize: 10, fill: t.tick }} />
+          ))}
           {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
           {series.map((s, i) => (
             <Bar key={s.key} dataKey={s.key} name={s.label} fill={t.color(s, i)} radius={[6, 6, 0, 0]} maxBarSize={36} />

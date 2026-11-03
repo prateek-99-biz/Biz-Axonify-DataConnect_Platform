@@ -87,7 +87,7 @@ export default async function HowItWorksPage() {
               <Link href={n.href} className="group flex h-full items-start gap-3 p-4 transition-colors hover:bg-brand/10">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand-ink"><n.icon className="h-4 w-4" aria-hidden /></span>
                 <span className="min-w-0">
-                  <span className="flex items-center gap-2 font-semibold">{n.label}{adminOnly.has(n.href) && <Badge tone="warn">Admins Only</Badge>}<ArrowRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden /></span>
+                  <span className="flex items-center gap-2 font-semibold">{n.label}{adminOnly.has(n.href) && <Badge tone="biz">Admins Only</Badge>}<ArrowRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden /></span>
                   <span className="mt-0.5 block text-xs text-slate-600">{PAGE_BLURB[n.href] ?? n.hint}</span>
                 </span>
               </Link>

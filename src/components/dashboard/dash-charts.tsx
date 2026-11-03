@@ -32,8 +32,11 @@ const Frame = ({ height, label, children }: { height: number; label: string; chi
   </div>
 );
 
-export function SingleLine({ data, xKey, yKey, label, format = "pct", height = 240, domain }: {
-  data: Row[]; xKey: string; yKey: string; label: string; format?: Fmt; height?: number; domain?: [number | "auto", number | "auto"];
+/** Position of each accent in the chart palette: green, purple, orange. */
+const ACCENT_INDEX = { green: 0, purple: 1, orange: 2 } as const;
+
+export function SingleLine({ data, xKey, yKey, label, format = "pct", height = 240, domain, accent }: {
+  data: Row[]; xKey: string; yKey: string; label: string; format?: Fmt; height?: number; domain?: [number | "auto", number | "auto"]; accent?: keyof typeof ACCENT_INDEX;
 }) {
   const t = useChartTheme();
   const f = fmt(format);
@@ -44,7 +47,7 @@ export function SingleLine({ data, xKey, yKey, label, format = "pct", height = 2
         <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} dy={6} minTickGap={18} />
         <YAxis tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} width={44} domain={domain ?? axisDomain(format)} />
         <Tooltip formatter={(v) => f(Number(v))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} />
-        <Line isAnimationActive={false} type="monotone" dataKey={yKey} name={label} stroke={t.color({ key: yKey, label }, 4)} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} />
+        <Line isAnimationActive={false} type="monotone" dataKey={yKey} name={label} stroke={t.color({ key: yKey, label }, accent ? ACCENT_INDEX[accent] : 4)} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} />
       </LineChart>
     </Frame>
   );

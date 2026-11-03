@@ -15,6 +15,10 @@
     --line: 214 226 216;
     --warn: 217 119 6;
     --critical: 220 38 38;
+    /* Biz Group logo colours, kept as quiet secondary accents beside the Axonify green. */
+    --biz-purple: 104 38 133;     /* #682685 */
+    --biz-orange: 239 121 34;     /* #EF7922 */
+    --biz-grey: 106 104 105;      /* #6A6869 */
 
     --slate-50: 246 249 247;
     --slate-100: 236 242 238;
@@ -46,6 +50,8 @@
       radial-gradient(60rem 40rem at -10% -15%, rgb(121 199 83 / 0.38), transparent 60%),
       radial-gradient(50rem 36rem at 110% -5%, rgb(0 170 97 / 0.22), transparent 60%),
       radial-gradient(60rem 42rem at 55% 120%, rgb(29 43 67 / 0.16), transparent 60%),
+      radial-gradient(44rem 32rem at -8% 108%, rgb(104 38 133 / 0.10), transparent 60%),
+      radial-gradient(34rem 26rem at 108% 104%, rgb(239 121 34 / 0.08), transparent 60%),
       linear-gradient(180deg, #F3FAEE 0%, #EEF7E8 100%);
   }
 
@@ -60,6 +66,9 @@
     --line: 52 66 92;
     --warn: 251 191 36;
     --critical: 248 113 113;
+    --biz-purple: 182 124 214;    /* lifted so it reads on dark glass */
+    --biz-orange: 247 150 70;
+    --biz-grey: 172 170 171;
 
     --slate-50: 27 38 56;
     --slate-100: 35 48 70;
@@ -90,6 +99,8 @@
       radial-gradient(60rem 40rem at -10% -15%, rgb(121 199 83 / 0.2), transparent 60%),
       radial-gradient(50rem 36rem at 110% -5%, rgb(0 170 97 / 0.16), transparent 60%),
       radial-gradient(60rem 45rem at 55% 120%, rgb(59 92 150 / 0.32), transparent 60%),
+      radial-gradient(44rem 32rem at -8% 108%, rgb(130 60 170 / 0.24), transparent 60%),
+      radial-gradient(34rem 26rem at 108% 104%, rgb(239 121 34 / 0.09), transparent 60%),
       linear-gradient(180deg, #0B1322 0%, #09101C 100%);
   }
 
@@ -146,4 +157,14 @@
   }
   .field option { @apply bg-surface text-ink; }
   .hairline { @apply border-line/70; }
+  /* A short bar in the three Biz Group colours under every page title, echoing the logo. */
+  main h1::after {
+    content: "";
+    display: block;
+    width: 2.75rem;
+    height: 3px;
+    margin-top: 0.5rem;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgb(var(--biz-purple)) 0 33.4%, rgb(var(--brand)) 33.4% 66.7%, rgb(var(--biz-orange)) 66.7% 100%);
+  }
 }

@@ -5,6 +5,7 @@ import { loadContext, type SearchParams } from "@/server/services/context";
 import { aggregate } from "@/server/metrics/calculations";
 import { parsePeriodKey, periodKey, periodLabel, quartersIn, quarterRange } from "@/server/metrics/period";
 import { firstKnowledgePeriod } from "@/server/sync/knowledge-history";
+import { RISK_THRESHOLDS } from "@/server/metrics/definitions";
 import { Button, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
@@ -90,7 +91,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           )}
           <div className="grid gap-4 xl:grid-cols-2">
             <Card><CardHeader title="Participation Over Time" subtitle={showAll ? "Full history" : "Last 8 quarters"} action={quarters.length > 8 ? <Link href={historyHref} className="text-xs underline">{showAll ? "Show last 8 quarters" : "Show all history"}</Link> : undefined} /><div className="p-4"><TrendChart data={trend} series={selected.map((c) => ({ key: c.id, label: c.name }))} /></div></Card>
-            <Card><CardHeader title="Health Score" subtitle={healthSubtitle} /><div className="p-4">{healthPeriods.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No health score is available for the selected quarters.</p> : <CompareBars xKey="client" format="number" data={bars} series={healthPeriods.map((p) => ({ key: p, label: p }))} />}</div></Card>
+            <Card><CardHeader title="Health Score" subtitle={healthSubtitle} /><div className="p-4">{healthPeriods.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No health score is available for the selected quarters.</p> : <CompareBars xKey="client" format="number" data={bars} series={healthPeriods.map((p) => ({ key: p, label: p }))} refLines={[{ y: RISK_THRESHOLDS.healthy, label: "Healthy" }, { y: RISK_THRESHOLDS.moderate, label: "Moderate" }, { y: RISK_THRESHOLDS.atRisk, label: "At Risk" }]} />}</div></Card>
           </div>
           <Card><CardHeader title="Side by Side" />
             <DataTable searchable={false} canExport={can(user.role, "export:csv")} exportName="client-comparison"

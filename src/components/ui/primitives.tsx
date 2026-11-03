@@ -49,6 +49,7 @@ const badgeVariants = cva("inline-flex items-center gap-1 rounded-full px-2.5 py
       warn: "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-300/25",
       critical: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-200 dark:ring-red-300/25",
       navy: "bg-navy text-white ring-navy dark:bg-white/10 dark:ring-white/15",
+      biz: "bg-biz-purple/15 text-biz-purple ring-biz-purple/30",
     },
   },
   defaultVariants: { tone: "neutral" },

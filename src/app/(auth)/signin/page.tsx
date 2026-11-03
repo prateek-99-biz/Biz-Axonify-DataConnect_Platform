@@ -7,7 +7,7 @@ import { devLoginEnabled } from "@/server/env";
 import { Button, CALLOUT_CRITICAL, Card, Input, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { AuthLink } from "@/components/auth/auth-card";
-import { BrandLogo } from "@/components/brand/brand-logo";
+import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
 import { cn } from "@/lib/utils";
 import { safeCallbackUrl } from "@/lib/safe-redirect";
 
@@ -71,6 +71,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
             <Button variant="dark" className="w-full">Sign in (dev)</Button>
           </form>
         )}
+        <p className="mt-6 flex items-center gap-2 border-t hairline pt-4 text-[11px] text-slate-500"><BizMark />A Biz Group dashboard for Axonify</p>
       </Card>
     </main>
   );

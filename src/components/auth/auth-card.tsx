@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandLogo } from "@/components/brand/brand-logo";
+import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
 import { Card, CALLOUT_CRITICAL } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function AuthCard({ title, intro, error, notice, children }: { title: str
         {error && <p role="alert" className={cn("glass mt-3 !rounded-xl px-3 py-2 text-xs", CALLOUT_CRITICAL)}>{error}</p>}
         {notice && <p role="status" className="glass mt-3 !rounded-xl border-emerald-300/60 !bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-300/20 dark:!bg-emerald-400/10 dark:text-emerald-100">{notice}</p>}
         {children}
+        <p className="mt-6 flex items-center gap-2 border-t hairline pt-4 text-[11px] text-slate-500"><BizMark />A Biz Group dashboard for Axonify</p>
       </Card>
     </main>
   );

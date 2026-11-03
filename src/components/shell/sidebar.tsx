@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BrandLogo } from "@/components/brand/brand-logo";
+import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
 import { activeHref, NAV, NAV_GROUPS } from "./nav";
 import type { Permission } from "@/server/auth/rbac";
 
@@ -40,7 +40,7 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
           collapsed ? "w-[4.5rem] hover:w-64 has-[:focus-visible]:w-64" : "w-full")}
         aria-label="Primary">
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-biz-purple/15 blur-3xl dark:bg-biz-purple/20" />
         <div className="relative flex h-16 shrink-0 items-center gap-3 px-4">
           <BrandLogo size={40} />
           <span className={cn("leading-tight", reveal)}>
@@ -48,14 +48,14 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
             <span className="block text-xs font-medium text-brand-ink">Intelligence · Axonify</span>
           </span>
         </div>
-        <div className="relative mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-brand/40 to-transparent" aria-hidden />
+        <div className="relative mx-4 h-px shrink-0 bg-gradient-to-r from-biz-purple/40 via-brand/60 to-biz-orange/40" aria-hidden />
         <nav className="relative flex-1 overflow-y-auto px-3 py-3">
           {NAV_GROUPS.map((group) => {
             const items = visible.filter((n) => n.group === group);
             if (items.length === 0) return null;
             return (
               <div key={group} className="mb-3">
-                <p className={cn("px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500", reveal)}>{group}</p>
+                <p className={cn("px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider", group === "Internal" ? "text-biz-purple" : "text-slate-500", reveal)}>{group}</p>
                 <ul className="space-y-0.5">
                   {items.map((n) => {
                     const active = n.href === current;
@@ -67,7 +67,7 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
                               ? "bg-gradient-to-r from-brand to-brand-accent font-semibold text-navy shadow-[0_10px_26px_-12px_rgb(var(--brand-accent)/0.9)]"
                               : "text-slate-600 hover:bg-white/60 hover:text-ink dark:hover:bg-white/10")}>
                           <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors",
-                            active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
+                            active ? "bg-white/35" : n.group === "Internal" ? "bg-biz-purple/15 text-biz-purple group-hover:bg-biz-purple/25" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                             <n.icon className="h-4 w-4" aria-hidden />
                           </span>
                           <span className={cn("min-w-0 leading-tight", reveal)}>
@@ -84,6 +84,7 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
           })}
         </nav>
         <div className="relative shrink-0 border-t hairline px-3 py-2">
+          <p className={cn("flex items-center gap-2 px-[10px] pb-2 pt-1 text-[11px] text-slate-500", reveal)}><BizMark />A Biz Group dashboard for Axonify</p>
           <button type="button" onClick={toggle} aria-pressed={collapsed} aria-label={collapsed ? "Keep the menu open" : "Fold the menu to icons"}
             className="group flex w-full items-center gap-3 rounded-xl px-[10px] py-2 text-sm text-slate-600 transition-colors hover:bg-white/60 hover:text-ink dark:hover:bg-white/10">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand-ink group-hover:bg-brand/20">

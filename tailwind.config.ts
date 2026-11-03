@@ -12,6 +12,7 @@ const config: Config = {
       colors: {
         brand: { DEFAULT: v("brand"), dark: v("brand-dark"), pale: v("brand-pale"), accent: v("brand-accent"), ink: v("brand-ink") },
         navy: { DEFAULT: "#1D2B43", soft: "#2B3C5A" },
+        biz: { purple: v("biz-purple"), orange: v("biz-orange"), grey: v("biz-grey") },
         ink: v("ink"),
         surface: v("surface"),
         line: v("line"),

@@ -62,7 +62,7 @@ export function QbrShell(p: QbrShellProps) {
       <div className="relative z-30 hidden w-[4.5rem] shrink-0 lg:block">
       <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 has-[:focus-visible]:w-64" aria-label="Dashboard Pages">
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-biz-purple/15 blur-3xl dark:bg-biz-purple/20" />
         <div className="relative flex h-16 items-center gap-3 px-4">
           <BrandLogo size={40} />
           <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">
@@ -70,7 +70,7 @@ export function QbrShell(p: QbrShellProps) {
             <span className="block text-xs font-medium text-brand-ink">{p.internal ? "Internal view" : "Quarterly business review"}</span>
           </span>
         </div>
-        <div className="relative mx-4 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" aria-hidden />
+        <div className="relative mx-4 h-px bg-gradient-to-r from-biz-purple/40 via-brand/60 to-biz-orange/40" aria-hidden />
         <nav className="relative flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {QBR_PAGES.map((n) => {
             const active = n.href === "/qbr" ? path === "/qbr" : path === n.href || path.startsWith(n.href + "/");

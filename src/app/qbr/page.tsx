@@ -55,11 +55,11 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader title="Average Frequency by Month" badge={<ScopeTag scope="range" />} subtitle="Days active per logged-in user" />
-          <div className="p-4"><SingleLine data={series} xKey="month" yKey="frequency" label="Average Frequency" format="decimal" /></div>
+          <div className="p-4"><SingleLine data={series} xKey="month" yKey="frequency" label="Average Frequency" format="decimal" accent="orange" /></div>
         </Card>
         <Card>
           <CardHeader title="Training Participation by Month" badge={<ScopeTag scope="range" />} subtitle="Training users ÷ active users" />
-          <div className="p-4"><SingleLine data={series} xKey="month" yKey="participation" label="Training Participation" format="pct" /></div>
+          <div className="p-4"><SingleLine data={series} xKey="month" yKey="participation" label="Training Participation" format="pct" accent="green" /></div>
         </Card>
       </div>
     </div>

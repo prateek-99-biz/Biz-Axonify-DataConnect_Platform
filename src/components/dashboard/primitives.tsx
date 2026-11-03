@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { titleCase } from "@/lib/labels";
 import { KPI_DEFS, type KpiMetric } from "@/server/dashboard/definitions";
+import { ACCENT, accentForKpi } from "@/lib/accent";
 
 export function PageHeader({ icon: Icon, title, subtitle, right }: { icon: LucideIcon; title: string; subtitle?: string; right?: ReactNode }) {
   return (
@@ -45,7 +46,7 @@ export function ScopeTag({ scope, label }: { scope: Scope; label?: string }) {
 export function KpiTile({ label, value, hint, scope, scopeLabel, metric }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string; metric?: KpiMetric }) {
   return (
     <Card className={cn("relative py-4 pl-6 pr-4", metric && "cursor-help")} title={metric ? KPI_DEFS[metric] : hint}>
-      <span aria-hidden className="absolute bottom-4 left-3 top-4 w-1 rounded-full bg-gradient-to-b from-brand to-brand-accent" />
+      <span aria-hidden className={cn("absolute bottom-4 left-3 top-4 w-1 rounded-full bg-gradient-to-b", ACCENT[accentForKpi(metric)].bar)} />
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">{value}</p>
       {hint && <p className="mt-0.5 truncate text-[11px] text-slate-400">{hint}</p>}
@@ -105,7 +106,7 @@ export function TrendPill({ trend }: { trend: "Rising" | "Declining" | "Stable" 
 export function InternalNote({ children }: { children: ReactNode }) {
   return (
     <p className="glass !rounded-xl border-dashed px-4 py-2 text-xs text-slate-500">
-      <span className="mr-2 rounded-full bg-navy px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-white/15">Internal</span>
+      <span className="mr-2 rounded-full bg-biz-purple/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-biz-purple ring-1 ring-inset ring-biz-purple/30">Internal</span>
       {children}
     </p>
   );

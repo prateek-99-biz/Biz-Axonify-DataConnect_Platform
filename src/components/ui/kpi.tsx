@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { Card } from "./primitives";
 import { cn, fmtNumber, fmtPct } from "@/lib/utils";
+import { ACCENT, type Accent } from "@/lib/accent";
 import type { Delta } from "@/server/metrics/calculations";
 
 export function DeltaChip({ d, unit = "pts", invert = false }: { d: Delta; unit?: "pts" | "pct" | "abs"; invert?: boolean }) {
@@ -20,22 +21,41 @@ export function DeltaChip({ d, unit = "pts", invert = false }: { d: Delta; unit?
 }
 
 export function KpiCard({
-  label, value, vsPrev, vsYear, hint, unit = "pts",
-}: { label: string; value: string; vsPrev?: Delta; vsYear?: Delta; hint?: string; unit?: "pts" | "pct" | "abs" }) {
+  label, value, vsPrev, vsYear, hint, unit = "pts", accent,
+}: { label: string; value: string; vsPrev?: Delta; vsYear?: Delta; hint?: string; unit?: "pts" | "pct" | "abs"; accent?: Accent }) {
   // A tile with no value and no comparison says nothing, so it is left out until there is data.
   if (value === "—") return null;
   vsPrev = vsPrev?.abs == null ? undefined : vsPrev;
   vsYear = vsYear?.abs == null ? undefined : vsYear;
   return (
     <Card className="group relative p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift" title={hint}>
-      <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-brand/25 blur-2xl transition-opacity group-hover:opacity-80 dark:bg-brand/15" />
-      <p className="relative text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+      <div aria-hidden className={cn("pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full blur-2xl transition-opacity group-hover:opacity-80", ACCENT[accent ?? "green"].orb)} />
+      <p className="relative flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">{accent && <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", ACCENT[accent].dot)} />}{label}</p>
       <p className="relative mt-2 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
       {hint && <p className="relative mt-0.5 truncate text-[11px] text-slate-400">{hint}</p>}
       <div className="relative mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-medium text-slate-500">
         {vsPrev && <span className="flex items-center gap-1.5">vs prev <DeltaChip d={vsPrev} unit={unit} /></span>}
         {vsYear && <span className="flex items-center gap-1.5">YoY <DeltaChip d={vsYear} unit={unit} /></span>}
       </div>
+    </Card>
+  );
+}
+
+/** The supporting numbers in one quiet row, so the headline KPIs above it are the ones that catch the eye. */
+export function KpiStrip({ items }: { items: { label: string; value: string; vsPrev?: Delta; unit?: "pts" | "pct" | "abs"; accent?: Accent }[] }) {
+  const shown = items.filter((i) => i.value !== "—");
+  if (shown.length === 0) return null;
+  return (
+    <Card className="grid grid-cols-2 gap-y-1 py-2 lg:grid-cols-4">
+      {shown.map((i) => (
+        <div key={i.label} className="px-5 py-3 lg:border-l hairline lg:first:border-l-0">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{i.accent && <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", ACCENT[i.accent].dot)} />}{i.label}</p>
+          <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-2xl font-semibold tabular-nums tracking-tight">{i.value}</span>
+            {i.vsPrev?.abs != null && <DeltaChip d={i.vsPrev} unit={i.unit} />}
+          </p>
+        </div>
+      ))}
     </Card>
   );
 }

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { requirePagePermission } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { loadContext, type SearchParams } from "@/server/services/context";
-import { buildPortfolio, deriveAlerts } from "@/server/services/portfolio";
+import { buildPortfolio } from "@/server/services/portfolio";
+import { buildAttention } from "@/server/services/attention";
 import { delta } from "@/server/metrics/calculations";
 import { periodKey, periodLabel, previousPeriod, yearAgo } from "@/server/metrics/period";
 import { Badge, CALLOUT_WARN, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
-import { DeltaChip, KpiCard } from "@/components/ui/kpi";
+import { DeltaChip, KpiCard, KpiStrip } from "@/components/ui/kpi";
+import { NeedsAttention } from "@/components/dashboard/needs-attention";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
@@ -23,7 +25,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
   const { kpis } = view;
   const prevLabel = periodLabel(previousPeriod(f.period));
   const yaLabel = periodLabel(yearAgo(f.period));
-  const alerts = deriveAlerts(view, f.period);
+  const attention = buildAttention(view.clients, new Date().toISOString().slice(0, 10), prevLabel);
   const canExport = can(user.role, "export:csv");
 
   if (view.scopeClientCount === 0) {
@@ -88,16 +90,28 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
         </p>
       )}
 
-      <section aria-label="Key indicators" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Registered Users" unit="pct" value={fmtNumber(kpis.current.registeredUsers)} vsPrev={delta(kpis.current.registeredUsers, kpis.previous.registeredUsers)} vsYear={delta(kpis.current.registeredUsers, kpis.yearAgo.registeredUsers)} />
-        <KpiCard label="Active Users" unit="pct" value={fmtNumber(kpis.current.activeUsers)} vsPrev={delta(kpis.current.activeUsers, kpis.previous.activeUsers)} vsYear={delta(kpis.current.activeUsers, kpis.yearAgo.activeUsers)} />
-        <KpiCard label="Participation" value={fmtPct(kpis.current.participationRate)} hint="Training users ÷ active users" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
-        <KpiCard label="Knowledge" value={fmtPct(kpis.current.avgKnowledge)} hint="Average current knowledge" vsPrev={delta(kpis.current.avgKnowledge, kpis.previous.avgKnowledge)} vsYear={delta(kpis.current.avgKnowledge, kpis.yearAgo.avgKnowledge)} />
-        <KpiCard label="Engagement Rate" value={fmtPct(kpis.current.engagementRate)} hint="Active users ÷ registered users" vsPrev={delta(kpis.current.engagementRate, kpis.previous.engagementRate)} vsYear={delta(kpis.current.engagementRate, kpis.yearAgo.engagementRate)} />
-        <KpiCard label="Retention Rate" value={fmtPct(kpis.current.retentionRate)} hint="Retained users ÷ previous active users" vsPrev={delta(kpis.current.retentionRate, kpis.previous.retentionRate)} vsYear={delta(kpis.current.retentionRate, kpis.yearAgo.retentionRate)} />
-        <KpiCard label="Feature Adoption" value={fmtPct(kpis.current.featureAdoption)} hint="Features used ÷ features available" vsPrev={delta(kpis.current.featureAdoption, kpis.previous.featureAdoption)} vsYear={delta(kpis.current.featureAdoption, kpis.yearAgo.featureAdoption)} />
-        <KpiCard label="Health Score" unit="abs" value={kpis.current.healthScore?.toFixed(0) ?? "—"} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
+      <NeedsAttention attention={attention} scopeCount={view.clients.length} periodLabel={periodLabel(f.period)} periodKey={periodKey(f.period)} />
+
+      <section aria-label="Headline indicators" className="grid gap-4 sm:grid-cols-3">
+        <KpiCard label="Participation" accent="green" value={fmtPct(kpis.current.participationRate)} hint="Training users ÷ active users" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
+        <KpiCard label="Knowledge" accent="purple" value={fmtPct(kpis.current.avgKnowledge)} hint="Average current knowledge" vsPrev={delta(kpis.current.avgKnowledge, kpis.previous.avgKnowledge)} vsYear={delta(kpis.current.avgKnowledge, kpis.yearAgo.avgKnowledge)} />
+        <KpiCard label="Health Score" accent="green" unit="abs" value={kpis.current.healthScore?.toFixed(0) ?? "—"} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
+        {kpis.current.healthScore == null && (
+          <Card className="flex items-center p-5 sm:col-span-2">
+            <p className="text-sm text-slate-600">
+              Knowledge and Health Score are not available for {periodLabel(f.period)}. Axonify keeps only each learner&rsquo;s current score, so they appear for quarters the dashboard has refreshed in. <Link href="/metrics" className="underline">See what the metrics mean</Link>.
+            </p>
+          </Card>
+        )}
       </section>
+
+      <KpiStrip items={[
+        { label: "Registered Users", value: fmtNumber(kpis.current.registeredUsers), vsPrev: delta(kpis.current.registeredUsers, kpis.previous.registeredUsers), unit: "pct" },
+        { label: "Active Users", value: fmtNumber(kpis.current.activeUsers), vsPrev: delta(kpis.current.activeUsers, kpis.previous.activeUsers), unit: "pct" },
+        { label: "Engagement Rate", accent: "orange", value: fmtPct(kpis.current.engagementRate), vsPrev: delta(kpis.current.engagementRate, kpis.previous.engagementRate) },
+        { label: "Retention Rate", value: fmtPct(kpis.current.retentionRate), vsPrev: delta(kpis.current.retentionRate, kpis.previous.retentionRate) },
+        { label: "Feature Adoption", value: fmtPct(kpis.current.featureAdoption), vsPrev: delta(kpis.current.featureAdoption, kpis.previous.featureAdoption) },
+      ]} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
@@ -111,18 +125,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
               <div key={k} className="flex items-center justify-between"><RiskBadge risk={k} /><span className="tabular-nums">{view.riskCounts[k]} <span className="text-xs text-slate-400">{l}</span></span></div>
             ))}
           </div>
-          <div className="border-t hairline">
-            <p className="px-4 pt-3 text-xs font-medium text-slate-500">Open alerts ({alerts.length})</p>
-            <ul className="max-h-44 divide-y divide-line overflow-y-auto">
-              {alerts.length === 0 && <li className="px-4 py-3 text-xs text-slate-500">No alerts for this period.</li>}
-              {alerts.slice(0, 8).map((a) => (
-                <li key={a.key} className="px-4 py-2 text-xs">
-                  <Badge tone={a.severity === "critical" ? "critical" : "warn"}>{a.title}</Badge>{" "}
-                  <Link href={`/clients/${a.clientId}?period=${periodKey(f.period)}`} className="font-medium hover:underline">{a.clientName}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <p className="border-t hairline px-4 py-3 text-xs text-slate-500">Alerts for these clients are listed in the bell at the top of the page.</p>
         </Card>
       </div>
 
