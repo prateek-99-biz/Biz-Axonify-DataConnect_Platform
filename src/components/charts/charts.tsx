@@ -55,7 +55,11 @@ export function TrendChart({
   const t = useChartTheme();
   const uid = "g" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const f = (v: number) => (format === "pct" ? pctFmt(v) : format === "score" ? v.toFixed(0) : new Intl.NumberFormat("en-US").format(v));
+  // A line needs two points. A measure with only one or two values (knowledge exists for the latest quarter only) would draw nothing, so it gets dots and a note.
+  const sparse = series.map((s) => ({ s, at: data.filter((d) => d[s.key] != null).map((d) => String(d[xKey])) })).filter((x) => x.at.length > 0 && x.at.length <= 2);
+  const sparseKeys = new Set(sparse.map((x) => x.s.key));
   return (
+    <>
     <ChartFrame height={height} label={`Trend of ${series.map((s) => s.label).join(", ")}`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
@@ -74,11 +78,15 @@ export function TrendChart({
           {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
           {series.map((s, i) => (
             <Area key={s.key} type="monotone" dataKey={s.key} name={s.label} stroke={t.color(s, i)} strokeWidth={2.25} fill={`url(#${uid}-${i})`}
-              dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: t.tooltip.background as string }} connectNulls={false} />
+              dot={sparseKeys.has(s.key) ? { r: 5, strokeWidth: 2, stroke: t.color(s, i), fill: t.color(s, i) } : false} activeDot={{ r: 4, strokeWidth: 2, stroke: t.tooltip.background as string }} connectNulls={false} />
           ))}
         </AreaChart>
       </ResponsiveContainer>
     </ChartFrame>
+    {sparse.map((x) => (
+      <p key={x.s.key} className="mt-1 text-[11px] text-slate-500">{x.s.label} has a value for {x.at.join(" and ")} only, so it shows as a dot.</p>
+    ))}
+    </>
   );
 }
 
