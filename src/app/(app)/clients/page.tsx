@@ -22,6 +22,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
   const everyone = [...view.clients.map((c) => c.client), ...view.noDataClients];
   const noneMapped = everyone.length > 0 && everyone.every((c) => !c.salesforceAccountId);
   const showIndustry = everyone.some((c) => c.industry !== "Unknown");
+  const showCsm = everyone.some((c) => c.csmName);
 
   const rows: TableRow[] = view.clients.length + view.noDataClients.length === 0 ? [] : [
     ...view.clients.map((c) => ({
@@ -61,7 +62,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         {rows.length === 0 ? <EmptyState title="No clients match these filters" /> : (
           <DataTable canExport={can(user.role, "export:csv")} exportName={`clients-${p}`}
             columns={[
-              { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), { key: "csm", header: "CSM" },
+              { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), ...(showCsm ? [{ key: "csm", header: "CSM" }] : []),
               { key: "users", header: "Users", align: "right" as const }, { key: "engagement", header: "Participation", align: "right" as const },
               { key: "health", header: "Health", align: "right" as const }, { key: "risk", header: "Risk" }, ...(noneMapped ? [] : [{ key: "mapped", header: "CRM Mapping" }]),
             ]} rows={rows} />

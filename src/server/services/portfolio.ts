@@ -34,7 +34,7 @@ export interface PortfolioView {
   trend: { period: string; engagementRate: number | null; participationRate: number | null; avgKnowledge: number | null; retentionRate: number | null; featureAdoption: number | null; healthScore: number | null; activeUsers: number }[];
   industries: { industry: string; clients: number; current: DerivedMetrics; previous: DerivedMetrics }[];
   clients: ClientRowView[];
-  csmBooks: { csmName: string; csmEmail: string; clients: number; current: DerivedMetrics; atRisk: number }[];
+  csmBooks: { csmName: string; csmEmail: string; clients: number; current: DerivedMetrics; atRisk: number; healthy: number }[];
   riskCounts: Record<RiskLevel, number>;
   /** Clients with no data in the selected period (never shown as zeros). */
   noDataClients: ClientSummary[];
@@ -99,13 +99,16 @@ export function buildPortfolio(clients: ClientSummary[], rows: ClientPeriodRow[]
     return { industry, clients: members.length, current: aggregate(rr, cur), previous: aggregate(rr, prev) };
   });
 
-  const csmKeys = [...new Set(clientViews.map((c) => c.client.csmEmail))].sort();
-  const csmBooks = csmKeys.map((email) => {
-    const mine = clientViews.filter((c) => c.client.csmEmail === email);
+  // A CSM is identified by email, or by name when only a name is on record; clients with neither share one "Unassigned" book.
+  const csmKey = (c: ClientSummary) => c.csmEmail || c.csmName;
+  const csmKeys = [...new Set(clientViews.map((c) => csmKey(c.client)))].sort((a, b) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)));
+  const csmBooks = csmKeys.map((key) => {
+    const mine = clientViews.filter((c) => csmKey(c.client) === key);
     const rr = scopedRows.filter((r) => mine.some((m) => m.client.id === r.clientId));
     return {
-      csmEmail: email, csmName: mine[0].client.csmName, clients: mine.length, current: aggregate(rr, cur),
+      csmEmail: key, csmName: mine[0].client.csmName || "Unassigned", clients: mine.length, current: aggregate(rr, cur),
       atRisk: mine.filter((m) => m.risk === "critical" || m.risk === "at_risk").length,
+      healthy: mine.filter((m) => m.risk === "healthy").length,
     };
   });
 

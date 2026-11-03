@@ -67,6 +67,24 @@ model ClientMapping {
   @@index([displayName])
 }
 
+/// Static Salesforce account data, loaded from a CSV in Settings until the live Salesforce link exists.
+/// Keyed by the Axonify tenant ID (the client ID shown in the Clients list) and kept apart from the Sync* tables, which every sync rewrites.
+model SalesforceAccount {
+  clientId            String    @id
+  salesforceAccountId String?   @unique
+  industry            String?
+  region              String?
+  csmName             String?
+  csmEmail            String?
+  licenses            Int?
+  /// Annual licence value (ARR) in `currency`.
+  licenseValue        Decimal?  @db.Decimal(14, 2)
+  currency            String    @default("USD")
+  contractStart       DateTime? @db.Date
+  renewalDate         DateTime? @db.Date
+  updatedAt           DateTime  @updatedAt
+}
+
 model Note {
   id        String        @id @default(cuid())
   clientId  String

@@ -10,6 +10,8 @@ import { supabaseConfigured } from "@/lib/supabase/server";
 import { supabaseAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { emailProblem, normalizeEmail } from "@/lib/account-input";
 import { Badge, Button, CALLOUT_CRITICAL, Card, CardHeader, Input, Select } from "@/components/ui/primitives";
+import { SalesforceImport } from "@/components/settings/salesforce-import";
+import { accountsSummary, importAccounts, type ImportResult } from "@/server/services/salesforce-accounts";
 import { cn } from "@/lib/utils";
 
 const MESSAGES: Record<string, string> = {
@@ -83,6 +85,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     redirect(error ? "/settings?error=failed" : `/settings?resent=${encodeURIComponent(user.email)}`);
   }
 
+  async function importSalesforce(_prev: ImportResult | null, form: FormData): Promise<ImportResult> {
+    "use server";
+    await requirePermission("settings:manage");
+    const file = form.get("file");
+    if (!(file instanceof File) || file.size === 0) return { imported: 0, blank: 0, errors: ["Choose a CSV file first."] };
+    if (file.size > 1_000_000) return { imported: 0, blank: 0, errors: ["That file is larger than 1 MB. It should only hold one row per client."] };
+    const result = await importAccounts(await file.text());
+    if (result.imported) revalidatePath("/", "layout");
+    return result;
+  }
+
+  const sf = await accountsSummary();
+
   const status = [
     { name: "Data Adapter", value: env.DATA_ADAPTER === "mock" ? "Mock (development only)" : "Synced summaries (Postgres)", ok: env.DATA_ADAPTER !== "mock" },
     { name: "Supabase Auth", value: supabaseConfigured() ? "Configured" : "Not configured", ok: supabaseConfigured() },
@@ -98,6 +113,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <ul className="divide-y divide-line text-sm">
           {status.map((i) => <li key={i.name} className="flex items-center justify-between px-4 py-2"><span>{i.name}</span><span className="flex items-center gap-2 text-slate-600">{i.value}<Badge tone={i.ok ? "good" : "warn"}>{i.ok ? "OK" : "Needs Attention"}</Badge></span></li>)}
         </ul>
+      </Card>
+      <Card>
+        <CardHeader title="Salesforce Accounts" subtitle="Static account data until the live Salesforce link is built: CSM, industry, licences, licence value and renewal dates" />
+        <p className="px-4 pt-3 text-xs text-slate-600">
+          {sf.count === 0 ? "Nothing loaded yet." : `${sf.count} account${sf.count === 1 ? "" : "s"} loaded${sf.updatedAt ? `, last updated ${sf.updatedAt.toISOString().slice(0, 16).replace("T", " ")} UTC` : ""}.`}{" "}
+          <a href="/api/salesforce-accounts" className="underline">Download CSV</a> for every client with the loaded values filled in, edit it, and import it again. Re-importing replaces a client&rsquo;s row; clients missing from the file are left as they are.
+        </p>
+        <p className="px-4 pt-2 text-[11px] text-slate-500">
+          Columns: client_id (the Axonify tenant ID, never change it), client_name (for reference), salesforce_account_id, industry, region, csm_name, csm_email, licenses, license_value (annual), currency (USD, AED…), contract_start and renewal_date (YYYY-MM-DD).
+        </p>
+        <SalesforceImport action={importSalesforce} />
       </Card>
       <Card>
         <CardHeader title="User Management" subtitle="Add a person and they receive an email with a link to choose their password" />

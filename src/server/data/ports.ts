@@ -10,6 +10,16 @@ export type Result<T> =
   | { status: "ok"; data: T; source: SourceKind; asOf: string }
   | { status: "unavailable"; reason: string; source: SourceKind };
 
+/** Commercial facts about a client from Salesforce. Dates are written YYYY-MM-DD. */
+export interface ClientCommercial {
+  licenses: number | null;
+  licenseValue: number | null;
+  currency: string;
+  region: string | null;
+  contractStart: string | null;
+  renewalDate: string | null;
+}
+
 export interface ClientSummary {
   /** Unified client key (ClientMapping.id). */
   id: string;
@@ -19,6 +29,8 @@ export interface ClientSummary {
   csmName: string;
   axonifyTenantId: string | null;
   salesforceAccountId: string | null;
+  /** Present once the client's row has been loaded from the Salesforce CSV. */
+  commercial?: ClientCommercial | null;
 }
 
 /** One row per client per calendar quarter (target shape of the reporting table). */

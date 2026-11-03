@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LifeBuoy } from "lucide-react";
 import { auth, signOut } from "@/server/auth";
 import { can, ROLE_LABEL, type Permission } from "@/server/auth/rbac";
 import { ackedAlertKeys } from "@/server/services/alert-acks";
@@ -13,7 +15,7 @@ import { Badge } from "@/components/ui/primitives";
 import { RefreshButton } from "@/components/shell/refresh-button";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 
-const ALL_PERMS: Permission[] = ["dashboard:read", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run"];
+const ALL_PERMS: Permission[] = ["dashboard:read", "dashboard:internal", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run"];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -43,7 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen gap-3 overflow-hidden p-3">
-      <Suspense fallback={<aside className="glass-nav hidden w-[4.5rem] md:block" />}>
+      <Suspense fallback={<aside className="glass-nav hidden w-64 md:block" />}>
         <Sidebar allowed={allowed} />
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -54,6 +56,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Badge tone="warn" className="shrink-0" title="All figures are synthetic development data">MOCK DATA</Badge>
           )}
           {can(user.role, "sync:run") && <RefreshButton asOf={loaded.ok ? loaded.ctx.asOf : null} />}
+          <Link href="/how-it-works" title="How this dashboard works" className="hidden shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-ink ring-1 ring-line transition-colors hover:bg-brand/15 sm:flex">
+            <LifeBuoy className="h-4 w-4" aria-hidden /><span className="hidden lg:inline">Help</span><span className="sr-only lg:hidden">Help</span>
+          </Link>
           <ThemeToggle />
           <NotificationCentre items={notifications} canAck />
           <ProfileMenu name={user.name ?? user.email} email={user.email} role={ROLE_LABEL[user.role]} signOutAction={doSignOut} />

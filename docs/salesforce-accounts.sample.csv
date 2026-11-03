@@ -1,0 +1,5 @@
+client_id,client_name,salesforce_account_id,industry,region,csm_name,csm_email,licenses,license_value,currency,contract_start,renewal_date
+101,Example Pharmacy Group,001000000000AAA,Retail,GCC,Sarah K.,sarah.k@bizgroup.ae,800,12000,USD,2025-01-01,2026-12-31
+102,Example Airline,001000000000BBB,Aviation,GCC,Mohamed R.,mohamed.r@bizgroup.ae,500,8500,USD,2025-09-01,2026-09-01
+103,Example Bank,001000000000CCC,Banking,UAE,Sarah K.,sarah.k@bizgroup.ae,350,5200,AED,2024-07-01,2026-07-01
+104,Example Retailer,,,,,,,,USD,,

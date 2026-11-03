@@ -5,6 +5,7 @@
 import { db } from "@/server/db";
 import { cached, SNAPSHOT_STALE_MS, SNAPSHOT_TTL_MS } from "@/server/cache";
 import type { AnalyticsPort, ClientPeriodRow, ClientSummary, Result } from "../../ports";
+import { applySalesforce, fromDb } from "../../salesforce-overlay";
 
 const unavailable = (reason: string): Result<never> => ({ status: "unavailable", reason, source: "synced" });
 
@@ -22,9 +23,13 @@ export const syncedAnalytics: AnalyticsPort = {
 
   async listClients() {
     // Independent queries: start both, so this costs one round trip instead of two.
-    const [at, rows] = await Promise.all([lastSync(), cached("snap:clients", SNAPSHOT_TTL_MS, () => db.syncClient.findMany({ orderBy: { name: "asc" } }), SNAPSHOT_STALE_MS)]);
+    const [at, rows, accounts] = await Promise.all([
+      lastSync(),
+      cached("snap:clients", SNAPSHOT_TTL_MS, () => db.syncClient.findMany({ orderBy: { name: "asc" } }), SNAPSHOT_STALE_MS),
+      cached("snap:salesforce", SNAPSHOT_TTL_MS, async () => (await db.salesforceAccount.findMany()).map(fromDb), SNAPSHOT_STALE_MS),
+    ]);
     if (!at) return unavailable(NO_SYNC);
-    const data: ClientSummary[] = rows.map((r) => ({ ...r }));
+    const data: ClientSummary[] = applySalesforce(rows.map((r) => ({ ...r })), accounts);
     return { status: "ok", data, source: "synced", asOf: at.toISOString() };
   },
 

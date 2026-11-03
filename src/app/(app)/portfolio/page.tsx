@@ -64,6 +64,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
 
   // Until industries are mapped everything is "Unknown", so the benchmark chart and column would only repeat that word.
   const showIndustry = view.clients.some((c) => c.client.industry !== "Unknown");
+  const showCsm = view.clients.some((c) => c.client.csmName);
   const industryChart =view.industries.map((i) => ({
     industry: i.industry, [periodLabel(f.period)]: i.current.participationRate, [prevLabel]: i.previous.participationRate,
   }));
@@ -78,7 +79,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
             {f.industry ? ` · ${f.industry}` : ""} · compared with {prevLabel} and {yaLabel}
           </p>
         </div>
-        <p className="text-xs text-slate-500">Source: {humanize(ctx.source)} · as of {new Date(ctx.asOf).toISOString().slice(0, 16).replace("T", " ")} UTC · <Link href="/data-reliability#definitions" className="underline">Metric Definitions</Link></p>
+        <p className="text-xs text-slate-500">Source: {humanize(ctx.source)} · as of {new Date(ctx.asOf).toISOString().slice(0, 16).replace("T", " ")} UTC · <Link href="/metrics" className="underline">What the Metrics Mean</Link></p>
       </div>
 
       {view.noDataClients.length > 0 && (
@@ -136,7 +137,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
         <CardHeader title="Clients" subtitle="Select a client to drill into teams, users and engagement" action={<Link href={`/clients/compare?period=${periodKey(f.period)}`} className="text-xs underline">Compare clients</Link>} />
         <DataTable canExport={canExport} exportName={`portfolio-${periodKey(f.period)}`}
           columns={[
-            { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), { key: "csm", header: "CSM" },
+            { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), ...(showCsm ? [{ key: "csm", header: "CSM" }] : []),
             { key: "users", header: "Users", align: "right" as const }, { key: "engagement", header: "Participation", align: "right" as const },
             { key: "change", header: `Δ vs ${prevLabel}`, align: "right" as const }, { key: "knowledge", header: "Knowledge", align: "right" as const }, { key: "retention", header: "Retention", align: "right" as const },
             { key: "adoption", header: "Adoption", align: "right" as const }, { key: "health", header: "Health", align: "right" as const },
