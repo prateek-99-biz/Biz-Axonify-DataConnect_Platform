@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { Badge, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { monthLabel } from "@/server/dashboard/calc";
 import { cn } from "@/lib/utils";
 import { QBR_PAGES } from "./pages";
@@ -63,7 +64,7 @@ export function QbrShell(p: QbrShellProps) {
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
         <div className="relative flex h-16 items-center gap-3 px-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent text-sm font-extrabold text-navy shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">Ax</span>
+          <BrandLogo size={40} />
           <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">
             <span className="block text-sm font-bold tracking-tight">Axonify Data Connect</span>
             <span className="block text-xs font-medium text-brand-ink">{p.internal ? "Internal view" : "Quarterly business review"}</span>

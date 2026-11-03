@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gauge } from "lucide-react";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { Card, CALLOUT_CRITICAL } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -10,9 +10,7 @@ export function AuthCard({ title, intro, error, notice, children }: { title: str
     <main className="relative flex min-h-screen items-center justify-center p-4">
       <ThemeToggle className="absolute right-4 top-4" />
       <Card className="w-full max-w-sm p-7">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent shadow-[0_10px_28px_-10px_rgb(var(--brand)/0.9)]">
-          <Gauge className="h-6 w-6 text-navy" aria-hidden />
-        </span>
+        <BrandLogo size={64} />
         <h1 className="mt-4 text-xl font-bold tracking-tight">{title}</h1>
         {intro && <p className="mt-1 text-sm text-slate-500">{intro}</p>}
         {error && <p role="alert" className={cn("glass mt-3 !rounded-xl px-3 py-2 text-xs", CALLOUT_CRITICAL)}>{error}</p>}

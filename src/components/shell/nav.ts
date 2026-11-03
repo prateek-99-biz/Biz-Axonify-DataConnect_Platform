@@ -1,4 +1,4 @@
-import { BookOpen, Building2, GitCompareArrows, Gauge, LayoutDashboard, LifeBuoy, Presentation, Settings, ShieldCheck, UsersRound, type LucideIcon } from "lucide-react";
+import { BookOpen, Building2, GitCompareArrows, LayoutDashboard, LifeBuoy, Presentation, Settings, ShieldCheck, UsersRound, type LucideIcon } from "lucide-react";
 import type { Permission } from "@/server/auth/rbac";
 
 export type NavGroup = "Analyse" | "Internal" | "Admin" | "Help";
@@ -26,4 +26,3 @@ export function activeHref(path: string): string | null {
   return hits.sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
 }
 
-export const BRAND_ICON = Gauge;

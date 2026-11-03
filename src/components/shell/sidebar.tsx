@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { activeHref, BRAND_ICON, NAV, NAV_GROUPS } from "./nav";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { activeHref, NAV, NAV_GROUPS } from "./nav";
 import type { Permission } from "@/server/auth/rbac";
 
 const STORAGE_KEY = "ci_nav_collapsed";
@@ -16,7 +17,6 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
   const sp = useSearchParams();
   // Carry the active filters across navigation.
   const qs = ["client", "industry", "period"].filter((k) => sp.get(k)).map((k) => `${k}=${encodeURIComponent(sp.get(k)!)}`).join("&");
-  const Brand = BRAND_ICON;
   const current = activeHref(path);
 
   const [collapsed, setCollapsed] = useState(false);
@@ -42,9 +42,7 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-accent/20 blur-3xl dark:bg-brand-accent/10" />
         <div className="relative flex h-16 shrink-0 items-center gap-3 px-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-accent shadow-[0_8px_24px_-8px_rgb(var(--brand)/0.9)] ring-1 ring-white/60 dark:ring-white/10">
-            <Brand className="h-5 w-5 text-navy" aria-hidden />
-          </span>
+          <BrandLogo size={40} />
           <span className={cn("leading-tight", reveal)}>
             <span className="block text-sm font-bold tracking-tight">Biz Customer</span>
             <span className="block text-xs font-medium text-brand-ink">Intelligence · Axonify</span>
