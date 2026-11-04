@@ -1,6 +1,6 @@
 # Project Scope: Biz Customer Intelligence Platform (Axonify DataConnect)
 
-_Last reviewed: 2026-10-28. Companion file: [TASKLIST.md](TASKLIST.md)._
+_Last reviewed: 2026-11-04. Companion file: [TASKLIST.md](TASKLIST.md)._
 
 ## 1. Purpose
 An internal Next.js web app for Biz Group customer-success teams (5 to 10 staff) that shows Axonify
@@ -16,10 +16,15 @@ Power BI report "Axonify-CSM-PowerBI-Dash" (spec: [axonify-dashboard-spec.md](ax
 | BigQuery to Postgres sync | `npm run sync` or admin "Refresh data" reads BigQuery once, stores summaries in Supabase Postgres | `src/server/sync`, `src/server/dashboard/bigquery/*`, `scripts/sync.ts` |
 | Auth and roles | Supabase Auth; Admin, Member, Client (pinned to one client, QBR only) | `src/server/auth/*`, `src/middleware.ts` |
 | Collaboration | Notes, tasks, alert acknowledgements, CSV export | `src/app/api/*`, `src/components/tables/*` |
-| Data reliability | Metric definitions, sync status, source freshness | `src/app/(app)/data-reliability` |
+| Data reliability | Metric definitions, sync status, source freshness, stale-data banner | `src/app/(app)/data-reliability` |
+| Internal pages | Internal Home, My Accounts (one CSM's accounts, week agenda, renewal timeline), Alerts and Watchlist, Renewals | `src/app/(app)/{internal,csm,alerts,renewals}`, `src/server/services/accounts.ts` |
+| Salesforce static data | CSV import of CSM, licences, contract value and renewal dates, keyed by Axonify client id; sample rows with a Remove button | `src/app/(app)/settings`, `src/server/services/salesforce-accounts.ts`, [docs/salesforce-data-request.md](docs/salesforce-data-request.md) |
+| Help pages | How It Works, What the Metrics Mean | `src/app/(app)/{how-it-works,metrics}` |
+| Refresh tooling | `sync:now`, `sync:schedule`, Refresh Data.cmd | `scripts/`, [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md) |
 
 ## 3. Out of scope (for now)
-- Salesforce (accounts, contracts, renewals, licensing, ARR): adapter is a stub (Phase 3).
+- A live Salesforce connection: the data is a static CSV for now. Cost To Serve and Benchmarks & Value (marked "Not Yet" on Internal Home) need hours, cost and benchmark data that does not exist yet.
+- Unattended refresh on Vercel: needs Google Cloud admin access (Workload Identity Federation or a reauth exemption).
 - Learning paths/SCORM, communications, MAX, checkpoints, chat (Phase 2).
 - Excel/PDF/QBR report generation, cloud deployment tooling, E2E tests (Phase 4).
 - Writing anything back to BigQuery or Axonify. The app is read-only against both.

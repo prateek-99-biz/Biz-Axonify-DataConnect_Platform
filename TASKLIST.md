@@ -1,7 +1,7 @@
 # Task List
 
-_Last updated: 2026-10-28. Scope and metric definitions: [PROJECT_SCOPE.md](PROJECT_SCOPE.md)._
-Legend: [x] done/verified, [ ] open. Priority: P0 wrong numbers on screen, P1 misleading, P2 polish.
+_Last updated: 2026-11-04 (see section R for work since 2026-10-29)._ _Earlier sections below were last updated 2026-10-28. Scope and metric definitions: [PROJECT_SCOPE.md](PROJECT_SCOPE.md)._
+Legend: [x] done/verified, [~] partly done, [ ] open. Priority: P0 wrong numbers on screen, P1 misleading, P2 polish.
 
 ## A. Data accuracy findings (from the 2026-10-28 audit)
 Method: all 14 queries dry-run against live BigQuery (all valid); the full dashboard pipeline run read-only for all 16 tenants; Emirates (tenant 324) compared with the Power BI spec and with direct distinct-user SQL.
@@ -36,13 +36,13 @@ Method: all 14 queries dry-run against live BigQuery (all valid); the full dashb
 
 ## C. Platform backlog (from docs/ROADMAP.md)
 - [ ] C1 Admin UI for `ClientMapping` (industry, CSM, Salesforce ID are unknown today).
-- [ ] C2 Salesforce adapter (Phase 3): accounts, contracts, renewals, licensing, ARR.
+- [~] C2 Salesforce (Phase 3): static CSV import, overlay and internal pages built (section R). Open: real CSV from the team, live connection.
 - [ ] C3 Phase 2 modules: learning paths/SCORM, communications, MAX, checkpoints.
 - [ ] C4 Phase 4: Excel/PDF/QBR export, caching, monitoring, CI/CD, E2E tests.
-- [ ] C5 Schedule `npm run sync` daily (Task Scheduler / cron / GitHub Actions).
+- [~] C5 Schedule the sync: Windows scripts built (`sync:now`, `sync:schedule`, section R). Open: unattended refresh needs a Google Cloud admin decision (DATA_REFRESH.md).
 - [ ] C6 Team, user and source-coverage views on synced data (currently mock-only).
 - [x] C7 Regression tests for A1-A3 added in `bigquery.test.ts` (roll-up rows, `|` hierarchy, 0-100 confidence).
-- [ ] C8 Commit the large working-tree change set (about 45 modified and several new directories are uncommitted).
+- [x] C8 Working tree committed (history in git).
 
 ## D. Fix log
 - 2026-10-28 A1-A3: `topRows()`/`aggregateMonths(rows, teams)` in `calc.ts` add only top-most team rows; `teamPath()` splits on `|`; confidence is `/100` in the matrix SQL and `norm100()` in `assemble.ts`. Re-run on live data: Emirates Oct 2026 now active 2,754 / logged-in 963 / training 889 (distinct-user SQL: 2,774 / 963 / 889), team nodes 614 -> 309, flydubai "Experts" 283 -> 9. A sync is needed before the stored snapshots show the corrected numbers.
@@ -210,3 +210,24 @@ Everything committed today was re-tested end to end on the final code; separate 
   3. Authentication > Email Templates (Invite, Reset Password, Confirm Signup): the default links work. Better for reliability, change each link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite` (use `recovery` and `signup` for the other two) with `&next=/set-password` on the first two.
   4. Production sending: Supabase's built-in mailer is limited to a few emails an hour; set up custom SMTP (Authentication > SMTP Settings) before inviting many people.
 - Not tested end to end: no emails were sent (no service-role key locally). Form checks, redirects, bad-link handling and the Settings screen were tested.
+
+
+## R. Internal pages, branding and refresh tooling (2026-10-30 to 2026-11-04)
+
+Done
+- [x] Internal pages: Internal Home, My Accounts (one CSM's accounts, This Week agenda, renewal timeline, account cards, admin team view), Alerts and Watchlist, Renewals. A CSM lands on My Accounts after sign-in.
+- [x] Salesforce static data: CSV import, Download CSV, sample data with Load and Remove buttons, data request and a pre-filled template of the 16 clients (kept out of git).
+- [x] Navigation made explicit (Analyse, Internal, Admin, Help groups) plus How It Works and What the Metrics Mean pages. Filters are shown only on pages that use them.
+- [x] Biz Group branding (logo, favicon, purple and orange accents) with Axonify green leading. Rules in docs/BRANDING.md.
+- [x] Review fixes: health number never contradicts its band; partial quarters are not flagged as declining; retention hidden when the base is under 10; Check Data flag for large accounts with almost nobody active; stale-data banner; sample data made realistic; contract currency; empty columns; chart legends, axes and the Knowledge dots; Feature Usage empty state.
+- [x] Refresh tooling: `npm run sync:now`, `npm run sync:schedule` (nightly, `-Morning` for the weekday sign-in check), Refresh Data.cmd, logs ignored by git.
+- [x] Docs: User Guide and Data Refresh guide added; README, scope, roadmap, architecture and assumptions brought up to date.
+
+Open
+- [ ] **Unattended refresh.** Needs Google Cloud admin: reauth exemption (A) or Workload Identity Federation (B). Then build the credentials helper, `/api/cron/sync` with `CRON_SECRET` and `vercel.json` cron, and set `maxDuration`.
+- [ ] Refresh Data on Vercel almost certainly fails today (no Google identity). Unverified. Add a clear message and, on localhost only, a "Sign in to Google" action.
+- [ ] Real Salesforce CSV from the team; then Remove Sample Data.
+- [ ] Cost To Serve (hours or cost data, finance role) and Benchmarks & Value (industry, Axonify benchmark, learning hours), both marked Not Yet on Internal Home.
+- [ ] Untested end to end: the CSM landing redirect (dev login needs an @bizgroup.ae address; unit-tested only) and the Windows schedule scripts' real runs (only the check-only run and input validation were exercised).
+- [ ] Provisional metrics still need sign-off (see A12). Items A4 to A13, B1 to B4 and E to K above that are not ticked remain open.
+- [ ] Not reproduced: the theme switching by itself (likely the OS or browser-pane colour scheme).

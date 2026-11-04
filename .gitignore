@@ -17,3 +17,6 @@ Axonify-CSM-PowerBI-Dash*.pdf
 
 # Files that list real customers or contract details; never commit
 /docs/private/
+
+# Output of the scheduled data refresh
+/logs/
