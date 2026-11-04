@@ -12,6 +12,7 @@ import { KpiStrip } from "@/components/ui/kpi";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { AckButton } from "@/components/internal/ack-button";
+import { PeriodNotice } from "@/components/internal/period-notice";
 import { SampleNotice } from "@/components/internal/sample-notice";
 import { cn, fmtPct } from "@/lib/utils";
 
@@ -29,7 +30,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   const acked = new Set(await ackedAlertKeys(user.id));
   const every = deriveAlerts(view, ctx.filters.period);
   const open = every.filter((a) => !acked.has(a.key));
-  const watch = buildWatchlist(view.clients, ctx.rows, ctx.filters.period);
+  const watch = buildWatchlist(view.clients, ctx.rows, ctx.filters.period, ctx.filters.inProgress);
   const sample = await sampleCount();
   const csmOf = new Map(ctx.clients.map((c) => [c.id, c.csmName || "Unassigned"]));
 
@@ -52,6 +53,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         <p className="mt-1 text-sm text-slate-500">What needs a conversation in {periodLabel(ctx.filters.period)}, and who to talk to about it</p>
       </div>
 
+      <PeriodNotice label={periodLabel(ctx.filters.period)} progress={ctx.progress} asOf={ctx.asOf} />
       <SampleNotice count={sample} canRemove={can(user.role, "settings:manage")} />
 
       <KpiStrip items={[

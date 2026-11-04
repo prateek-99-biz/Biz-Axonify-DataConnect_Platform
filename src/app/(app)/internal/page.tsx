@@ -9,8 +9,9 @@ import { bookSummary, buildAccountCards, buildRenewals, buildWatchlist, csmKey, 
 import { sampleCount } from "@/server/services/salesforce-accounts";
 import { periodKey, periodLabel } from "@/server/metrics/period";
 import { Badge, Card, SourceUnavailable } from "@/components/ui/primitives";
+import { PeriodNotice } from "@/components/internal/period-notice";
 import { SampleNotice } from "@/components/internal/sample-notice";
-import { cn, fmtNumber } from "@/lib/utils";
+import { cn, fmtNumber, fmtHealth } from "@/lib/utils";
 
 interface Tile { name: string; href: string | null; value: string; note: string; status?: string }
 
@@ -40,7 +41,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
   const view = buildPortfolio(ctx.clients, ctx.rows, { ...ctx.filters, client: null, industry: null });
   const acked = new Set(await ackedAlertKeys(user.id));
   const openAlerts = deriveAlerts(view, ctx.filters.period).filter((a) => !acked.has(a.key));
-  const watch = buildWatchlist(view.clients, ctx.rows, ctx.filters.period);
+  const watch = buildWatchlist(view.clients, ctx.rows, ctx.filters.period, ctx.filters.inProgress);
   const renewals = buildRenewals(ctx.clients, view.clients, today, 90);
   const renewTotals = renewalValueByCurrency(renewals);
 
@@ -48,7 +49,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
   const books = new Set(ctx.clients.map(csmKey).filter((k) => k !== ""));
   let accountsTile: Tile;
   if (mine) {
-    const s = bookSummary(buildAccountCards(ctx.clients.filter((c) => csmKey(c) === mine), ctx.rows, ctx.filters.period, new Map([["", NO_SIGNAL]]), today));
+    const s = bookSummary(buildAccountCards(ctx.clients.filter((c) => csmKey(c) === mine), ctx.rows, ctx.filters.period, new Map([["", NO_SIGNAL]]), today, ctx.filters.inProgress));
     accountsTile = { name: "My Accounts", href: "/csm", value: String(s.accounts), note: `${s.needAttention} need attention · ${s.renewing90} renewing in 90 days` };
   } else {
     accountsTile = { name: "My Accounts", href: "/csm", value: String(books.size), note: books.size === 0 ? "No CSM data loaded yet" : `CSM book${books.size === 1 ? "" : "s"}; pick one to view` };
@@ -58,7 +59,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
     accountsTile,
     { name: "Alerts and Watchlist", href: "/alerts", value: String(openAlerts.length), note: `${openAlerts.filter((a) => a.severity === "critical").length} critical · ${watch.length} on the watchlist` },
     { name: "Renewals", href: "/renewals", value: String(renewals.length), note: renewTotals.length ? `in 90 days · ${renewTotals.map((t) => `${t.currency} ${fmtNumber(Math.round(t.total))}`).join(" · ")}` : "in 90 days" },
-    { name: "Account Health", href: "/portfolio", value: view.kpis.current.healthScore?.toFixed(0) ?? "—", note: `portfolio average · ${view.riskCounts.critical + view.riskCounts.at_risk} Critical or At Risk` },
+    { name: "Account Health", href: "/portfolio", value: fmtHealth(view.kpis.current.healthScore), note: `portfolio average · ${view.riskCounts.critical + view.riskCounts.at_risk} Critical or At Risk` },
     { name: "Benchmarks and Value", href: null, value: "—", note: "Needs industry and an Axonify-wide benchmark, plus learning hours.", status: "Not Yet" },
     { name: "Cost To Serve", href: null, value: "—", note: "Admins and finance. Needs CSM and technical hours, and cost per hour.", status: "Not Yet" },
   ];
@@ -72,6 +73,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
           {" "}Your role is {can(user.role, "settings:manage") ? "Admin" : "Member"}.
         </p>
       </div>
+      <PeriodNotice label={periodLabel(ctx.filters.period)} progress={ctx.progress} asOf={ctx.asOf} />
       <SampleNotice count={sample} canRemove={can(user.role, "settings:manage")} />
       <section aria-label="Internal pages" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {tiles.map((t) => <TileView key={t.name} t={t} />)}

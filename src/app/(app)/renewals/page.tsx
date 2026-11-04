@@ -12,7 +12,7 @@ import { RiskBadge } from "@/components/ui/risk-badge";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { RenewalTimeline } from "@/components/internal/renewal-timeline";
 import { SampleNotice } from "@/components/internal/sample-notice";
-import { cn, fmtNumber } from "@/lib/utils";
+import { cn, fmtNumber, fmtHealth } from "@/lib/utils";
 import { riskLabel } from "@/lib/labels";
 
 const WINDOWS = [
@@ -68,7 +68,7 @@ export default async function RenewalsPage({ searchParams }: { searchParams: Pro
       renewal: { v: r.date, node: <span className="whitespace-nowrap tabular-nums">{r.date} <span className="text-xs text-slate-500">(in {r.days} day{r.days === 1 ? "" : "s"})</span></span> },
       value: { v: r.value, node: r.value == null ? "—" : <span className="whitespace-nowrap">{money(r.currency, r.value)}</span> },
       licences: { v: r.licenses, node: r.licenses == null ? "—" : fmtNumber(r.licenses) },
-      health: { v: r.health, node: r.health?.toFixed(0) ?? "—" },
+      health: { v: r.health, node: fmtHealth(r.health) },
       risk: { v: riskLabel(r.risk), node: <RiskBadge risk={r.risk} /> },
     },
   }));

@@ -9,7 +9,7 @@ import { RISK_THRESHOLDS } from "@/server/metrics/definitions";
 import { Button, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { fmtNumber, fmtPct } from "@/lib/utils";
+import { fmtNumber, fmtPct, fmtHealth } from "@/lib/utils";
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("clients:read");
@@ -32,7 +32,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       client: { v: c.name }, period: { v: p },
       users: { v: none ? null : m.registeredUsers, node: none ? "—" : fmtNumber(m.registeredUsers) },
       participation: { v: m.participationRate, node: fmtPct(m.participationRate) }, knowledge: { v: m.avgKnowledge, node: fmtPct(m.avgKnowledge) },
-      engagement: { v: m.engagementRate, node: fmtPct(m.engagementRate) }, health: { v: m.healthScore, node: m.healthScore?.toFixed(0) ?? "—" },
+      engagement: { v: m.engagementRate, node: fmtPct(m.engagementRate) }, health: { v: m.healthScore, node: fmtHealth(m.healthScore) },
     } };
   }));
 

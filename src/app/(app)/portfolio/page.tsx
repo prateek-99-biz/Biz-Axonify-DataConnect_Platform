@@ -9,10 +9,11 @@ import { periodKey, periodLabel, previousPeriod, yearAgo } from "@/server/metric
 import { Badge, CALLOUT_WARN, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
 import { DeltaChip, KpiCard, KpiStrip } from "@/components/ui/kpi";
 import { NeedsAttention } from "@/components/dashboard/needs-attention";
+import { PeriodNotice } from "@/components/internal/period-notice";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { cn, fmtNumber, fmtPct } from "@/lib/utils";
+import { cn, fmtNumber, fmtPct, fmtHealth } from "@/lib/utils";
 import { humanize, riskLabel } from "@/lib/labels";
 
 export default async function PortfolioPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -48,7 +49,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       knowledge: { v: c.current.avgKnowledge, node: fmtPct(c.current.avgKnowledge) },
       retention: { v: c.current.retentionRate, node: fmtPct(c.current.retentionRate) },
       adoption: { v: c.current.featureAdoption, node: fmtPct(c.current.featureAdoption) },
-      health: { v: c.current.healthScore, node: c.current.healthScore?.toFixed(0) ?? "—" },
+      health: { v: c.current.healthScore, node: fmtHealth(c.current.healthScore) },
       risk: { v: riskLabel(c.risk), node: <RiskBadge risk={c.risk} /> },
       driver: { v: c.topFactor ? `${c.topFactor.label} ${c.topFactor.points > 0 ? "+" : ""}${c.topFactor.points.toFixed(1)}` : null },
     },
@@ -59,7 +60,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
     cells: {
       csm: { v: b.csmName }, clients: { v: b.clients }, users: { v: b.current.registeredUsers, node: fmtNumber(b.current.registeredUsers) },
       engagement: { v: b.current.participationRate, node: fmtPct(b.current.participationRate) },
-      health: { v: b.current.healthScore, node: b.current.healthScore?.toFixed(0) ?? "—" },
+      health: { v: b.current.healthScore, node: fmtHealth(b.current.healthScore) },
       atRisk: { v: b.atRisk },
     },
   }));
@@ -67,6 +68,9 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
   // Until industries are mapped everything is "Unknown", so the benchmark chart and column would only repeat that word.
   const showIndustry = view.clients.some((c) => c.client.industry !== "Unknown");
   const showCsm = view.clients.some((c) => c.client.csmName);
+  // Columns with nothing in them for any client are left out, as Industry and CSM are.
+  const showAdoption = view.clients.some((c) => c.current.featureAdoption != null);
+  const showDriver = view.clients.some((c) => c.topFactor);
   const industryChart =view.industries.map((i) => ({
     industry: i.industry, [periodLabel(f.period)]: i.current.participationRate, [prevLabel]: i.previous.participationRate,
   }));
@@ -90,12 +94,14 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
         </p>
       )}
 
-      <NeedsAttention attention={attention} scopeCount={view.clients.length} periodLabel={periodLabel(f.period)} periodKey={periodKey(f.period)} />
+      <PeriodNotice label={periodLabel(f.period)} progress={ctx.progress} asOf={ctx.asOf} />
+
+      <NeedsAttention attention={attention} scopeCount={view.clients.length} periodLabel={periodLabel(f.period)} periodKey={periodKey(f.period)} healthAvailable={kpis.current.healthScore != null} />
 
       <section aria-label="Headline indicators" className="grid gap-4 sm:grid-cols-3">
         <KpiCard label="Participation" accent="green" value={fmtPct(kpis.current.participationRate)} hint="Training users ÷ active users" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
         <KpiCard label="Knowledge" accent="purple" value={fmtPct(kpis.current.avgKnowledge)} hint="Average current knowledge" vsPrev={delta(kpis.current.avgKnowledge, kpis.previous.avgKnowledge)} vsYear={delta(kpis.current.avgKnowledge, kpis.yearAgo.avgKnowledge)} />
-        <KpiCard label="Health Score" accent="green" unit="abs" value={kpis.current.healthScore?.toFixed(0) ?? "—"} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
+        <KpiCard label="Health Score" accent="green" unit="abs" value={fmtHealth(kpis.current.healthScore)} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
         {kpis.current.healthScore == null && (
           <Card className="flex items-center p-5 sm:col-span-2">
             <p className="text-sm text-slate-600">
@@ -108,7 +114,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       <KpiStrip items={[
         { label: "Registered Users", value: fmtNumber(kpis.current.registeredUsers), vsPrev: delta(kpis.current.registeredUsers, kpis.previous.registeredUsers), unit: "pct" },
         { label: "Active Users", value: fmtNumber(kpis.current.activeUsers), vsPrev: delta(kpis.current.activeUsers, kpis.previous.activeUsers), unit: "pct" },
-        { label: "Engagement Rate", accent: "orange", value: fmtPct(kpis.current.engagementRate), vsPrev: delta(kpis.current.engagementRate, kpis.previous.engagementRate) },
+        { label: "Engagement Rate", accent: "orange", note: "Low signal", noteHint: "Active means a live account, so this sits near 100% for most clients. Use Participation instead.", value: fmtPct(kpis.current.engagementRate), vsPrev: delta(kpis.current.engagementRate, kpis.previous.engagementRate) },
         { label: "Retention Rate", value: fmtPct(kpis.current.retentionRate), vsPrev: delta(kpis.current.retentionRate, kpis.previous.retentionRate) },
         { label: "Feature Adoption", value: fmtPct(kpis.current.featureAdoption), vsPrev: delta(kpis.current.featureAdoption, kpis.previous.featureAdoption) },
       ]} />
@@ -120,11 +126,11 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
         </Card>
         <Card>
           <CardHeader title="Account Risk" subtitle="Clients by health band (Healthy 75+, Moderate 60+, At Risk 45+)" />
-          <div className="space-y-2 p-4 text-sm">
+          {kpis.current.healthScore == null ? <p className="p-4 text-sm text-slate-600">Health bands aren’t available for {periodLabel(f.period)}, because knowledge is only recorded for the latest quarter.</p> : <div className="space-y-2 p-4 text-sm">
             {([["critical", "Critical"], ["at_risk", "At Risk"], ["moderate", "Moderate"], ["healthy", "Healthy"]] as const).map(([k, l]) => (
               <div key={k} className="flex items-center justify-between"><RiskBadge risk={k} /><span className="tabular-nums">{view.riskCounts[k]} <span className="text-xs text-slate-400">{l}</span></span></div>
             ))}
-          </div>
+          </div>}
           <p className="border-t hairline px-4 py-3 text-xs text-slate-500">Alerts for these clients are listed in the bell at the top of the page.</p>
         </Card>
       </div>
@@ -143,8 +149,8 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
             { key: "name", header: "Client" }, ...(showIndustry ? [{ key: "industry", header: "Industry" }] : []), ...(showCsm ? [{ key: "csm", header: "CSM" }] : []),
             { key: "users", header: "Users", align: "right" as const }, { key: "engagement", header: "Participation", align: "right" as const },
             { key: "change", header: `Δ vs ${prevLabel}`, align: "right" as const }, { key: "knowledge", header: "Knowledge", align: "right" as const }, { key: "retention", header: "Retention", align: "right" as const },
-            { key: "adoption", header: "Adoption", align: "right" as const }, { key: "health", header: "Health", align: "right" as const },
-            { key: "risk", header: "Risk" }, { key: "driver", header: "Main Driver (pts)", hint: "Factor with the largest weighted change in health score" },
+            ...(showAdoption ? [{ key: "adoption", header: "Adoption", align: "right" as const }] : []), { key: "health", header: "Health", align: "right" as const },
+            { key: "risk", header: "Risk" }, ...(showDriver ? [{ key: "driver", header: "Main Driver (pts)", hint: "Factor with the largest weighted change in health score" }] : []),
           ]}
           rows={rows} />
       </Card>

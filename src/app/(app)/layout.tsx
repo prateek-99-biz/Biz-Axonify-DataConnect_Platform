@@ -13,6 +13,7 @@ import { Breadcrumbs, GlobalSearch, NotificationCentre, ProfileMenu, type Notifi
 import { FilterBar } from "@/components/filters/filter-bar";
 import { Badge } from "@/components/ui/primitives";
 import { RefreshButton } from "@/components/shell/refresh-button";
+import { StaleDataBanner } from "@/components/shell/stale-banner";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 
 const ALL_PERMS: Permission[] = ["dashboard:read", "dashboard:internal", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run"];
@@ -81,6 +82,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             />
           </Suspense>
         )}
+        {loaded.ok && <StaleDataBanner asOf={loaded.ctx.asOf} isAdmin={can(user.role, "sync:run")} />}
         <main className="-mx-1 flex-1 overflow-y-auto px-1 pb-6">{children}</main>
       </div>
     </div>

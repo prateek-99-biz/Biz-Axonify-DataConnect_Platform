@@ -1,3 +1,4 @@
+import { fmtHealth } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, CircleCheck } from "lucide-react";
 import { Badge, Card } from "@/components/ui/primitives";
@@ -5,8 +6,18 @@ import { RiskBadge } from "@/components/ui/risk-badge";
 import type { Attention } from "@/server/services/attention";
 
 /** The first thing on the Portfolio page: how many clients need a conversation, which ones, and why. */
-export function NeedsAttention({ attention, scopeCount, periodLabel, periodKey }: { attention: Attention; scopeCount: number; periodLabel: string; periodKey: string }) {
+export function NeedsAttention({ attention, scopeCount, periodLabel, periodKey, healthAvailable = true }: { attention: Attention; scopeCount: number; periodLabel: string; periodKey: string; healthAvailable?: boolean }) {
   const { total, critical, atRisk, declining, items } = attention;
+
+  // Knowledge is only recorded for the latest quarter, so an older one has no health score and nobody can be Critical or At Risk.
+  if (!healthAvailable) {
+    return (
+      <Card className="p-5">
+        <p className="text-lg font-semibold">Health isn’t available for {periodLabel}</p>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">Knowledge is only recorded for the latest quarter, so Critical and At Risk can’t be worked out for this one. {declining > 0 ? `${declining} of ${scopeCount} clients lost participation.` : "No client lost participation."} Choose the latest quarter to see who needs attention.</p>
+      </Card>
+    );
+  }
 
   if (total === 0 && declining === 0) {
     return (
@@ -50,10 +61,11 @@ export function NeedsAttention({ attention, scopeCount, periodLabel, periodKey }
                   {c.risk !== "unknown" && c.health != null && (
                     <span className="flex items-center gap-2">
                       <RiskBadge risk={c.risk} />
-                      <span className="w-7 text-right text-sm font-semibold tabular-nums">{c.health.toFixed(0)}</span>
+                      <span className="w-7 text-right text-sm font-semibold tabular-nums">{fmtHealth(c.health)}</span>
                     </span>
                   )}
                   <span className="min-w-0 flex-1 basis-48 text-xs text-slate-600">{c.change ?? ""}</span>
+                  {c.dataCheck && <Badge tone="warn" title="Only a few registered users are active. Check Axonify before acting.">Check Data</Badge>}
                   {c.renewalDays != null && <Badge tone="warn" title={`Renewal date ${c.renewalDate}`}>Renews in {c.renewalDays} day{c.renewalDays === 1 ? "" : "s"}</Badge>}
                   <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </Link>

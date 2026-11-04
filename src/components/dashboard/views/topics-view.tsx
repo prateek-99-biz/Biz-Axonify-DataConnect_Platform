@@ -12,7 +12,7 @@ import { cn, fmtCompact, fmtNumber, fmtPct } from "@/lib/utils";
 
 const WARN_CELL = "rounded-md bg-amber-100 px-2 py-0.5 font-semibold text-amber-900 dark:bg-amber-400/15 dark:text-amber-200";
 
-export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal }: { topics: PackedRows<TopicNode>; stats: PackedRows<TopicStat>; canExport: boolean; internal: boolean }) {
+export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal, overall }: { topics: PackedRows<TopicNode>; stats: PackedRows<TopicStat>; canExport: boolean; internal: boolean; overall?: { current: number | null; baseline: number | null } }) {
   const topics = useMemo(() => unpackRows(topicsP), [topicsP]);
   const stats = useMemo(() => unpackRows(statsP), [statsP]);
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -21,8 +21,8 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
   const scoped = useMemo(() => stats.filter((s) => !keep || keep.has(s.topicId)), [stats, keep]);
 
   const aud = scoped.reduce((s, t) => s + t.audience, 0);
-  const current = weightedAvg(scoped, (t) => t.current);
-  const baseline = weightedAvg(scoped, (t) => t.baseline);
+  const current = keep ? weightedAvg(scoped, (t) => t.current) : overall?.current ?? weightedAvg(scoped, (t) => t.current);
+  const baseline = keep ? weightedAvg(scoped, (t) => t.baseline) : overall?.baseline ?? weightedAvg(scoped, (t) => t.baseline);
   const sum = (f: (t: TopicStat) => number) => scoped.reduce((s, t) => s + f(t), 0);
   const latest = scoped.map((t) => t.createdAt).sort().at(-1);
 
@@ -39,7 +39,7 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
         modules: { v: s.modules, node: fmtNumber(s.modules) },
         l1: cell(s.l1), l2: cell(s.l2), l3: cell(s.l3),
         total: { v: q, node: fmtNumber(q) },
-        saturation: { v: saturation(s), node: fmtPct(saturation(s), 0) },
+        saturation: { v: saturation(s), node: saturation(s) > 1 ? "100%+" : fmtPct(saturation(s), 0) },
         flag: { v: flag, node: flag === "No warning" ? <span className="text-slate-500">{flag}</span> : <span className={WARN_CELL}>{flag}</span> },
         priority: { v: reviewPriority(s) },
       },
@@ -54,7 +54,7 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
     { key: "l2", header: "L2", align: "right" as const },
     { key: "l3", header: "L3", align: "right" as const },
     { key: "total", header: "Total Questions", align: "right" as const },
-    { key: "saturation", header: "Saturation", align: "right" as const, hint: "Released questions against a 12-question target (provisional)" },
+    { key: "saturation", header: "Saturation", align: "right" as const, hint: "Released questions against a 12-question target (provisional). 100%+ means more than the target." },
     ...(internal ? [{ key: "flag", header: "Content Flag" }, { key: "priority", header: "Priority", align: "right" as const, hint: "1 = review first, 7 = no issue" }] : []),
   ];
 

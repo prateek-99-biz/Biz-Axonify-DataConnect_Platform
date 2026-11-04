@@ -83,7 +83,7 @@ export function TrendChart({
           <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} dy={6} />
           <YAxis tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} width={44} />
           <Tooltip formatter={(v) => f(Number(v))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} cursor={{ stroke: t.grid, strokeWidth: 1 }} />
-          {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
+          {series.length > 1 && <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
           {series.map((s, i) => (
             <Area key={s.key} type="monotone" dataKey={s.key} name={s.label} stroke={t.color(s, i)} strokeWidth={2.25} fill={`url(#${uid}-${i})`}
               dot={sparseKeys.has(s.key) ? { r: 5, strokeWidth: 2, stroke: t.color(s, i), fill: t.color(s, i) } : false} activeDot={{ r: 4, strokeWidth: 2, stroke: t.tooltip.background as string }} connectNulls={false} />
@@ -118,7 +118,7 @@ export function CompareBars({
             <ReferenceLine key={r.y} y={r.y} stroke={t.tick} strokeDasharray="4 4" strokeOpacity={0.55} ifOverflow="extendDomain"
               label={{ value: `${r.label} ${r.y}`, position: "right", fontSize: 10, fill: t.tick }} />
           ))}
-          {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
+          {series.length > 1 && <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
           {series.map((s, i) => (
             <Bar key={s.key} dataKey={s.key} name={s.label} fill={t.color(s, i)} radius={[6, 6, 0, 0]} maxBarSize={36} />
           ))}

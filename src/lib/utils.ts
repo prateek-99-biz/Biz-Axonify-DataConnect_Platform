@@ -19,3 +19,8 @@ export function fmtPct(n: number | null | undefined, digits = 1) {
   if (n == null || Number.isNaN(n)) return "—";
   return `${(n * 100).toFixed(digits)}%`;
 }
+
+/** Health as a whole number that never crosses a band: 44.7 reads 44 (Critical), not 45 (At Risk), because the bands are whole numbers. */
+export function fmtHealth(score: number | null | undefined): string {
+  return score == null || Number.isNaN(score) ? "—" : String(Math.floor(score));
+}

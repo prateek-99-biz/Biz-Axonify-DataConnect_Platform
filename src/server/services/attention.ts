@@ -1,6 +1,7 @@
 import type { ClientRowView } from "./portfolio";
-import type { RiskLevel } from "@/server/metrics/calculations";
+import { lowActivity, type RiskLevel } from "@/server/metrics/calculations";
 import { riskLabel } from "@/lib/labels";
+import { fmtHealth } from "@/lib/utils";
 
 /** A renewal this close is worth saying out loud next to a client that is already struggling. */
 export const RENEWAL_WINDOW_DAYS = 120;
@@ -14,6 +15,8 @@ export interface AttentionItem {
   change: string | null;
   renewalDate: string | null;
   renewalDays: number | null;
+  /** Active users are so few against registered that the source should be checked before acting. */
+  dataCheck: boolean;
 }
 
 export interface Attention {
@@ -51,7 +54,7 @@ export function buildAttention(clients: ClientRowView[], today: string, prevLabe
       const renewalDate = c.client.commercial?.renewalDate ?? null;
       const days = renewalDate ? daysUntil(renewalDate, today) : null;
       return {
-        clientId: c.client.id, name: c.client.name, risk: c.risk, health: c.current.healthScore, change: changePhrase(c, prevLabel),
+        clientId: c.client.id, name: c.client.name, risk: c.risk, health: c.current.healthScore, change: changePhrase(c, prevLabel), dataCheck: lowActivity(c.current),
         renewalDate, renewalDays: days != null && days >= 0 && days <= RENEWAL_WINDOW_DAYS ? days : null,
       };
     }),
@@ -68,7 +71,7 @@ export interface ClientHeadline {
 export function buildClientHeadline(i: {
   risk: RiskLevel; health: number | null; healthDeltaPts: number | null; prevLabel: string;
   factor: { label: string; points: number } | null; participationPts: number | null; declining: boolean;
-  renewalDate: string | null; today: string;
+  renewalDate: string | null; today: string; dataCheck?: { active: number; registered: number } | null;
 }): ClientHeadline {
   const tone = i.risk === "healthy" ? "good" : i.risk === "at_risk" ? "warn" : i.risk === "critical" ? "critical" : "neutral";
   const points: string[] = [];
@@ -78,10 +81,11 @@ export function buildClientHeadline(i: {
     return { tone: "neutral", headline: "Not enough data to score this client's health", points };
   }
 
-  const h = Math.round(i.health);
+  const h = fmtHealth(i.health);
   const move = i.healthDeltaPts == null ? "" : Math.abs(i.healthDeltaPts) < 0.5 ? `, unchanged from ${i.prevLabel}` : `, ${i.healthDeltaPts > 0 ? "up" : "down"} ${Math.abs(i.healthDeltaPts).toFixed(0)} pts from ${i.prevLabel}`;
   const headline = `${riskLabel(i.risk)}: health is ${h}${move}`;
 
+  if (i.dataCheck) points.push(`Only ${i.dataCheck.active} of ${i.dataCheck.registered} registered users are active, which looks like a data problem. Check Axonify before acting.`);
   if (i.declining && i.participationPts != null) points.push(`Participation fell ${Math.abs(i.participationPts).toFixed(1)} pts against ${i.prevLabel}.`);
   if (i.factor && Math.abs(i.factor.points) >= 0.05) points.push(`${i.factor.label} moved health most (${signed(i.factor.points)} pts).`);
   if (i.renewalDate) {

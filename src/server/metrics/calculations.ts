@@ -73,12 +73,19 @@ export function riskLevel(score: number | null): RiskLevel {
   return "critical";
 }
 
+/** Retention on fewer previous active users than this says nothing: 3 of 3 retained is not "100%". */
+export const MIN_RETENTION_BASE = 10;
+
+/** Fewer than this share of registered users active, for an account of real size, looks like a source problem rather than a decline. */
+export const LOW_ACTIVITY_SHARE = 0.1;
+export const lowActivity = (m: { registeredUsers: number; activeUsers: number }) => m.registeredUsers >= 50 && m.activeUsers / m.registeredUsers < LOW_ACTIVITY_SHARE;
+
 /** Derived metrics from already-summed counts (ratio-of-sums, so portfolio rates are user-weighted). */
 export function derive(t: Totals): DerivedMetrics {
   const engagementRate = ratio(t.activeUsers, t.registeredUsers);
   const participationRate = ratio(t.trainingUsers, t.activeUsers);
   const avgKnowledge = ratio(t.knowledgeWeighted, t.knowledgeLearners);
-  const retentionRate = ratio(t.retainedUsers, t.previousActiveUsers);
+  const retentionRate = t.previousActiveUsers >= MIN_RETENTION_BASE ? ratio(t.retainedUsers, t.previousActiveUsers) : null;
   const featureAdoption = ratio(t.featuresUsed, t.featuresAvailable);
   const score = healthScore(participationRate, avgKnowledge);
   return { ...t, engagementRate, participationRate, avgKnowledge, retentionRate, featureAdoption, healthScore: score, risk: riskLevel(score) };

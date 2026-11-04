@@ -62,3 +62,17 @@ export function quarterRange(from: Period, to: Period): string[] {
   }
   return out;
 }
+
+export interface PeriodProgress { fraction: number; covered: number; total: number }
+
+/** How many of a period's days the data covers, given when it was last refreshed. A finished period is 1. */
+export function periodProgress(p: Period, asOfIso: string): PeriodProgress {
+  const start = Date.UTC(p.year, p.quarter ? (p.quarter - 1) * 3 : 0, 1);
+  const end = p.quarter ? Date.UTC(p.year, p.quarter * 3, 1) : Date.UTC(p.year + 1, 0, 1);
+  const total = Math.round((end - start) / 86_400_000);
+  const covered = Math.min(total, Math.max(0, Math.ceil((Date.parse(asOfIso) - start) / 86_400_000)));
+  return { fraction: total === 0 ? 1 : covered / total, covered, total };
+}
+
+/** Below this share of the period, a change against the previous period compares a few weeks with a whole one, so it is not flagged. */
+export const MIN_TREND_PROGRESS = 0.5;

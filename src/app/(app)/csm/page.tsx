@@ -12,8 +12,9 @@ import { KpiStrip } from "@/components/ui/kpi";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { Sparkline } from "@/components/charts/sparkline";
 import { RenewalTimeline } from "@/components/internal/renewal-timeline";
+import { PeriodNotice } from "@/components/internal/period-notice";
 import { SampleNotice } from "@/components/internal/sample-notice";
-import { cn, fmtNumber, fmtPct } from "@/lib/utils";
+import { cn, fmtNumber, fmtPct, fmtHealth } from "@/lib/utils";
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toFixed(1)}`;
@@ -26,7 +27,7 @@ function AccountCardView({ c, period }: { c: AccountCard; period: string }) {
         <div className="flex items-start justify-between gap-3">
           <p className="min-w-0 truncate text-lg font-semibold group-hover:text-brand-ink">{c.name}</p>
           {c.noData ? <Badge>No Data This Quarter</Badge> : (
-            <span className="flex shrink-0 items-center gap-2"><RiskBadge risk={c.risk} /><span className="text-2xl font-semibold tabular-nums">{c.health == null ? "—" : c.health.toFixed(0)}</span></span>
+            <span className="flex shrink-0 items-center gap-2"><RiskBadge risk={c.risk} /><span className="text-2xl font-semibold tabular-nums">{fmtHealth(c.health)}</span></span>
           )}
         </div>
 
@@ -52,6 +53,7 @@ function AccountCardView({ c, period }: { c: AccountCard; period: string }) {
 
         <div className="mt-3 flex flex-wrap gap-1.5">
           {c.renewalDays != null && c.renewalDays <= 365 && <Badge tone={c.renewalDays <= 30 ? "warn" : "neutral"}>Renews in {c.renewalDays} day{c.renewalDays === 1 ? "" : "s"}</Badge>}
+          {c.dataCheck && <Badge tone="warn" title="Only a few registered users are active. Check Axonify before acting.">Check Data</Badge>}
           {c.openTasks > 0 && <Badge tone={c.overdueTasks > 0 ? "critical" : "neutral"}>{c.openTasks} open task{c.openTasks === 1 ? "" : "s"}{c.overdueTasks > 0 ? `, ${c.overdueTasks} overdue` : ""}</Badge>}
           {!c.noData && (c.daysSinceNote == null ? <Badge>No notes yet</Badge> : c.daysSinceNote >= 30 ? <Badge tone="warn">No note for {c.daysSinceNote} days</Badge> : null)}
         </div>
@@ -105,7 +107,7 @@ export default async function MyAccountsPage({ searchParams }: { searchParams: P
 
   const today = new Date().toISOString().slice(0, 10);
   const signals = await accountSignals(book.map((c) => c.id), today);
-  const cards = buildAccountCards(book, ctx.rows, ctx.filters.period, signals, today);
+  const cards = buildAccountCards(book, ctx.rows, ctx.filters.period, signals, today, ctx.filters.inProgress);
   const summary = bookSummary(cards);
   const agenda = weekAgenda(cards, today);
   const users = cards.reduce((n, c) => n + (c.users ?? 0), 0);
@@ -133,6 +135,7 @@ export default async function MyAccountsPage({ searchParams }: { searchParams: P
         )}
       </div>
 
+      <PeriodNotice label={periodLabel(ctx.filters.period)} progress={ctx.progress} asOf={ctx.asOf} />
       <SampleNotice count={sample} canRemove={isAdmin} />
 
       <KpiStrip items={[
@@ -188,7 +191,7 @@ export default async function MyAccountsPage({ searchParams }: { searchParams: P
                     <td className="px-5 py-2.5 font-semibold">{b.csmName}{b.csmEmail === mine ? " (you)" : ""}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums">{b.clients}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums">{b.atRisk}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{b.current.healthScore?.toFixed(0) ?? "—"}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{fmtHealth(b.current.healthScore)}</td>
                     <td className="px-5 py-2.5 text-right"><Link href={`/csm?csm=${encodeURIComponent(b.csmEmail)}&period=${period}`} className="text-xs underline">View accounts</Link></td>
                   </tr>
                 ))}

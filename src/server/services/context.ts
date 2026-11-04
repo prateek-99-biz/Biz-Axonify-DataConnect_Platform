@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { getAdapters } from "@/server/data";
 import type { ClientPeriodRow, ClientSummary, Result, SourceKind } from "@/server/data/ports";
-import { parsePeriodKey, type Period } from "@/server/metrics/period";
+import { MIN_TREND_PROGRESS, parsePeriodKey, periodProgress, type Period, type PeriodProgress } from "@/server/metrics/period";
 import type { Filters } from "./portfolio";
 
 export const FILTER_COOKIE = "ci_filters";
@@ -16,6 +16,8 @@ export interface LoadedContext {
   rows: ClientPeriodRow[];
   source: SourceKind;
   asOf: string;
+  /** How much of the chosen period the data covers. */
+  progress: PeriodProgress;
   availablePeriods: string[];
 }
 
@@ -45,6 +47,8 @@ export async function loadContext(sp: SearchParams): Promise<ContextResult> {
   const industry = pick("industry");
   const period: Period = parsePeriodKey(pick("period") ?? "") ?? parsePeriodKey(latest ?? "") ?? { year: new Date().getUTCFullYear(), quarter: 1 };
 
+  const progress = periodProgress(period, r.asOf);
+
   return {
     ok: true,
     ctx: {
@@ -52,11 +56,13 @@ export async function loadContext(sp: SearchParams): Promise<ContextResult> {
         client: clientId && clientId !== "all" && c.data.some((x) => x.id === clientId) ? clientId : null,
         industry: industry && industry !== "all" && c.data.some((x) => x.industry === industry) ? industry : null,
         period,
+        inProgress: progress.fraction < MIN_TREND_PROGRESS,
       },
       clients: c.data,
       rows: r.data,
       source: c.source,
       asOf: r.asOf,
+      progress,
       availablePeriods,
     },
   };

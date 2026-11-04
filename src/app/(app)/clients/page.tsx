@@ -7,7 +7,7 @@ import { periodKey, periodLabel } from "@/server/metrics/period";
 import { Badge, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { fmtNumber, fmtPct } from "@/lib/utils";
+import { fmtNumber, fmtPct, fmtHealth } from "@/lib/utils";
 import { riskLabel } from "@/lib/labels";
 
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -32,7 +32,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         name: { v: c.client.name }, industry: { v: c.client.industry }, csm: { v: c.client.csmName },
         users: { v: c.current.registeredUsers, node: fmtNumber(c.current.registeredUsers) },
         engagement: { v: c.current.participationRate, node: fmtPct(c.current.participationRate) },
-        health: { v: c.current.healthScore, node: c.current.healthScore?.toFixed(0) ?? "—" },
+        health: { v: c.current.healthScore, node: fmtHealth(c.current.healthScore) },
         risk: { v: riskLabel(c.risk), node: <RiskBadge risk={c.risk} /> },
         mapped: { v: c.client.salesforceAccountId ? "Mapped" : "No Salesforce account", node: c.client.salesforceAccountId ? <Badge tone="good">Mapped</Badge> : <Badge tone="warn">No Salesforce account</Badge> },
       },

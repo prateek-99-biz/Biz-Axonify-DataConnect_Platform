@@ -42,6 +42,18 @@ describe("buildSampleAccounts", () => {
   it("is the same for the same input", () => expect(buildSampleAccounts(clients, TODAY)).toEqual(rows));
 });
 
+describe("realism", () => {
+  it("picks an industry that fits the client's name", () => {
+    const named = buildSampleAccounts([{ id: "1", name: "emirates" }, { id: "2", name: "etihad" }, { id: "3", name: "gm" }, { id: "4", name: "cbuae" }, { id: "5", name: "adidas" }], TODAY);
+    expect(named.map((r) => r.industry)).toEqual(["Aviation", "Aviation", "Automotive", "Banking", "Retail"]);
+  });
+  it("gives licences that cover the registered users", () => {
+    const sized = buildSampleAccounts([{ id: "1", name: "a", users: 2797 }, { id: "2", name: "b", users: 286 }, { id: "3", name: "c", users: 9867 }, { id: "4", name: "d", users: 30 }], TODAY);
+    sized.forEach((r, i) => expect(r.licenses!).toBeGreaterThanOrEqual([2797, 286, 9867, 30][i]));
+    expect(sized.every((r) => r.licenses! / [2797, 286, 9867, 30][sized.indexOf(r)] < 3 || r.licenses === 50)).toBe(true);
+  });
+});
+
 describe("isSampleId", () => {
   it("recognises only the sample prefix", () => {
     expect(isSampleId("MOCK-SF-007")).toBe(true);

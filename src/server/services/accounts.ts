@@ -1,5 +1,5 @@
 import type { ClientPeriodRow, ClientSummary } from "@/server/data/ports";
-import { aggregate, type RiskLevel } from "@/server/metrics/calculations";
+import { aggregate, lowActivity, type RiskLevel } from "@/server/metrics/calculations";
 import { periodKey, type Period } from "@/server/metrics/period";
 import { buildPortfolio, DECLINE_THRESHOLD, type ClientRowView } from "./portfolio";
 import { daysUntil } from "./attention";
@@ -41,6 +41,8 @@ export interface AccountCard {
   nextTaskDue: string | null;
   daysSinceNote: number | null;
   noData: boolean;
+  /** Active users are so few against registered that the source should be checked before acting. */
+  dataCheck: boolean;
 }
 
 const rank = (c: AccountCard) => (c.noData ? 4 : c.risk === "critical" ? 0 : c.risk === "at_risk" ? 1 : c.declining ? 2 : 3);
@@ -53,8 +55,8 @@ export function daysSince(iso: string | null, today: string): number | null {
 const endQuarter = (p: Period) => (p.quarter ? periodKey(p) : `${p.year}-Q4`);
 
 /** One card per account, most urgent first: Critical, At Risk, losing participation, then the rest by health; accounts without data last. */
-export function buildAccountCards(clients: ClientSummary[], rows: ClientPeriodRow[], period: Period, signals: ReadonlyMap<string, AccountSignal>, today: string): AccountCard[] {
-  const view = buildPortfolio(clients, rows, { client: null, industry: null, period });
+export function buildAccountCards(clients: ClientSummary[], rows: ClientPeriodRow[], period: Period, signals: ReadonlyMap<string, AccountSignal>, today: string, inProgress = false): AccountCard[] {
+  const view = buildPortfolio(clients, rows, { client: null, industry: null, period, inProgress });
   const end = endQuarter(period);
   const sparkFor = (id: string) =>
     rows.filter((r) => r.clientId === id && r.period <= end).sort((a, b) => a.period.localeCompare(b.period)).slice(-8).map((r) => aggregate([r], [r.period]).participationRate);
@@ -71,10 +73,10 @@ export function buildAccountCards(clients: ClientSummary[], rows: ClientPeriodRo
   const withData: AccountCard[] = view.clients.map((v: ClientRowView) => ({
     ...base(v.client), risk: v.risk, health: v.current.healthScore, healthDeltaPts: v.healthDelta.abs,
     participation: v.current.participationRate, participationDeltaPts: v.participationDelta.abs == null ? null : v.participationDelta.abs * 100,
-    declining: v.declining, knowledge: v.current.avgKnowledge, users: v.current.registeredUsers, noData: false,
+    declining: v.declining, knowledge: v.current.avgKnowledge, users: v.current.registeredUsers, noData: false, dataCheck: lowActivity(v.current),
   }));
   const without: AccountCard[] = view.noDataClients.map((c) => ({
-    ...base(c), risk: "unknown", health: null, healthDeltaPts: null, participation: null, participationDeltaPts: null, declining: false, knowledge: null, users: null, noData: true,
+    ...base(c), risk: "unknown", health: null, healthDeltaPts: null, participation: null, participationDeltaPts: null, declining: false, knowledge: null, users: null, noData: true, dataCheck: false,
   }));
   return [...withData, ...without].sort((a, b) => rank(a) - rank(b) || (a.health ?? Infinity) - (b.health ?? Infinity) || a.name.localeCompare(b.name));
 }
@@ -137,7 +139,8 @@ export function watchAction(risk: RiskLevel, streak: number): WatchAction {
 export interface WatchRow { clientId: string; name: string; csm: string; participation: number | null; changePts: number | null; knowledge: number | null; streak: number; risk: RiskLevel; action: WatchAction }
 
 /** Accounts whose participation fell by the decline threshold or more, worst first. */
-export function buildWatchlist(views: ClientRowView[], rows: ClientPeriodRow[], period: Period): WatchRow[] {
+export function buildWatchlist(views: ClientRowView[], rows: ClientPeriodRow[], period: Period, inProgress = false): WatchRow[] {
+  if (inProgress) return [];
   return views
     .filter((v) => v.participationDelta.abs != null && v.participationDelta.abs <= DECLINE_THRESHOLD)
     .map((v) => {

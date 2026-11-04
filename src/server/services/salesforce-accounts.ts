@@ -61,7 +61,11 @@ export async function loadSampleAccounts(): Promise<{ loaded: number; skipped: n
   if (clients.status !== "ok") return { loaded: 0, skipped: 0 };
   const existing = await db.salesforceAccount.findMany({ select: { clientId: true, salesforceAccountId: true } });
   const real = new Set(existing.filter((e) => !isSampleId(e.salesforceAccountId)).map((e) => e.clientId));
-  const all = buildSampleAccounts(clients.data.map((c) => ({ id: c.id, name: c.name })), new Date().toISOString().slice(0, 10));
+  // Licences follow each client's latest registered users, so utilization looks sensible.
+  const periods = await db.syncClientPeriod.findMany({ select: { clientId: true, period: true, registeredUsers: true } });
+  const users = new Map<string, { period: string; n: number }>();
+  for (const r of periods) { const cur = users.get(r.clientId); if (!cur || r.period > cur.period) users.set(r.clientId, { period: r.period, n: r.registeredUsers }); }
+  const all = buildSampleAccounts(clients.data.map((c) => ({ id: c.id, name: c.name, users: users.get(c.id)?.n })), new Date().toISOString().slice(0, 10));
   const rows = all.filter((r) => !real.has(r.clientId));
   await Promise.all(rows.map((r) => db.salesforceAccount.upsert({ where: { clientId: r.clientId }, create: { clientId: r.clientId, ...toData(r) }, update: toData(r) })));
   clearCache("snap:");

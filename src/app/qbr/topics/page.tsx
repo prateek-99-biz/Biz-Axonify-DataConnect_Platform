@@ -25,5 +25,5 @@ async function TopicsBody({ searchParams }: Props) {
   const q = await loadQbr(await searchParams, ["topics"]);
   if (!q.ok) return <SourceUnavailable reason={q.reason} />;
   const { data, canExport, internal } = q.ctx;
-  return <TopicsView topics={packRows(data.topics)} stats={packRows(data.topicStats)} canExport={canExport} internal={internal} />;
+  return <TopicsView topics={packRows(data.topics)} stats={packRows(data.topicStats)} canExport={canExport} internal={internal} overall={{ current: data.knowledge.current, baseline: data.knowledge.baseline }} />;
 }

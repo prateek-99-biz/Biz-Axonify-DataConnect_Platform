@@ -34,8 +34,9 @@ export function RenewalTimeline({ items, today }: { items: TimelineItem[]; today
           const above = i % 2 === 0;
           return (
             <g key={it.id}>
+              <title>{it.name}</title>
               <circle cx={x(it.days)} cy={AXIS} r="7" className={FILL[it.risk]} />
-              <text x={x(it.days)} y={above ? AXIS - 16 : AXIS + 38} textAnchor="middle" className="fill-ink" fontSize="11">{it.name.length > 14 ? `${it.name.slice(0, 13)}…` : it.name}</text>
+              <text x={x(it.days)} y={above ? AXIS - 16 : AXIS + 38} textAnchor="middle" className="fill-ink" fontSize="11">{it.name.length > 18 ? `${it.name.slice(0, 17)}…` : it.name}</text>
             </g>
           );
         })}

@@ -99,6 +99,8 @@ export interface CrmAccount {
   contractStart: string | null;
   contractEnd: string | null;
   arr: number | null;
+  /** Currency of `arr`, when known. */
+  currency?: string | null;
 }
 
 export interface CrmPort {

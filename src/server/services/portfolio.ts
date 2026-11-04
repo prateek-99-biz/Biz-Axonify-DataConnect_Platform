@@ -1,5 +1,6 @@
 import type { ClientPeriodRow, ClientSummary } from "@/server/data/ports";
-import { aggregate, contributingFactor, delta, type DerivedMetrics, type Delta, type RiskLevel } from "@/server/metrics/calculations";
+import { aggregate, contributingFactor, delta, lowActivity, type DerivedMetrics, type Delta, type RiskLevel } from "@/server/metrics/calculations";
+import { fmtHealth } from "@/lib/utils";
 import { periodKey, previousPeriod, quarterRange, quartersIn, yearAgo, type Period } from "@/server/metrics/period";
 import { RISK_THRESHOLDS } from "@/server/metrics/definitions";
 
@@ -9,6 +10,8 @@ export interface Filters {
   /** industry name or null = all */
   industry: string | null;
   period: Period;
+  /** True while less than half the period has data, when a change against the previous period is not like-for-like. */
+  inProgress?: boolean;
 }
 
 export interface ClientRowView {
@@ -88,7 +91,7 @@ export function buildPortfolio(clients: ClientSummary[], rows: ClientPeriodRow[]
         participationDelta,
         topFactor: factor ? { label: factor.label, points: factor.points } : null,
         risk: current.risk,
-        declining: participationDelta.abs != null && participationDelta.abs <= DECLINE_THRESHOLD,
+        declining: !f.inProgress && participationDelta.abs != null && participationDelta.abs <= DECLINE_THRESHOLD,
       };
     });
 
@@ -134,7 +137,7 @@ export function deriveAlerts(view: PortfolioView, period: Period): DerivedAlert[
   for (const c of view.clients) {
     if (c.risk === "critical") {
       out.push({ key: `risk:${c.client.id}:${p}`, clientId: c.client.id, clientName: c.client.name, severity: "critical",
-        title: "Critical Health Score", detail: `Health ${c.current.healthScore?.toFixed(0)} is in the Critical band (below ${RISK_THRESHOLDS.atRisk}).` });
+        title: "Critical Health Score", detail: `Health ${fmtHealth(c.current.healthScore)} is in the Critical band (below ${RISK_THRESHOLDS.atRisk}).${lowActivity(c.current) ? ` Only ${c.current.activeUsers} of ${c.current.registeredUsers} registered users are active, so check the data before acting.` : ""}` });
     }
     if (c.declining) {
       out.push({ key: `decline:${c.client.id}:${p}`, clientId: c.client.id, clientName: c.client.name, severity: "warning",

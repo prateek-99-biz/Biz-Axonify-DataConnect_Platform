@@ -19,7 +19,7 @@ const row = (clientId: string, period: string, participation: number, knowledge:
 
 const card = (over: Partial<AccountCard> = {}): AccountCard => ({
   clientId: "1", name: "A", risk: "healthy", health: 80, healthDeltaPts: 0, participation: 0.8, participationDeltaPts: 0, declining: false, knowledge: 0.8, users: 100, spark: [],
-  renewalDate: null, renewalDays: null, openTasks: 0, overdueTasks: 0, nextTaskDue: null, daysSinceNote: 5, noData: false, ...over,
+  renewalDate: null, renewalDays: null, openTasks: 0, overdueTasks: 0, nextTaskDue: null, daysSinceNote: 5, noData: false, dataCheck: false, ...over,
 });
 
 describe("who a signed-in person is", () => {

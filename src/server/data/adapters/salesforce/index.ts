@@ -18,7 +18,7 @@ export const salesforceCrm: CrmPort = {
       status: "ok",
       source: "salesforce",
       asOf: row.updatedAt.toISOString(),
-      data: { salesforceAccountId, contractStart: a.contractStart, contractEnd: a.renewalDate, arr: a.licenseValue },
+      data: { salesforceAccountId, contractStart: a.contractStart, contractEnd: a.renewalDate, arr: a.licenseValue, currency: a.currency },
     };
   },
 };

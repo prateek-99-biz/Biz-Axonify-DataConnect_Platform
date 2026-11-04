@@ -24,7 +24,7 @@ export function useProgressColors() {
 
 /** Percentage axes get a 5-point pad (clamped to 0-100%) so tiny month-to-month movement is not blown up. */
 const axisDomain = (kind: Fmt): [number | "auto" | ((v: number) => number), number | "auto" | ((v: number) => number)] =>
-  kind === "pct" || kind === "pct1" ? [(min: number) => Math.max(0, Math.floor((min - 0.05) * 20) / 20), (max: number) => Math.min(1, Math.ceil((max + 0.05) * 20) / 20)] : ["auto", "auto"];
+  kind === "pct" || kind === "pct1" ? [(min: number) => Math.max(0, Math.floor((min - 0.05) * 20) / 20), (max: number) => { const c = Math.min(1, Math.ceil((max + 0.05) * 20) / 20); return c >= 0.75 ? Math.min(1, Math.ceil(c * 4) / 4) : c; }] : ["auto", "auto"];
 
 const Frame = ({ height, label, children }: { height: number; label: string; children: React.ReactElement }) => (
   <div style={{ height }} role="img" aria-label={label}>
@@ -67,7 +67,7 @@ export function DualAxisLine({ data, xKey, left, right, height = 300 }: {
         <YAxis yAxisId="l" tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={fl} width={44} domain={axisDomain(left.format)} />
         <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={fr} width={40} domain={axisDomain(right.format)} />
         <Tooltip formatter={(v, name) => (name === left.label ? fl(Number(v)) : fr(Number(v)))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} />
-        <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
+        <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
         <Line isAnimationActive={false} yAxisId="l" type="monotone" dataKey={left.key} name={left.label} stroke={c1} strokeWidth={2.5} dot={{ r: 3 }} connectNulls={false} />
         <Line isAnimationActive={false} yAxisId="r" type="monotone" dataKey={right.key} name={right.label} stroke={c2} strokeWidth={2.5} dot={{ r: 3 }} connectNulls={false} />
       </LineChart>
@@ -91,7 +91,7 @@ export function HBars({ data, nameKey, series, format = "pct", rowHeight = 30, m
           <XAxis type="number" tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} domain={format === "pct" ? [0, 1] : [0, "auto"]} />
           <YAxis type="category" dataKey={nameKey} width={nameWidth} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={trunc} interval={0} />
           <Tooltip formatter={(v) => f(Number(v))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} cursor={{ fill: t.cursor }} />
-          {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
+          {series.length > 1 && <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
           {series.map((s, i) => <Bar isAnimationActive={false} key={s.key} dataKey={s.key} name={s.label} fill={t.color({ key: s.key, label: s.label }, s.color ?? i * 2)} radius={[0, 5, 5, 0]} maxBarSize={14} />)}
         </BarChart>
       </Frame>
@@ -114,7 +114,7 @@ export function ProgressStack({ data, labelKey = "label", height, percent = fals
         <XAxis type="number" tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} />
         <YAxis type="category" dataKey={labelKey} width={96} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} />
         <Tooltip formatter={(v) => new Intl.NumberFormat("en-US").format(Number(v))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} cursor={{ fill: t.cursor }} />
-        {showLegend && <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
+        {showLegend && <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />}
         {PROGRESS_ORDER.map((k: ProgressStatus) => <Bar isAnimationActive={false} key={k} dataKey={k} name={PROGRESS_LABEL[k]} stackId="p" fill={colors[k]} maxBarSize={30} />)}
       </BarChart>
     </Frame>
@@ -129,7 +129,7 @@ export function Donut({ data, height = 260 }: { data: { name: string; value: num
     <Frame height={height} label="Share by platform">
       <PieChart>
         <Tooltip formatter={(v, n) => [`${new Intl.NumberFormat("en-US").format(Number(v))} (${((Number(v) / total) * 100).toFixed(1)}%)`, n]} contentStyle={t.tooltip} itemStyle={{ color: t.tooltip.color }} />
-        <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
+        <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
         <Pie isAnimationActive={false} data={data} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="86%" paddingAngle={2} stroke="none"
           label={({ percent }) => ((percent ?? 0) >= 0.04 ? `${((percent ?? 0) * 100).toFixed(1)}%` : "")} labelLine={false}>
           {data.map((d, i) => <Cell key={d.name} fill={palette[i % palette.length]} />)}
@@ -176,7 +176,7 @@ export function QuadrantBubbles({ points, height = 480 }: {
         <ReferenceLine y={0.5} stroke={mid} strokeDasharray="6 5" />
         <Tooltip cursor={{ strokeDasharray: "3 3", stroke: t.grid }} contentStyle={t.tooltip} itemStyle={{ color: t.tooltip.color }}
           formatter={(v, n) => (n === "Learners" ? new Intl.NumberFormat("en-US").format(Number(v)) : `${(Number(v) * 100).toFixed(0)}%`)} />
-        <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
+        <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} verticalAlign="top" formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
         {points.map((p, i) => (
           <Scatter isAnimationActive={false} key={p.segment} name={p.segment} data={[p]} fill={colors[i % colors.length]} shape={SHAPES[i % SHAPES.length]} fillOpacity={0.85} />
         ))}

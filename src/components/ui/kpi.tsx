@@ -42,7 +42,7 @@ export function KpiCard({
 }
 
 /** The supporting numbers in one quiet row, so the headline KPIs above it are the ones that catch the eye. */
-export function KpiStrip({ items }: { items: { label: string; value: string; vsPrev?: Delta; unit?: "pts" | "pct" | "abs"; accent?: Accent }[] }) {
+export function KpiStrip({ items }: { items: { label: string; value: string; vsPrev?: Delta; unit?: "pts" | "pct" | "abs"; accent?: Accent; note?: string; noteHint?: string }[] }) {
   const shown = items.filter((i) => i.value !== "—");
   if (shown.length === 0) return null;
   return (
@@ -54,6 +54,7 @@ export function KpiStrip({ items }: { items: { label: string; value: string; vsP
             <span className="text-2xl font-semibold tabular-nums tracking-tight">{i.value}</span>
             {i.vsPrev?.abs != null && <DeltaChip d={i.vsPrev} unit={i.unit} />}
           </p>
+          {i.note && <p className="mt-0.5 text-[10px] text-slate-400" title={i.noteHint}>{i.note}</p>}
         </div>
       ))}
     </Card>

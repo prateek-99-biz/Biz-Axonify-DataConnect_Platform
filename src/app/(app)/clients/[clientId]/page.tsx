@@ -7,17 +7,18 @@ import { db } from "@/server/db";
 import { loadContext, type SearchParams } from "@/server/services/context";
 import { buildPortfolio, DECLINE_THRESHOLD } from "@/server/services/portfolio";
 import { buildClientHeadline } from "@/server/services/attention";
-import { aggregate, contributingFactor, delta } from "@/server/metrics/calculations";
+import { aggregate, contributingFactor, delta, lowActivity } from "@/server/metrics/calculations";
 import { periodKey, periodLabel, previousPeriod, quartersIn, yearAgo } from "@/server/metrics/period";
 import { Badge, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
 import { KpiCard } from "@/components/ui/kpi";
 import { ClientHeadlineCard } from "@/components/dashboard/client-headline";
+import { PeriodNotice } from "@/components/internal/period-notice";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { TeamTree } from "@/components/tables/team-tree";
 import { NotesTasks } from "@/components/tables/notes-tasks";
-import { cn, fmtNumber, fmtPct } from "@/lib/utils";
+import { cn, fmtNumber, fmtPct, fmtHealth } from "@/lib/utils";
 import { humanize, lifecycleLabel } from "@/lib/labels";
 
 // Team, user and engagement detail is not in the refreshed summaries; Client Dashboards has it.
@@ -99,7 +100,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         <Card><CardHeader title="Contract" /><dl className="grid gap-3 p-4 text-sm sm:grid-cols-3">
           <div><dt className="text-xs text-slate-500">Start</dt><dd>{res.data.contractStart ?? "—"}</dd></div>
           <div><dt className="text-xs text-slate-500">End</dt><dd>{res.data.contractEnd ?? "—"}</dd></div>
-          <div><dt className="text-xs text-slate-500">ARR</dt><dd>{res.data.arr == null ? "—" : fmtNumber(res.data.arr)}</dd></div></dl></Card>
+          <div><dt className="text-xs text-slate-500">ARR</dt><dd>{res.data.arr == null ? "—" : `${res.data.currency ? `${res.data.currency} ` : ""}${fmtNumber(res.data.arr)}`}</dd></div></dl></Card>
       ) : <SourceUnavailable reason={res && res.status === "unavailable" ? res.reason : "Unavailable"} />;
   } else if (!hasData && tab !== "activity") {
     body = <EmptyState title={`No Axonify data for ${periodLabel(f.period)}`}>This client has no records in the selected period. Choose a period the client was live in.</EmptyState>;
@@ -108,17 +109,19 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     const participationChange = delta(m.participationRate, mPrev.participationRate);
     body = (
       <div className="space-y-4">
+        <PeriodNotice label={periodLabel(f.period)} progress={ctx.progress} asOf={ctx.asOf} />
         <ClientHeadlineCard headline={buildClientHeadline({
           risk: m.risk, health: m.healthScore, healthDeltaPts: delta(m.healthScore, mPrev.healthScore).abs, prevLabel: periodLabel(previousPeriod(f.period)),
           factor: factors[0] && mPrev.healthScore != null ? { label: factors[0].label, points: factors[0].points } : null,
-          participationPts: participationChange.abs == null ? null : participationChange.abs * 100, declining: participationChange.abs != null && participationChange.abs <= DECLINE_THRESHOLD,
+          participationPts: participationChange.abs == null ? null : participationChange.abs * 100, declining: !f.inProgress && participationChange.abs != null && participationChange.abs <= DECLINE_THRESHOLD,
+          dataCheck: lowActivity(m) ? { active: m.activeUsers, registered: m.registeredUsers } : null,
           renewalDate: client.commercial?.renewalDate ?? null, today: new Date().toISOString().slice(0, 10),
         })} />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard label="Registered Users" unit="pct" value={fmtNumber(m.registeredUsers)} vsPrev={delta(m.registeredUsers, mPrev.registeredUsers)} vsYear={delta(m.registeredUsers, mYa.registeredUsers)} />
           <KpiCard label="Participation" accent="green" value={fmtPct(m.participationRate)} vsPrev={delta(m.participationRate, mPrev.participationRate)} vsYear={delta(m.participationRate, mYa.participationRate)} />
           <KpiCard label="Knowledge" accent="purple" value={fmtPct(m.avgKnowledge)} vsPrev={delta(m.avgKnowledge, mPrev.avgKnowledge)} vsYear={delta(m.avgKnowledge, mYa.avgKnowledge)} />
-          <KpiCard label="Health Score" unit="abs" value={m.healthScore?.toFixed(0) ?? "—"} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
+          <KpiCard label="Health Score" unit="abs" value={fmtHealth(m.healthScore)} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
           <KpiCard label="Engagement" accent="orange" value={fmtPct(m.engagementRate)} vsPrev={delta(m.engagementRate, mPrev.engagementRate)} vsYear={delta(m.engagementRate, mYa.engagementRate)} />
           <KpiCard label="Retention" value={fmtPct(m.retentionRate)} vsPrev={delta(m.retentionRate, mPrev.retentionRate)} vsYear={delta(m.retentionRate, mYa.retentionRate)} />
           <KpiCard label="Feature Adoption" value={fmtPct(m.featureAdoption)} vsPrev={delta(m.featureAdoption, mPrev.featureAdoption)} vsYear={delta(m.featureAdoption, mYa.featureAdoption)} />
@@ -128,7 +131,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             <div className="p-4"><TrendChart data={trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Engagement" }]} /></div></Card>
           <Card><CardHeader title="What Changed" subtitle={`Weighted contribution to health score vs ${periodLabel(previousPeriod(f.period))}`} />
             <ul className="divide-y divide-line text-sm">
-              {mPrev.healthScore == null ? <li className="p-4 text-xs text-slate-500">No previous-period data to compare.</li> :
+              {mPrev.healthScore == null ? <li className="p-4 text-xs text-slate-500">Health can’t be broken down against {periodLabel(previousPeriod(f.period))}, because knowledge isn’t recorded for it.</li> :
                 factors.map((x) => <li key={x.key} className="flex justify-between px-4 py-3"><span>{x.label}</span><span className={cn("tabular-nums", x.points < -0.05 ? "text-critical" : x.points > 0.05 ? "text-brand-ink" : "text-slate-500")}>{x.points > 0 ? "+" : ""}{x.points.toFixed(1)} pts</span></li>)}
             </ul></Card>
         </div>
