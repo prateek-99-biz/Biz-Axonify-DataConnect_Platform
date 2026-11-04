@@ -4,6 +4,7 @@ import { getAdapters } from "@/server/data";
 import { loadContext, type SearchParams } from "@/server/services/context";
 import { METRIC_DEFINITIONS, RISK_THRESHOLDS, HEALTH_WEIGHTS } from "@/server/metrics/definitions";
 import { Badge, Card, CardHeader, SourceUnavailable } from "@/components/ui/primitives";
+import { SyncFailure } from "@/components/ui/sync-failure";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { db } from "@/server/db";
 import { fmtNumber } from "@/lib/utils";
@@ -22,7 +23,7 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
   const now = Date.now();
 
   let coverageSection: React.ReactNode;
-  if (cov.status !== "ok") coverageSection = <SourceUnavailable reason={cov.reason} />;
+  if (cov.status !== "ok") coverageSection = null; // Per-client coverage is not kept in the refreshed data; the refresh history below is the record.
   else {
     const rows: TableRow[] = cov.data.map((r) => {
       const ageH = r.lastLoadedAt ? (now - Date.parse(r.lastLoadedAt)) / 3.6e6 : null;
@@ -60,7 +61,7 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
           {runs.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
               <span className="flex items-center gap-2"><Badge tone={r.status === "ok" ? "good" : r.status === "failed" ? "critical" : "warn"}>{statusLabel(r.status)}</Badge>{r.startedAt.toISOString().slice(0, 16).replace("T", " ")} UTC · {r.triggeredBy ?? "—"}</span>
-              <span className="max-w-full text-xs text-slate-500 [overflow-wrap:anywhere]">{r.status === "ok" ? `${r.clientCount} clients · ${r.rowCount} rows` : (user.role === "ADMIN" ? r.message : "The sync did not finish. An administrator can see the details.") ?? ""}</span>
+              <span className="max-w-full text-xs text-slate-500 [overflow-wrap:anywhere]">{r.status === "ok" ? `${r.clientCount} clients · ${r.rowCount} rows` : <SyncFailure message={user.role === "ADMIN" ? (r.message ?? "") : null} />}</span>
             </li>
           ))}
         </ul>

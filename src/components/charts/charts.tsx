@@ -9,18 +9,26 @@ export const PALETTE = {
   light: ["#79C753", "#682685", "#EF7922", "#00AA61", "#3B6FD8", "#8A97AB"],
   dark: ["#8BD866", "#B67CD6", "#F79646", "#2DD48C", "#8CB8FF", "#CBD5E1"],
 };
+/**
+ * For charts whose series are clients, CSMs, periods or peer groups rather than measures. It leaves out green, purple and orange,
+ * which on this platform always mean participation, knowledge and engagement.
+ */
+export const ENTITY_PALETTE = {
+  light: ["#3B6FD8", "#0E9AA7", "#64748B", "#0EA5E9", "#D6457A", "#8A97AB"],
+  dark: ["#8CB8FF", "#2DD4BF", "#CBD5E1", "#7DD3FC", "#FDA4AF", "#94A3B8"],
+};
 const NAVY = "#1D2B43";
 
 export interface SeriesDef { key: string; label: string; color?: string }
 
 const pctFmt = (v: number) => `${(v * 100).toFixed(0)}%`;
 
-export function useChartTheme() {
+export function useChartTheme(entities = false) {
   const dark = useIsDark();
-  const colors = dark ? PALETTE.dark : PALETTE.light;
+  const colors = entities ? (dark ? ENTITY_PALETTE.dark : ENTITY_PALETTE.light) : dark ? PALETTE.dark : PALETTE.light;
   return {
     // Pages that ask for navy get the palette's second colour (Biz purple), which also stays visible on dark glass.
-    color: (s: SeriesDef, i: number) => (s.color && s.color.toUpperCase() !== NAVY ? s.color : s.color ? colors[1] : colors[i % colors.length]),
+    color: (s: SeriesDef, i: number) => (entities ? colors[i % colors.length] : s.color && s.color.toUpperCase() !== NAVY ? s.color : s.color ? colors[1] : colors[i % colors.length]),
     grid: dark ? "rgba(255,255,255,0.08)" : "rgba(29,43,67,0.08)",
     tick: dark ? "#ACB9CB" : "#4B586C",
     tooltip: {
@@ -50,9 +58,9 @@ function ChartFrame({ height, label, children }: { height: number; label: string
 }
 
 export function TrendChart({
-  data, series, xKey = "period", format = "pct", height = 260,
-}: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey?: string; format?: "pct" | "number" | "score"; height?: number }) {
-  const t = useChartTheme();
+  data, series, xKey = "period", format = "pct", height = 260, entities,
+}: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey?: string; format?: "pct" | "number" | "score"; height?: number; entities?: boolean }) {
+  const t = useChartTheme(entities);
   const uid = "g" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const f = (v: number) => (format === "pct" ? pctFmt(v) : format === "score" ? v.toFixed(0) : new Intl.NumberFormat("en-US").format(v));
   // A line needs two points. A measure with only one or two values (knowledge exists for the latest quarter only) would draw nothing, so it gets dots and a note.
@@ -94,9 +102,9 @@ export function TrendChart({
 export interface RefLine { y: number; label: string }
 
 export function CompareBars({
-  data, series, xKey, format = "pct", height = 260, refLines,
-}: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey: string; format?: "pct" | "number"; height?: number; refLines?: RefLine[] }) {
-  const t = useChartTheme();
+  data, series, xKey, format = "pct", height = 260, refLines, entities,
+}: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey: string; format?: "pct" | "number"; height?: number; refLines?: RefLine[]; entities?: boolean }) {
+  const t = useChartTheme(entities);
   const f = (v: number) => (format === "pct" ? pctFmt(v) : new Intl.NumberFormat("en-US").format(v));
   return (
     <ChartFrame height={height} label={`Comparison of ${series.map((s) => s.label).join(", ")} by ${xKey}`}>

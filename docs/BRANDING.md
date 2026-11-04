@@ -21,6 +21,10 @@ A measure keeps one colour everywhere, on KPI tiles and on charts, so a reader l
 - Knowledge and learning measures are **purple**.
 - Engagement, frequency and time on the platform are **orange**.
 
+Charts whose series are not measures, such as clients, CSMs, periods or peer groups, use a separate palette (`ENTITY_PALETTE` in
+`src/components/charts/charts.tsx`, switched on with the `entities` prop). It leaves out green, purple and orange, so those three
+never mean anything but participation, knowledge and engagement.
+
 `src/lib/accent.ts` holds the mapping. `accentFor()` serves the team pages and `accentForKpi()` serves the client dashboards.
 Chart series take their colours from `PALETTE` in `src/components/charts/charts.tsx`, in the same order: green, purple, orange.
 

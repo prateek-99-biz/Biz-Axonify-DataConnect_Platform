@@ -20,6 +20,9 @@ import { NotesTasks } from "@/components/tables/notes-tasks";
 import { cn, fmtNumber, fmtPct } from "@/lib/utils";
 import { humanize, lifecycleLabel } from "@/lib/labels";
 
+// Team, user and engagement detail is not in the refreshed summaries; Client Dashboards has it.
+const DETAIL_TABS: ReadonlySet<string> = new Set(["teams", "users", "engagement"]);
+
 const TABS = [
   ["overview", "Overview"], ["teams", "Teams"], ["users", "Users"], ["engagement", "Engagement"], ["commercial", "Contract & Renewals"], ["activity", "Notes & Tasks"],
 ] as const;
@@ -35,7 +38,10 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   if (!client) notFound();
 
   const f = ctx.filters;
-  const tab = TABS.find(([k]) => k === (Array.isArray(sp.tab) ? sp.tab[0] : sp.tab))?.[0] ?? "overview";
+  const { analytics, crm } = getAdapters();
+  // Tabs that would only show "unavailable" are left out, so every tab on the page works.
+  const visibleTabs = analytics.kind === "synced" ? TABS.filter(([k]) => !DETAIL_TABS.has(k)) : TABS;
+  const tab = visibleTabs.find(([k]) => k === (Array.isArray(sp.tab) ? sp.tab[0] : sp.tab))?.[0] ?? "overview";
   const rows = ctx.rows.filter((r) => r.clientId === clientId);
   const cur = quartersIn(f.period);
   const prev = quartersIn(previousPeriod(f.period));
@@ -54,7 +60,6 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   // With no industry on record the "peers" are simply everyone else, which the portfolio bars already show.
   const industryKnown = client.industry !== "Unknown";
 
-  const { analytics, crm } = getAdapters();
   const trend = rows.sort((a, b) => a.period.localeCompare(b.period)).map((r) => {
     const x = aggregate([r], [r.period]);
     return { period: r.period, engagementRate: x.engagementRate, participationRate: x.participationRate, avgKnowledge: x.avgKnowledge, retentionRate: x.retentionRate, featureAdoption: x.featureAdoption, activeUsers: r.activeUsers, sessions: r.sessions };
@@ -76,7 +81,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
 
   const tabs = (
     <nav aria-label="Client sections" className="glass inline-flex max-w-full gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none]">
-      {TABS.map(([k, label]) => (
+      {visibleTabs.map(([k, label]) => (
         <Link key={k} href={qs(k)} aria-current={tab === k ? "page" : undefined}
           className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm transition-all", tab === k ? "bg-brand font-semibold text-navy shadow-[0_6px_18px_-8px_rgb(var(--brand)/0.9)]" : "text-slate-600 hover:bg-slate-100 hover:text-ink")}>{label}</Link>
       ))}
@@ -89,7 +94,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     const sfId = client.salesforceAccountId;
     const res = sfId && can(user.role, "commercial:read") ? await crm.getAccount(sfId) : null;
     body = !can(user.role, "commercial:read") ? <SourceUnavailable reason="Your role does not include commercial information." />
-      : !sfId ? <SourceUnavailable reason="This client has no Salesforce Account ID mapped, so contract data cannot be looked up. An Admin can add the mapping." />
+      : !sfId ? <SourceUnavailable reason="No Salesforce data has been loaded for this client yet. An admin can import the Salesforce file in Settings." />
       : res?.status === "ok" ? (
         <Card><CardHeader title="Contract" /><dl className="grid gap-3 p-4 text-sm sm:grid-cols-3">
           <div><dt className="text-xs text-slate-500">Start</dt><dd>{res.data.contractStart ?? "—"}</dd></div>
@@ -128,7 +133,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             </ul></Card>
         </div>
         <Card><CardHeader title="Peer Benchmark" subtitle={industryKnown ? `This client vs ${client.industry} peers (${peerView.clients.length}) and the whole portfolio (${portfolioView.clients.length}), ${periodLabel(f.period)}` : `This client vs the whole portfolio (${portfolioView.clients.length} clients), ${periodLabel(f.period)}`} />
-          <div className="p-4"><CompareBars xKey="metric" series={[{ key: "client", label: client.name }, ...(industryKnown ? [{ key: "peers", label: `${client.industry} peers` }] : []), { key: "portfolio", label: "Portfolio" }]}
+          <div className="p-4"><CompareBars entities xKey="metric" series={[{ key: "client", label: client.name }, ...(industryKnown ? [{ key: "peers", label: `${client.industry} peers` }] : []), { key: "portfolio", label: "Portfolio" }]}
             data={[
               { metric: "Participation", client: m.participationRate, peers: peerMetrics.participationRate, portfolio: portfolioView.kpis.current.participationRate },
               { metric: "Knowledge", client: m.avgKnowledge, peers: peerMetrics.avgKnowledge, portfolio: portfolioView.kpis.current.avgKnowledge },

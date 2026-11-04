@@ -132,7 +132,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       {showIndustry && (
         <Card>
           <CardHeader title="Industry Benchmark" subtitle={`Participation by industry, ${periodLabel(f.period)} vs ${prevLabel}`} />
-          <div className="p-4"><CompareBars data={industryChart} xKey="industry" series={[{ key: periodLabel(f.period), label: periodLabel(f.period) }, { key: prevLabel, label: prevLabel, color: "#1D2B43" }]} /></div>
+          <div className="p-4"><CompareBars entities data={industryChart} xKey="industry" series={[{ key: periodLabel(f.period), label: periodLabel(f.period) }, { key: prevLabel, label: prevLabel }]} /></div>
         </Card>
       )}
 

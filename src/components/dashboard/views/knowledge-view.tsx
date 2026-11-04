@@ -82,7 +82,7 @@ function TopicExplorer({ heavy, sel, onChange }: { heavy: Promise<HeavyTopics>; 
         <CardHeader title="Knowledge Growth by Topic" badge={<ScopeTag scope="snapshot" />} subtitle={`${bars.length} topic${bars.length === 1 ? "" : "s"} · current vs baseline`} />
         <div className="p-4">
           {bars.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No topics selected.</p> : (
-            <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current Knowledge", color: 2 }, { key: "baseline", label: "Baseline Knowledge", color: 5 }]} />
+            <HBars data={bars} nameKey="name" nameWidth={230} series={[{ key: "current", label: "Current Knowledge", color: 1 }, { key: "baseline", label: "Baseline Knowledge", color: 5 }]} />
           )}
         </div>
       </Card>

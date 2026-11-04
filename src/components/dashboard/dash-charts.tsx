@@ -58,7 +58,7 @@ export function DualAxisLine({ data, xKey, left, right, height = 300 }: {
 }) {
   const t = useChartTheme();
   const fl = fmt(left.format), fr = fmt(right.format);
-  const c1 = t.color({ key: "a", label: "" }, 2), c2 = t.color({ key: "b", label: "" }, 0);
+  const c1 = t.color({ key: "a", label: "" }, 0), c2 = t.color({ key: "b", label: "" }, 2);
   return (
     <Frame height={height} label={`${left.label} and ${right.label} by month`}>
       <LineChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>

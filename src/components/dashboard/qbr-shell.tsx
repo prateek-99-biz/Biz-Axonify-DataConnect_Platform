@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
-import { ArrowLeft, LogOut } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ArrowLeft, ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Badge, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
-import { BrandLogo } from "@/components/brand/brand-logo";
+import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
 import { monthLabel } from "@/server/dashboard/calc";
 import { cn } from "@/lib/utils";
 import { QBR_PAGES } from "./pages";
@@ -34,6 +34,18 @@ export function QbrShell(p: QbrShellProps) {
   const sp = useSearchParams();
   const [pending, start] = useTransition();
   const [menu, setMenu] = useState(false);
+  const [pagesOpen, setPagesOpen] = useState(false);
+  // Open by default with every page named; the same choice as the team sidebar, remembered under the same key.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem("ci_nav_collapsed") === "1"); } catch { /* storage unavailable: stay open */ }
+  }, []);
+  useEffect(() => setPagesOpen(false), [path]);
+  const toggleRail = () => setCollapsed((c) => {
+    try { localStorage.setItem("ci_nav_collapsed", c ? "0" : "1"); } catch { /* not remembered */ }
+    return !c;
+  });
+  const reveal = collapsed ? "opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100" : "";
 
   const keep = new URLSearchParams();
   KEEP.forEach((k) => { const v = sp.get(k); if (v) keep.set(k, v); });
@@ -59,13 +71,13 @@ export function QbrShell(p: QbrShellProps) {
   return (
     <div className="flex h-screen gap-3 overflow-hidden p-3">
       {/* The rail keeps a fixed 4.5rem slot; the panel grows over the page on hover or keyboard focus. */}
-      <div className="relative z-30 hidden w-[4.5rem] shrink-0 lg:block">
-      <aside className="glass-nav group/side absolute inset-y-0 left-0 flex w-[4.5rem] flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300 hover:w-64 has-[:focus-visible]:w-64" aria-label="Dashboard Pages">
+      <div className={cn("relative z-30 hidden shrink-0 transition-[width] duration-300 lg:block", collapsed ? "w-[4.5rem]" : "w-64")}>
+      <aside className={cn("glass-nav group/side absolute inset-y-0 left-0 flex flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300", collapsed ? "w-[4.5rem] hover:w-64 has-[:focus-visible]:w-64" : "w-full")} aria-label="Dashboard Pages">
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand/30 blur-3xl dark:bg-brand/15" />
         <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-biz-purple/15 blur-3xl dark:bg-biz-purple/20" />
         <div className="relative flex h-16 items-center gap-3 px-4">
           <BrandLogo size={40} />
-          <span className="leading-tight opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">
+          <span className={cn("leading-tight", reveal)}>
             <span className="block text-sm font-bold tracking-tight">Axonify Data Connect</span>
             <span className="block text-xs font-medium text-brand-ink">{p.internal ? "Internal view" : "Quarterly business review"}</span>
           </span>
@@ -81,7 +93,7 @@ export function QbrShell(p: QbrShellProps) {
                 <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                   <n.icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className="truncate opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">{n.label}</span>
+                <span className={cn("truncate", reveal)}>{n.label}</span>
               </Link>
             );
           })}
@@ -89,9 +101,19 @@ export function QbrShell(p: QbrShellProps) {
         {p.internal && (
           <Link href="/portfolio" aria-label="Back to Team Workspace" className="relative m-3 flex items-center gap-2 rounded-xl border border-line/60 bg-white/40 px-[10px] py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-ink dark:bg-white/5 dark:hover:bg-white/10">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center"><ArrowLeft className="h-4 w-4" aria-hidden /></span>
-            <span className="opacity-0 transition-opacity duration-200 group-hover/side:opacity-100 group-has-[:focus-visible]/side:opacity-100">Back to Team Workspace</span>
+            <span className={reveal}>Back to Team Workspace</span>
           </Link>
         )}
+        <div className="relative shrink-0 border-t hairline px-3 py-2">
+          <p className={cn("flex items-center gap-2 px-[10px] pb-2 pt-1 text-[11px] text-slate-500", reveal)}><BizMark />A Biz Group dashboard for Axonify</p>
+          <button type="button" onClick={toggleRail} aria-pressed={collapsed} aria-label={collapsed ? "Keep the menu open" : "Fold the menu to icons"}
+            className="group flex w-full items-center gap-3 rounded-xl px-[10px] py-2 text-sm text-slate-600 transition-colors hover:bg-white/60 hover:text-ink dark:hover:bg-white/10">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand-ink group-hover:bg-brand/20">
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" aria-hidden /> : <PanelLeftClose className="h-4 w-4" aria-hidden />}
+            </span>
+            <span className={reveal}>{collapsed ? "Keep Menu Open" : "Fold Menu"}</span>
+          </button>
+        </div>
       </aside>
       </div>
 
@@ -139,14 +161,30 @@ export function QbrShell(p: QbrShellProps) {
           </div>
         </header>
 
-        <nav aria-label="Dashboard Pages" className="glass flex shrink-0 gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none] lg:hidden">
-          {QBR_PAGES.map((n) => {
-            const active = n.href === "/qbr" ? path === "/qbr" : path.startsWith(n.href);
-            return (
-              <Link key={n.href} href={href(n.href)} aria-current={active ? "page" : undefined}
-                className={cn("whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition-all", active ? "bg-brand font-semibold text-navy" : "text-slate-600 hover:bg-slate-100 hover:text-ink")}>{n.short}</Link>
-            );
-          })}
+        <nav aria-label="Dashboard Pages" className="glass shrink-0 !rounded-2xl p-1 lg:hidden">
+          <button type="button" onClick={() => setPagesOpen((o) => !o)} aria-expanded={pagesOpen} aria-controls="qbr-mobile-menu"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold">
+            <Menu className="h-5 w-5 text-brand-ink" aria-hidden />
+            <span className="min-w-0 flex-1 truncate">{(QBR_PAGES.find((n) => (n.href === "/qbr" ? path === "/qbr" : path.startsWith(n.href))) ?? QBR_PAGES[0]).label}</span>
+            <span className="text-xs font-normal text-slate-500">{pagesOpen ? "Close" : "All Pages"}</span>
+            <ChevronDown className={cn("h-4 w-4 text-slate-500 transition-transform", pagesOpen && "rotate-180")} aria-hidden />
+          </button>
+          {pagesOpen && (
+            <ul id="qbr-mobile-menu" className="max-h-[60vh] overflow-y-auto px-1 pb-2">
+              {QBR_PAGES.map((n) => {
+                const active = n.href === "/qbr" ? path === "/qbr" : path.startsWith(n.href);
+                return (
+                  <li key={n.href}>
+                    <Link href={href(n.href)} aria-current={active ? "page" : undefined}
+                      className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm", active ? "bg-brand font-semibold text-navy" : "text-slate-700 hover:bg-brand/15")}>
+                      <n.icon className="h-4 w-4 shrink-0" aria-hidden />
+                      <span className="min-w-0"><span className="block">{n.label}</span><span className={cn("block text-[11px] font-normal", active ? "text-navy/70" : "text-slate-500")}>{n.blurb}</span></span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </nav>
 
         <main className="-mx-1 flex-1 overflow-y-auto px-1 pb-4">{p.children}</main>
