@@ -11,7 +11,7 @@ const TYPES: EmailOtpType[] = ["invite", "recovery", "signup", "email", "magicli
  */
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
-  const next = safeCallbackUrl(q.get("next"), "/portfolio");
+  const next = safeCallbackUrl(q.get("next"), "/");
   const fail = () => NextResponse.redirect(new URL("/signin?error=link", req.url));
   if (!supabaseConfigured()) return fail();
 

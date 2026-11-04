@@ -13,7 +13,7 @@ import { safeCallbackUrl } from "@/lib/safe-redirect";
 
 export default async function SignIn({ searchParams }: { searchParams: Promise<{ callbackUrl?: string; error?: string }> }) {
   const sp = await searchParams;
-  const callbackUrl = safeCallbackUrl(sp.callbackUrl);
+  const callbackUrl = safeCallbackUrl(sp.callbackUrl, "/");
 
   async function login(form: FormData) {
     "use server";

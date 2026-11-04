@@ -10,7 +10,7 @@ import { humanize } from "@/lib/labels";
 
 export interface NotificationItem { key: string; clientId: string; clientName: string; severity: "warning" | "critical"; title: string; detail: string }
 
-const LABELS: Record<string, string> = { portfolio: "Portfolio", clients: "Clients", csm: "CSM Portfolio", metrics: "What the Metrics Mean", "how-it-works": "How It Works", "data-reliability": "Data Reliability", settings: "Settings", compare: "Compare Clients" };
+const LABELS: Record<string, string> = { portfolio: "Portfolio", clients: "Clients", csm: "My Accounts", internal: "Internal Home", alerts: "Alerts and Watchlist", renewals: "Renewals", metrics: "What the Metrics Mean", "how-it-works": "How It Works", "data-reliability": "Data Reliability", settings: "Settings", compare: "Compare Clients" };
 
 export function Breadcrumbs() {
   const path = usePathname();

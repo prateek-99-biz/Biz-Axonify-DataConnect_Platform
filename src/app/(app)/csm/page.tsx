@@ -3,119 +3,200 @@ import { requirePagePermission } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { loadContext, type SearchParams } from "@/server/services/context";
 import { buildPortfolio } from "@/server/services/portfolio";
+import { accountSignals } from "@/server/services/account-signals";
+import { bookSummary, buildAccountCards, csmKey, csmKeyForEmail, weekAgenda, type AccountCard } from "@/server/services/accounts";
+import { sampleCount } from "@/server/services/salesforce-accounts";
 import { periodKey, periodLabel } from "@/server/metrics/period";
-import { Badge, Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui/primitives";
+import { Badge, Button, Card, CardHeader, EmptyState, Select, SourceUnavailable } from "@/components/ui/primitives";
+import { KpiStrip } from "@/components/ui/kpi";
 import { RiskBadge } from "@/components/ui/risk-badge";
-import { CompareBars } from "@/components/charts/charts";
-import { DataTable, type TableRow } from "@/components/tables/data-table";
-import { fmtNumber, fmtPct } from "@/lib/utils";
-import { riskLabel } from "@/lib/labels";
+import { Sparkline } from "@/components/charts/sparkline";
+import { RenewalTimeline } from "@/components/internal/renewal-timeline";
+import { SampleNotice } from "@/components/internal/sample-notice";
+import { cn, fmtNumber, fmtPct } from "@/lib/utils";
 
-const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "—";
-const dayCount = (iso: string, today: string) => Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toFixed(1)}`;
 
-export default async function CsmPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+function AccountCardView({ c, period }: { c: AccountCard; period: string }) {
+  const tone = c.risk === "critical" ? "critical" : c.risk === "at_risk" ? "warn" : c.risk === "healthy" ? "good" : "neutral";
+  return (
+    <Link href={`/clients/${c.clientId}?period=${period}`} className="group block">
+      <Card className="h-full p-5 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lift">
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 truncate text-lg font-semibold group-hover:text-brand-ink">{c.name}</p>
+          {c.noData ? <Badge>No Data This Quarter</Badge> : (
+            <span className="flex shrink-0 items-center gap-2"><RiskBadge risk={c.risk} /><span className="text-2xl font-semibold tabular-nums">{c.health == null ? "—" : c.health.toFixed(0)}</span></span>
+          )}
+        </div>
+
+        {!c.noData && (
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+            <div>
+              <Sparkline values={c.spark} tone={tone} label={`Participation over the last ${c.spark.length} quarters for ${c.name}`} />
+              <p className="mt-1 text-[11px] text-slate-500">Participation, last {c.spark.length} quarters</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xl font-semibold tabular-nums">{fmtPct(c.participation)}</p>
+              {c.participationDeltaPts != null && <p className={cn("text-[11px] tabular-nums", c.participationDeltaPts <= -3 ? "text-critical" : "text-slate-500")}>{signed(c.participationDeltaPts)} pts</p>}
+            </div>
+          </div>
+        )}
+
+        {!c.noData && (
+          <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg bg-brand/10 px-2.5 py-1.5"><dt className="text-slate-500">Knowledge</dt><dd className="font-semibold tabular-nums">{fmtPct(c.knowledge)}</dd></div>
+            <div className="rounded-lg bg-brand/10 px-2.5 py-1.5"><dt className="text-slate-500">Registered Users</dt><dd className="font-semibold tabular-nums">{fmtNumber(c.users ?? 0)}</dd></div>
+          </dl>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {c.renewalDays != null && c.renewalDays <= 365 && <Badge tone={c.renewalDays <= 30 ? "warn" : "neutral"}>Renews in {c.renewalDays} day{c.renewalDays === 1 ? "" : "s"}</Badge>}
+          {c.openTasks > 0 && <Badge tone={c.overdueTasks > 0 ? "critical" : "neutral"}>{c.openTasks} open task{c.openTasks === 1 ? "" : "s"}{c.overdueTasks > 0 ? `, ${c.overdueTasks} overdue` : ""}</Badge>}
+          {!c.noData && (c.daysSinceNote == null ? <Badge>No notes yet</Badge> : c.daysSinceNote >= 30 ? <Badge tone="warn">No note for {c.daysSinceNote} days</Badge> : null)}
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+export default async function MyAccountsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("dashboard:internal");
-  const loaded = await loadContext(await searchParams);
+  const sp = await searchParams;
+  const loaded = await loadContext(sp);
   if (!loaded.ok) return <SourceUnavailable reason={loaded.reason} />;
   const { ctx } = loaded;
-  const view = buildPortfolio(ctx.clients, ctx.rows, ctx.filters);
-  const p = periodKey(ctx.filters.period);
-  const today = new Date().toISOString().slice(0, 10);
+  const period = periodKey(ctx.filters.period);
+  const isAdmin = can(user.role, "settings:manage");
+  const sample = await sampleCount();
 
-  const assigned = view.csmBooks.filter((b) => b.csmEmail !== "");
-  const anyCommercial = ctx.clients.some((c) => c.commercial);
+  // Every CSM that has accounts, by name.
+  const books = new Map<string, { key: string; name: string; count: number }>();
+  for (const c of ctx.clients) {
+    const key = csmKey(c);
+    if (key === "") continue;
+    const b = books.get(key) ?? { key, name: c.csmName || key, count: 0 };
+    b.count++;
+    books.set(key, b);
+  }
+  const list = [...books.values()].sort((a, b) => a.name.localeCompare(b.name));
 
-  const header = (
-    <div>
-      <h1 className="text-2xl font-bold tracking-tight">CSM Portfolio</h1>
-      <p className="text-sm text-slate-500">Book of business and account performance by CSM · {periodLabel(ctx.filters.period)}</p>
-    </div>
-  );
-
-  // Until Salesforce data is loaded there is no CSM to group by, so show where it comes from instead of one anonymous book.
-  if (assigned.length === 0) {
+  if (list.length === 0) {
     return (
       <div className="space-y-4">
-        {header}
+        <h1 className="text-2xl font-bold tracking-tight">My Accounts</h1>
         <Card className="border-dashed">
           <EmptyState title="No CSM data loaded yet">
             CSM names, renewal dates and licences come from the Salesforce account data.
-            {can(user.role, "settings:manage") ? " Download the template and import it from Settings." : " An administrator can import it from Settings."}
+            {isAdmin ? " Import the file, or load sample data to see how the page looks, from Settings." : " An administrator can import it from Settings."}
           </EmptyState>
-          {can(user.role, "settings:manage") && <p className="pb-6 text-center text-xs"><Link href="/settings" className="underline">Open Settings</Link></p>}
+          {isAdmin && <p className="pb-6 text-center text-xs"><Link href="/settings" className="underline">Open Settings</Link></p>}
         </Card>
       </div>
     );
   }
 
-  const csmOf = new Map(ctx.clients.map((c) => [c.id, c.csmName || "Unassigned"]));
-  const renewals: TableRow[] = [...view.clients.map((c) => ({ c: c.client, health: c.current.healthScore, risk: c.risk })), ...view.noDataClients.map((c) => ({ c, health: null, risk: "unknown" as const }))]
-    .filter((x) => x.c.commercial?.renewalDate && x.c.commercial.renewalDate >= today)
-    .sort((a, b) => a.c.commercial!.renewalDate!.localeCompare(b.c.commercial!.renewalDate!))
-    .map((x) => {
-      const date = x.c.commercial!.renewalDate!;
-      const days = dayCount(date, today);
-      return {
-        id: x.c.id, href: `/clients/${x.c.id}?period=${p}`,
-        cells: {
-          account: { v: x.c.name }, csm: { v: csmOf.get(x.c.id) ?? "Unassigned" },
-          renewal: { v: date, node: <span className="tabular-nums">{date} <span className="text-xs text-slate-500">({days === 0 ? "today" : `in ${days} day${days === 1 ? "" : "s"}`})</span></span> },
-          health: { v: x.health, node: x.health?.toFixed(0) ?? "—" },
-          risk: { v: riskLabel(x.risk), node: <RiskBadge risk={x.risk} /> },
-        },
-      };
-    });
+  const mine = csmKeyForEmail(user.email, ctx.clients);
+  const wanted = one(sp.csm);
+  const selected = list.find((b) => b.key === wanted)?.key ?? mine ?? list[0].key;
+  const isMine = selected === mine;
+  const who = list.find((b) => b.key === selected)!;
+  const book = ctx.clients.filter((c) => csmKey(c) === selected);
 
-  const chart = [
-    { metric: "Participation", ...Object.fromEntries(view.csmBooks.map((b) => [b.csmName, b.current.participationRate])) },
-    { metric: "Knowledge", ...Object.fromEntries(view.csmBooks.map((b) => [b.csmName, b.current.avgKnowledge])) },
-  ];
+  const today = new Date().toISOString().slice(0, 10);
+  const signals = await accountSignals(book.map((c) => c.id), today);
+  const cards = buildAccountCards(book, ctx.rows, ctx.filters.period, signals, today);
+  const summary = bookSummary(cards);
+  const agenda = weekAgenda(cards, today);
+  const users = cards.reduce((n, c) => n + (c.users ?? 0), 0);
+
+  // The manager's view of every CSM, kept small and for admins only.
+  const all = isAdmin ? buildPortfolio(ctx.clients, ctx.rows, { client: null, industry: null, period: ctx.filters.period }) : null;
 
   return (
     <div className="space-y-6">
-      {header}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{isMine ? "My Accounts" : `${who.name}’s Accounts`}<Badge tone="biz" className="ml-3 align-middle">Internal Only</Badge></h1>
+          <p className="mt-1 text-sm text-slate-500">{who.name} · {summary.accounts} account{summary.accounts === 1 ? "" : "s"} · {fmtNumber(users)} users · {periodLabel(ctx.filters.period)}</p>
+        </div>
+        {list.length > 1 && (
+          <form method="get" className="flex items-center gap-2 text-xs font-medium text-slate-500">
+            <input type="hidden" name="period" value={period} />
+            <label className="flex items-center gap-2">Viewing
+              <Select name="csm" defaultValue={selected} aria-label="Customer success manager">
+                {list.map((b) => <option key={b.key} value={b.key}>{b.name}{b.key === mine ? " (you)" : ""}</option>)}
+              </Select>
+            </label>
+            <Button size="sm">Show</Button>
+          </form>
+        )}
+      </div>
 
-      <section aria-label="CSM books of business" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {view.csmBooks.map((b) => (
-          <Card key={b.csmEmail || "unassigned"} className="border-t-4 border-t-brand p-5">
-            <div className="flex items-center gap-3">
-              <span aria-hidden className="flex h-11 w-11 items-center justify-center rounded-full bg-brand/15 text-sm font-bold text-brand-ink">{initials(b.csmName)}</span>
-              <div className="min-w-0">
-                <p className="truncate text-lg font-semibold">{b.csmName}</p>
-                <p className="text-xs text-slate-500">{b.clients} account{b.clients === 1 ? "" : "s"} · {fmtNumber(b.current.registeredUsers)} users</p>
-              </div>
-            </div>
-            <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-              {([["Avg participation", fmtPct(b.current.participationRate)], ["Avg knowledge", fmtPct(b.current.avgKnowledge)], ["Healthy", String(b.healthy)], ["At risk", String(b.atRisk)]] as const).map(([k, v]) => (
-                <div key={k} className="rounded-xl bg-brand/10 px-3 py-2">
-                  <dt className="text-slate-500">{k}</dt>
-                  <dd className={`mt-0.5 text-xl font-semibold tabular-nums ${k === "At risk" && b.atRisk > 0 ? "text-critical" : k === "Healthy" ? "text-brand-ink" : ""}`}>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </Card>
-        ))}
+      <SampleNotice count={sample} canRemove={isAdmin} />
+
+      <KpiStrip items={[
+        { label: "Accounts", value: String(summary.accounts) },
+        { label: "Need Attention", value: String(summary.needAttention) },
+        { label: "Renewing In 90 Days", value: String(summary.renewing90) },
+        { label: "Open Tasks", value: summary.overdueTasks > 0 ? `${summary.openTasks} (${summary.overdueTasks} overdue)` : String(summary.openTasks) },
+      ]} />
+
+      <Card>
+        <CardHeader title="This Week" subtitle="Overdue and due tasks, renewals within 30 days, and accounts that have gone quiet" />
+        {agenda.length === 0 ? (
+          <p className="px-5 py-4 text-sm text-slate-600">Nothing urgent. No overdue tasks, no renewals within 30 days, and every account has a recent note.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {agenda.map((a) => (
+              <li key={a.key}>
+                <Link href={`/clients/${a.clientId}?period=${period}&tab=activity`} className="flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-brand/10">
+                  <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", a.urgent ? "bg-critical" : "bg-slate-400")} />
+                  <span className="min-w-0 flex-1"><span className="font-semibold">{a.name}</span> <span className="text-slate-600">· {a.text}</span></span>
+                  <span className="text-xs text-slate-500">Open notes and tasks</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader title="Renewal Timeline" subtitle="Next twelve months, coloured by account health" />
+        <div className="px-5 py-4">
+          {cards.some((c) => c.renewalDate) ? (
+            <RenewalTimeline today={today} items={cards.filter((c) => c.renewalDate).map((c) => ({ id: c.clientId, name: c.name, days: c.renewalDays ?? -1, risk: c.risk }))} />
+          ) : <p className="text-sm text-slate-600">No renewal dates for these accounts yet. They come from the Salesforce file.</p>}
+        </div>
+      </Card>
+
+      <section aria-label="Accounts" className="grid gap-4 lg:grid-cols-2">
+        {cards.map((c) => <AccountCardView key={c.clientId} c={c} period={period} />)}
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader title="CSM Performance" subtitle={`Average participation and knowledge across each CSM's accounts, ${periodLabel(ctx.filters.period)}`} />
-          <div className="p-4"><CompareBars xKey="metric" data={chart} series={view.csmBooks.map((b) => ({ key: b.csmName, label: b.csmName }))} /></div>
-        </Card>
-        <Card>
-          <CardHeader title="Upcoming Renewals" subtitle="Soonest first, from the Salesforce renewal date" badge={!anyCommercial ? <Badge tone="warn">Awaiting Salesforce data</Badge> : undefined} />
-          {renewals.length === 0 ? (
-            <EmptyState title={anyCommercial ? "No upcoming renewals" : "No renewal dates yet"}>
-              {anyCommercial ? "No client has a renewal date from today onward." : "Add renewal_date to the Salesforce CSV in Settings and they will appear here."}
-            </EmptyState>
-          ) : (
-            <DataTable searchable={false} canExport={can(user.role, "export:csv")} exportName={`renewals-${p}`}
-              columns={[{ key: "account", header: "Account" }, { key: "csm", header: "CSM" }, { key: "renewal", header: "Renewal" }, { key: "health", header: "Health", align: "right" as const }, { key: "risk", header: "Risk" }]}
-              rows={renewals} />
-          )}
-        </Card>
-      </div>
+      {all && (
+        <details className="glass !rounded-2xl">
+          <summary className="cursor-pointer px-5 py-3 text-sm font-semibold">Team View: every CSM</summary>
+          <div className="overflow-x-auto border-t hairline">
+            <table className="w-full text-sm">
+              <thead className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                <tr><th className="px-5 py-2.5 font-semibold">CSM</th><th className="px-3 py-2.5 text-right font-semibold">Accounts</th><th className="px-3 py-2.5 text-right font-semibold">Need Attention</th><th className="px-3 py-2.5 text-right font-semibold">Average Health</th><th className="px-5 py-2.5 font-semibold"><span className="sr-only">Open</span></th></tr>
+              </thead>
+              <tbody>
+                {all.csmBooks.filter((b) => b.csmEmail !== "").map((b) => (
+                  <tr key={b.csmEmail} className="border-t hairline">
+                    <td className="px-5 py-2.5 font-semibold">{b.csmName}{b.csmEmail === mine ? " (you)" : ""}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{b.clients}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{b.atRisk}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{b.current.healthScore?.toFixed(0) ?? "—"}</td>
+                    <td className="px-5 py-2.5 text-right"><Link href={`/csm?csm=${encodeURIComponent(b.csmEmail)}&period=${period}`} className="text-xs underline">View accounts</Link></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
     </div>
   );
 }

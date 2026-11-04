@@ -6,7 +6,10 @@ const PERIOD_ONLY: FilterScope = { client: false, industry: false, period: true 
 const NONE: FilterScope = { client: false, industry: false, period: false };
 
 // Pages that ignore the filters entirely.
-const UNFILTERED = ["/settings", "/data-reliability", "/how-it-works", "/metrics"];
+const UNFILTERED = ["/settings", "/data-reliability", "/how-it-works", "/metrics", "/renewals"];
+
+// The internal pages pick their own clients (a CSM's book, or everyone), so only the quarter applies.
+const PERIOD_PAGES = ["/csm", "/alerts", "/internal"];
 
 /**
  * A client's profile is already one client, and Compare picks its own clients with tick boxes, so both use only the period.
@@ -15,5 +18,6 @@ const UNFILTERED = ["/settings", "/data-reliability", "/how-it-works", "/metrics
 export function filterScope(path: string): FilterScope {
   if (UNFILTERED.some((p) => path === p || path.startsWith(p + "/"))) return NONE;
   if (path === "/clients/compare" || path.startsWith("/clients/")) return PERIOD_ONLY;
+  if (PERIOD_PAGES.some((p) => path === p || path.startsWith(p + "/"))) return PERIOD_ONLY;
   return ALL;
 }

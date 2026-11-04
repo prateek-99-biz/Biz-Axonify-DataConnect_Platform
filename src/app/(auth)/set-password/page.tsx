@@ -19,7 +19,7 @@ export default async function SetPassword({ searchParams }: { searchParams: Prom
     if (!(await sb.auth.getUser()).data.user) redirect("/set-password");
     const { error } = await sb.auth.updateUser({ password });
     if (error) redirect("/set-password?error=failed");
-    redirect("/portfolio");
+    redirect("/");
   }
 
   if (!user) {

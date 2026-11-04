@@ -21,7 +21,7 @@ export default async function SignUp({ searchParams }: { searchParams: Promise<{
     if (problem) redirect(`/signup?problem=${encodeURIComponent(problem)}`);
     if (!supabaseConfigured()) redirect("/signup?error=config");
     const sb = await supabaseServer();
-    const { error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: `${await siteUrl()}/auth/confirm?next=/portfolio` } });
+    const { error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: `${await siteUrl()}/auth/confirm?next=/` } });
     if (error) redirect("/signup?error=failed");
     // The same message whether or not the address already has an account, so this page cannot be used to find out who does.
     redirect("/signup?sent=1");

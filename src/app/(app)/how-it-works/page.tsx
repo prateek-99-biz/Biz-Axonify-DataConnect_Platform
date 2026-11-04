@@ -23,14 +23,10 @@ const TOOLS: { name: string; body: string }[] = [
   { name: "Light and Dark", body: "The sun or moon switch in the top bar changes the theme." },
 ];
 
-/** Teams, Users and Engagement read team-level data that the refreshed summaries do not hold yet, so they say so; Client Dashboards has that detail. */
-const TABS: readonly (readonly [name: string, body: string, available: boolean])[] = [
-  ["Overview", "Health, participation, knowledge and retention with trends, plus what changed and a peer comparison.", true],
-  ["Teams", "Team hierarchy. Not available yet from the refreshed data. See Client Dashboards for team performance.", false],
-  ["Users", "Individual learners. Not available yet from the refreshed data.", false],
-  ["Engagement", "Active users and engagement by team. Not available yet. Client Dashboards has engagement by team.", false],
-  ["Contract & Renewals", "Contract start, end and licence value, from the Salesforce file.", true],
-  ["Notes & Tasks", "Your team's notes and follow-ups for the client.", true],
+const TABS: readonly (readonly [name: string, body: string])[] = [
+  ["Overview", "A one-line summary of how the client is doing, then health, participation, knowledge and retention with trends, what changed, and a peer comparison."],
+  ["Contract & Renewals", "Contract start, end and licence value, from the Salesforce file."],
+  ["Notes & Tasks", "Your team's notes and follow-ups for the client."],
 ];
 
 const ROLES: { role: keyof typeof ROLE_LABEL; sees: string }[] = [
@@ -46,6 +42,7 @@ const FAQ: { q: string; a: string }[] = [
   { q: "Why are the numbers different from the Axonify portal?", a: "The dashboard follows Biz Group's Power BI definitions, listed on What the Metrics Mean. Refresh timing also matters, so check the \"as of\" time." },
   { q: "How current is the data?", a: "As current as the last refresh. The \"as of\" time at the top of Portfolio shows it, and Data Reliability lists every refresh and whether it worked." },
   { q: "A refresh failed. What now?", a: "Failed refreshes keep the previous data, so nothing disappears. An administrator can see the reason on Data Reliability. A common cause is an expired Google sign-in." },
+  { q: "Why does the dashboard open on My Accounts?", a: "If your email is the CSM email on accounts in the Salesforce file, you land on your own accounts when you sign in. Everyone else lands on the portfolio." },
   { q: "How do I add someone?", a: "Admins use Settings, then User Management, then Add User. The person gets an email with a link to choose a password." },
 ];
 
@@ -98,11 +95,11 @@ export default async function HowItWorksPage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader title="Inside a Client Profile" subtitle="Open any client from Portfolio, Clients or the search box" />
+          <CardHeader title="Inside a Client Profile" subtitle="Open any client from Portfolio, Clients or the search box. Team, user and engagement detail is in Client Dashboards." />
           <dl className="divide-y divide-line">
-            {TABS.map(([name, body, available]) => (
+            {TABS.map(([name, body]) => (
               <div key={name} className="grid gap-1 px-5 py-3 text-sm sm:grid-cols-[10rem_1fr]">
-                <dt className="flex flex-wrap items-center gap-2 font-medium">{name}{!available && <Badge tone="neutral">Not Yet</Badge>}</dt>
+                <dt className="font-medium">{name}</dt>
                 <dd className="text-xs text-slate-600">{body}</dd>
               </div>
             ))}
@@ -164,7 +161,10 @@ const PAGE_BLURB: Record<string, string> = {
   "/clients": "A searchable directory. Open a client for its full profile.",
   "/clients/compare": "Pick up to five clients and compare their trends and health, or compare two quarters.",
   "/qbr": "The quarterly review pages for one client: engagement, knowledge, usage, teams and content.",
-  "/csm": "Each CSM's accounts and how they are doing, with upcoming renewals.",
+  "/internal": "A home page for the Biz-only pages, with one live number from each.",
+  "/csm": "A CSM's accounts on one page: how each is doing, what to do this week, and when each renews. CSMs land here when they sign in.",
+  "/alerts": "Every open alert and the engagement watchlist, with a suggested next step for each account.",
+  "/renewals": "Upcoming contract renewals by window, with value and how healthy each account is.",
   "/data-reliability": "Refresh history, clients missing a key, and every metric definition.",
   "/settings": "Add and manage users, and load the Salesforce account file.",
   "/how-it-works": "This page.",
