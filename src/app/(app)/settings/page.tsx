@@ -11,7 +11,7 @@ import { supabaseAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { emailProblem, normalizeEmail } from "@/lib/account-input";
 import { Badge, Button, CALLOUT_CRITICAL, Card, CardHeader, Input, Select } from "@/components/ui/primitives";
 import { SalesforceImport } from "@/components/settings/salesforce-import";
-import { accountsSummary, importAccounts, type ImportResult } from "@/server/services/salesforce-accounts";
+import { accountsSummary, importAccounts, loadSampleAccounts, removeSampleAccounts, sampleCount, type ImportResult } from "@/server/services/salesforce-accounts";
 import { cn } from "@/lib/utils";
 
 const MESSAGES: Record<string, string> = {
@@ -96,7 +96,23 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     return result;
   }
 
-  const sf = await accountsSummary();
+  /** Fills the accounts that have no real Salesforce row with made-up data, so the internal pages have something to show. */
+  async function loadSample() {
+    "use server";
+    await requirePermission("settings:manage");
+    await loadSampleAccounts();
+    revalidatePath("/", "layout");
+  }
+
+  /** Removes only the made-up rows. Real rows are never touched. */
+  async function removeSample() {
+    "use server";
+    await requirePermission("settings:manage");
+    await removeSampleAccounts();
+    revalidatePath("/", "layout");
+  }
+
+  const [sf, sample] = await Promise.all([accountsSummary(), sampleCount()]);
 
   const status = [
     { name: "Data Adapter", value: env.DATA_ADAPTER === "mock" ? "Mock (development only)" : "Synced summaries (Postgres)", ok: env.DATA_ADAPTER !== "mock" },
@@ -117,13 +133,24 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <Card>
         <CardHeader title="Salesforce Accounts" subtitle="Static account data until the live Salesforce link is built: CSM, industry, licences, licence value and renewal dates" />
         <p className="px-4 pt-3 text-xs text-slate-600">
-          {sf.count === 0 ? "Nothing loaded yet." : `${sf.count} account${sf.count === 1 ? "" : "s"} loaded${sf.updatedAt ? `, last updated ${sf.updatedAt.toISOString().slice(0, 16).replace("T", " ")} UTC` : ""}.`}{" "}
+          {sf.count === 0 ? "Nothing loaded yet." : `${sf.count} account${sf.count === 1 ? "" : "s"} loaded${sf.updatedAt ? `, last updated ${sf.updatedAt.toISOString().slice(0, 16).replace("T", " ")} UTC` : ""}${sample > 0 ? `, ${sample} of them sample data` : ""}.`}{" "}
           <a href="/api/salesforce-accounts" className="underline">Download CSV</a> for every client with the loaded values filled in, edit it, and import it again. Re-importing replaces a client&rsquo;s row; clients missing from the file are left as they are.
         </p>
         <p className="px-4 pt-2 text-[11px] text-slate-500">
           Columns: client_id (the Axonify tenant ID, never change it), client_name (for reference), salesforce_account_id, industry, region, csm_name, csm_email, licenses, license_value (annual), currency (USD, AED…), contract_start and renewal_date (YYYY-MM-DD).
         </p>
         <SalesforceImport action={importSalesforce} />
+        <div className="border-t hairline px-4 py-3">
+          <p className="text-xs font-semibold">Sample Data</p>
+          <p className="mt-1 text-xs text-slate-600">
+            {sample > 0
+              ? `Made-up Salesforce data is loaded for ${sample} account${sample === 1 ? "" : "s"}: four sample CSMs, licences, values and renewal dates. The internal pages are marked Sample Data while it is there. Importing a real file replaces a client's sample row; this button removes the rest.`
+              : "Load made-up CSMs, licences, values and renewal dates so the internal pages have something to show. Clients that already have real data are skipped, and one button removes it all again."}
+          </p>
+          <form action={sample > 0 ? removeSample : loadSample} className="mt-2">
+            <Button variant={sample > 0 ? "outline" : "primary"}>{sample > 0 ? "Remove Sample Data" : "Load Sample Data"}</Button>
+          </form>
+        </div>
       </Card>
       <Card>
         <CardHeader title="User Management" subtitle="Add a person and they receive an email with a link to choose their password" />

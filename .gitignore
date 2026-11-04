@@ -14,3 +14,6 @@ Axonify-CSM-PowerBI-Dash*.pdf
 
 # Extra build folders from NEXT_DIST_DIR
 .next-*
+
+# Files that list real customers or contract details; never commit
+/docs/private/
