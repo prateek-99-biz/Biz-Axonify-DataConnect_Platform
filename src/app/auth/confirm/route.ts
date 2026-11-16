@@ -27,9 +27,13 @@ export async function GET(req: NextRequest) {
     return error ? fail() : NextResponse.redirect(new URL(next, req.url));
   }
   if (tokenHash && type && TYPES.includes(type)) {
-    const { error } = await sb.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (error) logAuthError(`email link (${type})`, error);
-    return error ? fail() : NextResponse.redirect(new URL(next, req.url));
+    // Not used up here: link previews and mail scanners open every link. The page asks the person to press a button,
+    // and only that spends the link.
+    const to = new URL("/auth/continue", req.url);
+    to.searchParams.set("token_hash", tokenHash);
+    to.searchParams.set("type", type);
+    to.searchParams.set("next", next);
+    return NextResponse.redirect(to);
   }
   return fail();
 }
