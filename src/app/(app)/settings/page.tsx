@@ -6,6 +6,7 @@ import { db } from "@/server/db";
 import { clearCache } from "@/server/cache";
 import { getEnv } from "@/server/env";
 import { siteUrl } from "@/server/site-url";
+import { federationState } from "@/server/google/federation";
 import { supabaseConfigured } from "@/lib/supabase/server";
 import { supabaseAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { logAuthError } from "@/server/auth/log";
@@ -154,11 +155,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   const [sf, sample] = await Promise.all([accountsSummary(), sampleCount()]);
 
+  const google = federationState();
+  const scheduled = google.kind === "ready" && !!process.env.CRON_SECRET;
   const status = [
     { name: "Data Adapter", value: env.DATA_ADAPTER === "mock" ? "Mock (development only)" : "Synced summaries (Postgres)", ok: env.DATA_ADAPTER !== "mock" },
     { name: "Supabase Auth", value: supabaseConfigured() ? "Configured" : "Not configured", ok: supabaseConfigured() },
     { name: "User Invitations", value: supabaseAdminConfigured() ? "Configured" : "Needs SUPABASE_SERVICE_ROLE_KEY", ok: supabaseAdminConfigured() },
     { name: "BigQuery Project", value: process.env.BQ_PROJECT_ID || "Not configured", ok: !!process.env.BQ_PROJECT_ID },
+    { name: "Google Sign-In for Refresh", value: google.kind === "ready" ? "Keyless (Workload Identity Federation)" : google.kind === "partial" ? `Half configured, missing ${google.missing.join(", ")}` : "This machine's own Google sign-in", ok: google.kind !== "partial" },
+    { name: "Scheduled Daily Refresh", value: scheduled ? "On (22:00 UTC)" : google.kind === "ready" ? "Needs CRON_SECRET" : "Off (needs the Google setup, see DATA_REFRESH.md)", ok: scheduled },
   ];
 
   return (

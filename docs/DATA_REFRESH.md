@@ -29,7 +29,14 @@ Limits: the laptop must be on and you signed in to Windows (a missed run happens
 ## The Refresh Data button
 - Admin only; same sync; 60 second cooldown; one run at a time; a failure leaves the old data untouched.
 - **On localhost** it uses the Google sign-in on that machine.
-- **On Vercel** there is no Google sign-in, so it fails until the app has an identity of its own (below). It cannot open a login page there: a Vercel function has no browser and no gcloud.
+- **On Vercel** there is no Google sign-in, so it fails until the app has an identity of its own (below). It cannot open a login page there: a Vercel function has no browser and no gcloud. Once Option B is set up the button works there too.
+
+## The daily refresh on Vercel
+The code for this is in place and stays switched off until the Google setup in Option B exists.
+- `vercel.json` asks Vercel to call `/api/cron/sync` once a day at 22:00 UTC (02:00 in Dubai). On the Hobby plan Vercel may start it any time within that hour.
+- The route only answers a caller that sends `CRON_SECRET`, which Vercel's scheduler does by itself. Without `CRON_SECRET` it is closed to everyone.
+- It runs the same sync as everything else, records the run as `vercel-cron` on the Data Reliability page, and answers with an error status when the sync fails, so the failure shows in Vercel under Cron Jobs.
+- **Settings, Configuration Status** shows two rows for this: *Google Sign-In for Refresh* and *Scheduled Daily Refresh*.
 
 ## Making it unattended (needs a Google Cloud admin)
 | Option | What | Notes |
@@ -50,10 +57,26 @@ Limits: the laptop must be on and you signed in to Windows (a missed run happens
 
 **Vercel**
 1. Project Settings, Security: turn on OIDC Federation.
-2. Add `GCP_PROJECT_ID`, `GCP_PROJECT_NUMBER`, `GCP_SERVICE_ACCOUNT_EMAIL`, `GCP_WORKLOAD_IDENTITY_POOL_ID`, `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID`.
+2. Add four variables for Production. None is a secret; they only say where to sign in. Set all four or none: a half-filled set is reported as an error so a typo cannot fall back to the wrong identity.
 
-**Code (not built yet)**
-A credentials helper using `@vercel/oidc` and `google-auth-library` for the four `new BigQuery(...)` calls; a `/api/cron/sync` route guarded by `CRON_SECRET` with a `vercel.json` cron; `maxDuration` for the function (a sync takes about a minute, and Vercel's Hobby plan caps functions at 60 seconds). Test on a preview deployment first.
+   | Variable | Value |
+   |---|---|
+   | `GCP_PROJECT_NUMBER` | The Google project's number (digits), not its name |
+   | `GCP_WORKLOAD_IDENTITY_POOL_ID` | The pool created in step 4 |
+   | `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID` | The provider created in step 4 |
+   | `GCP_SERVICE_ACCOUNT_EMAIL` | The service account from step 2 |
+
+3. Add `CRON_SECRET`: long random text, marked Sensitive. This switches the daily refresh on.
+4. Check `BQ_PROJECT_ID`, `BQ_DATASET` and `BQ_TENANT_IDS` are set for Production, then redeploy.
+5. Test: Settings shows both rows as OK; press **Refresh Data** on the live site; then look at Vercel, Cron Jobs after the next 22:00 UTC.
+
+**Code (built)**
+- `src/server/google/bigquery-client.ts` makes every BigQuery client. With the four `GCP_` variables it signs in through Vercel's token (`@vercel/oidc` and `google-auth-library`); without them it uses the machine's own Google sign-in, so the laptop scripts are unchanged.
+- `src/app/api/cron/sync/route.ts` is the scheduled route, and `vercel.json` holds the schedule.
+- Both sync routes allow up to 300 seconds. A sync takes about a minute. If a run is cut off at 60 seconds, the Vercel project is not using Fluid Compute (Project Settings, Functions), which is what allows more on the Hobby plan.
+
+**If the Google setup is refused**
+The same keyless sign-in works from a GitHub Actions schedule running `npm run sync`, with GitHub as the identity provider in step 4 instead of Vercel. That route has no time limit.
 
 ## Troubleshooting
 | Message | Meaning and fix |
@@ -62,3 +85,6 @@ A credentials helper using `@vercel/oidc` and `google-auth-library` for the four
 | `invalid_rapt`, `invalid_grant`, `reauth` | The sign-in expired. `npm run sync:now` |
 | `Sync is already running` or cooldown | Wait a minute |
 | Source returned nothing | The sync keeps the old data on purpose; check Data Reliability |
+| `half configured. Missing: GCP_...` | Only some of the four `GCP_` variables are set in Vercel. Set the ones named |
+| Cron job shows 503 in Vercel | `CRON_SECRET` is not set |
+| Cron job shows 500, message about permission or audience | The Google side does not match: check the pool, provider and service-account names, and that OIDC Federation is on |

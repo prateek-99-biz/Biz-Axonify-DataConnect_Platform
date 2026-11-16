@@ -1,6 +1,6 @@
 // Validates every dashboard query against BigQuery without running it (dry run: free, reads no data).
 // Usage: npm run bq:check. Needs BQ_PROJECT_ID, BQ_TENANT_IDS and Google credentials.
-import { BigQuery } from "@google-cloud/bigquery";
+import { bigQueryClient } from "../src/server/google/bigquery-client";
 import { QUERIES, buildSql, type QueryName } from "../src/server/dashboard/bigquery/queries";
 import { bqConfig } from "../src/server/dashboard/bigquery/load";
 
@@ -11,7 +11,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  const bq = new BigQuery({ projectId: cfg.project });
+  const bq = await bigQueryClient(cfg.project);
   let failed = 0;
   for (const name of Object.keys(QUERIES) as QueryName[]) {
     try {

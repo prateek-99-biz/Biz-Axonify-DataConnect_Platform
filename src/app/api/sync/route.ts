@@ -4,6 +4,9 @@ import { requirePermission, toResponse } from "@/server/auth/guard";
 import { getEnv } from "@/server/env";
 import { runSync } from "@/server/sync";
 
+// A sync takes about a minute, longer than the default limit for a hosted function.
+export const maxDuration = 300;
+
 export async function POST() {
   try {
     const user = await requirePermission("sync:run");

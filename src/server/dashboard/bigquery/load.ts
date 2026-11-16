@@ -1,4 +1,5 @@
 import type { Result } from "@/server/data/ports";
+import { bigQueryClient } from "@/server/google/bigquery-client";
 import { assembleDashboard, type Row, type RowSet } from "./assemble";
 import { buildSql, type QueryName, type Source } from "./queries";
 import type { DashboardData } from "../types";
@@ -16,8 +17,7 @@ export function bqConfig(): BqConfig | null {
 }
 
 export async function runQuery(cfg: BqConfig, name: QueryName, tenants: number[]): Promise<Row[]> {
-  const { BigQuery } = await import("@google-cloud/bigquery");
-  const bq = new BigQuery({ projectId: cfg.project });
+  const bq = await bigQueryClient(cfg.project);
   try {
     const [rows] = await bq.query({ query: buildSql(name, cfg), params: { tenants }, types: { tenants: ["INT64"] } });
     return rows as Row[];

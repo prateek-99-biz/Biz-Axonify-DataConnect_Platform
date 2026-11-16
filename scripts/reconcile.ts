@@ -4,7 +4,7 @@
 //   --snapshot         compare the snapshots stored in Postgres (what the pages show) instead of freshly built data
 // Exit code 1 when any check fails. Reads BigQuery only; nothing is written.
 import { existsSync, readFileSync } from "node:fs";
-import { BigQuery } from "@google-cloud/bigquery";
+import { bigQueryClient } from "../src/server/google/bigquery-client";
 import { bqConfig, fetchDashboards, runQuery } from "../src/server/dashboard/bigquery/load";
 import { compareAtMost, compareValue, invariantChecks, referenceIsFresh, summarize, type Check, type Reference } from "../src/server/dashboard/reconcile";
 import type { DashboardData } from "../src/server/dashboard/types";
@@ -28,7 +28,7 @@ async function main() {
   const only = arg("tenant")?.split(",").map(Number).filter(Boolean);
   const tenants = cfg.tenants.filter((t) => !only || only.includes(t));
   const P = (v: string) => `\`${cfg.project}.${cfg.dataset}.${v}\``;
-  const bq = new BigQuery({ projectId: cfg.project });
+  const bq = await bigQueryClient(cfg.project);
   const q = async (sql: string) => (await bq.query({ query: sql, params: { t: tenants }, types: { t: ["INT64"] } }))[0] as Rows;
 
   const names = new Map((await runQuery(cfg, "clients", tenants)).map((r) => [String(num(r.id)), String(r.name)]));

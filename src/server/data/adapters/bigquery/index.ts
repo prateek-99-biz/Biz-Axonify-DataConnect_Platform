@@ -3,6 +3,7 @@
  * and every table/column name comes from the mapping file (config/bigquery-mapping.json). No table names
  * are assumed in code. Unmapped capabilities return `unavailable` with an explanation instead of mock data.
  */
+import { bigQueryClient } from "@/server/google/bigquery-client";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import type { AnalyticsPort, ClientPeriodRow, ClientSummary, Result } from "../../ports";
@@ -53,8 +54,7 @@ const ident = (s: string) => {
 };
 
 async function query<T>(sql: string): Promise<T[]> {
-  const { BigQuery } = await import("@google-cloud/bigquery");
-  const bq = new BigQuery({ projectId: process.env.BQ_PROJECT_ID });
+  const bq = await bigQueryClient(process.env.BQ_PROJECT_ID);
   const [rows] = await bq.query({ query: sql });
   return rows as T[];
 }
@@ -104,8 +104,7 @@ export const bigqueryAnalytics: AnalyticsPort = {
     const c = m.columns;
     const select = (Object.keys(c) as (keyof typeof c)[]).map((k) => `${ident(c[k])} AS ${k}`).join(", ");
     const where = clientIds?.length ? `WHERE ${ident(c.clientId)} IN UNNEST(@ids)` : "";
-    const { BigQuery } = await import("@google-cloud/bigquery");
-    const bq = new BigQuery({ projectId: process.env.BQ_PROJECT_ID });
+    const bq = await bigQueryClient(process.env.BQ_PROJECT_ID);
     const [rows] = await bq.query({
       query: `SELECT ${select} FROM ${ident(m.table)} ${where}`,
       params: clientIds?.length ? { ids: clientIds } : undefined,
