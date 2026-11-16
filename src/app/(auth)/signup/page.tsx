@@ -4,7 +4,8 @@ import { siteUrl } from "@/server/site-url";
 import { logAuthError } from "@/server/auth/log";
 import { emailProblem, knownProblem, normalizeEmail, passwordProblem } from "@/lib/account-input";
 import { AuthCard, AuthLink } from "@/components/auth/auth-card";
-import { Button, Input } from "@/components/ui/primitives";
+import { Input } from "@/components/ui/primitives";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const MESSAGES: Record<string, string> = {
   config: "Sign-up is not available: Supabase is not configured on the server.",
@@ -43,7 +44,7 @@ export default async function SignUp({ searchParams }: { searchParams: Promise<{
           <Input name="email" type="email" aria-label="Email" placeholder="Email" autoComplete="email" required />
           <Input name="password" type="password" aria-label="Password" placeholder="Password (10+ characters, letters and numbers)" autoComplete="new-password" minLength={10} required />
           <Input name="confirm" type="password" aria-label="Confirm password" placeholder="Confirm password" autoComplete="new-password" minLength={10} required />
-          <Button variant="primary" className="w-full">Create Account</Button>
+          <SubmitButton variant="primary" className="w-full" pendingText="Creating…">Create Account</SubmitButton>
         </form>
       )}
       <p className="mt-4 text-xs text-slate-500">Already have an account? <AuthLink href="/signin">Sign in</AuthLink></p>

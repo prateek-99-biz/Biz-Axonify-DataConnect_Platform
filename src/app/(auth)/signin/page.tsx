@@ -7,6 +7,7 @@ import { devLoginEnabled } from "@/server/env";
 import { Button, CALLOUT_CRITICAL, Card, Input, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { AuthLink } from "@/components/auth/auth-card";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { HashSession } from "@/components/auth/hash-session";
 import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
 import { cn } from "@/lib/utils";
@@ -56,7 +57,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
         <form action={login} className="mt-5 space-y-2">
           <Input name="email" type="email" aria-label="Email" placeholder="Email" autoComplete="username" required />
           <Input name="password" type="password" aria-label="Password" placeholder="Password" autoComplete="current-password" required />
-          <Button variant="primary" className="w-full">Sign in</Button>
+          <SubmitButton variant="primary" className="w-full" pendingText="Signing in…">Sign in</SubmitButton>
           <p className="flex items-center justify-between pt-1 text-xs text-slate-500">
             <AuthLink href="/forgot-password">Forgot password?</AuthLink>
             <span>New here? <AuthLink href="/signup">Create an account</AuthLink></span>

@@ -4,7 +4,8 @@ import { siteUrl } from "@/server/site-url";
 import { logAuthError } from "@/server/auth/log";
 import { emailProblem, normalizeEmail } from "@/lib/account-input";
 import { AuthCard, AuthLink } from "@/components/auth/auth-card";
-import { Button, Input } from "@/components/ui/primitives";
+import { Input } from "@/components/ui/primitives";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function ForgotPassword({ searchParams }: { searchParams: Promise<{ error?: string; sent?: string }> }) {
   const sp = await searchParams;
@@ -33,7 +34,7 @@ export default async function ForgotPassword({ searchParams }: { searchParams: P
       {!sp.sent && (
         <form action={request} className="mt-5 space-y-2">
           <Input name="email" type="email" aria-label="Email" placeholder="Email" autoComplete="email" required />
-          <Button variant="primary" className="w-full">Send Reset Link</Button>
+          <SubmitButton variant="primary" className="w-full" pendingText="Sending…">Send Reset Link</SubmitButton>
         </form>
       )}
       <p className="mt-4 text-xs text-slate-500"><AuthLink href="/signin">Back to sign in</AuthLink></p>

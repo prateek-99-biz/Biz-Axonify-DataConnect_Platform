@@ -13,6 +13,7 @@ import { logAuthError } from "@/server/auth/log";
 import { emailProblem, normalizeEmail } from "@/lib/account-input";
 import { Badge, Button, CALLOUT_CRITICAL, Card, CardHeader, Input, Select } from "@/components/ui/primitives";
 import { UserRowMenu } from "@/components/settings/user-row-menu";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { SaveWhenChanged } from "@/components/settings/save-when-changed";
 import { SalesforceImport } from "@/components/settings/salesforce-import";
 import { accountsSummary, importAccounts, loadSampleAccounts, removeSampleAccounts, sampleCount, type ImportResult } from "@/server/services/salesforce-accounts";
@@ -216,7 +217,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
             </Select>
           </label>
-          <Button variant="primary">Add User</Button>
+          <SubmitButton variant="primary" pendingText="Sending…">Add User</SubmitButton>
         </form>
         <ul className="divide-y divide-line text-sm">
           {users.length === 0 && <li className="p-4 text-xs text-slate-500">No users yet.</li>}

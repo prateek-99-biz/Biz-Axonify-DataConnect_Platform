@@ -3,7 +3,9 @@ import { supabaseConfigured, supabaseServer } from "@/lib/supabase/server";
 import { knownProblem, passwordProblem } from "@/lib/account-input";
 import { AuthCard, AuthLink } from "@/components/auth/auth-card";
 import { HashSession } from "@/components/auth/hash-session";
-import { Button, Input } from "@/components/ui/primitives";
+import { Input } from "@/components/ui/primitives";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { logAuthError } from "@/server/auth/log";
 
 /** Where invited people choose their password, and where password-reset links end. Needs the session the email link creates. */
 export default async function SetPassword({ searchParams }: { searchParams: Promise<{ problem?: string; error?: string }> }) {
@@ -18,7 +20,11 @@ export default async function SetPassword({ searchParams }: { searchParams: Prom
     const sb = await supabaseServer();
     if (!(await sb.auth.getUser()).data.user) redirect("/set-password");
     const { error } = await sb.auth.updateUser({ password });
-    if (error) redirect("/set-password?error=failed");
+    // "Same password" means an earlier click already saved this one, so the person is done rather than stuck.
+    if (error && error.code !== "same_password") {
+      logAuthError("set password", error);
+      redirect("/set-password?error=failed");
+    }
     redirect("/");
   }
 
@@ -40,7 +46,7 @@ export default async function SetPassword({ searchParams }: { searchParams: Prom
       <form action={save} className="mt-5 space-y-2">
         <Input name="password" type="password" aria-label="New password" placeholder="New password (10+ characters, letters and numbers)" autoComplete="new-password" minLength={10} required />
         <Input name="confirm" type="password" aria-label="Confirm new password" placeholder="Confirm new password" autoComplete="new-password" minLength={10} required />
-        <Button variant="primary" className="w-full">Save Password and Continue</Button>
+        <SubmitButton variant="primary" className="w-full" pendingText="Saving…">Save Password and Continue</SubmitButton>
       </form>
     </AuthCard>
   );
