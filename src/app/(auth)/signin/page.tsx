@@ -7,6 +7,7 @@ import { devLoginEnabled } from "@/server/env";
 import { Button, CALLOUT_CRITICAL, Card, Input, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { AuthLink } from "@/components/auth/auth-card";
+import { HashSession } from "@/components/auth/hash-session";
 import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
 import { cn } from "@/lib/utils";
 import { safeCallbackUrl } from "@/lib/safe-redirect";
@@ -51,6 +52,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
         <h1 className="mt-4 text-xl font-bold tracking-tight">Biz Customer Intelligence</h1>
         <p className="mt-1 text-sm text-slate-500">Sign in with your account.</p>
         {sp.error && <p role="alert" className={cn("glass mt-3 !rounded-xl px-3 py-2 text-xs", CALLOUT_CRITICAL)}>{errors[sp.error] ?? errors.invalid}</p>}
+        <HashSession passive />
         <form action={login} className="mt-5 space-y-2">
           <Input name="email" type="email" aria-label="Email" placeholder="Email" autoComplete="username" required />
           <Input name="password" type="password" aria-label="Password" placeholder="Password" autoComplete="current-password" required />

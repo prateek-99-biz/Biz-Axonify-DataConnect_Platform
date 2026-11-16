@@ -8,8 +8,11 @@ import { getEnv } from "@/server/env";
 import { siteUrl } from "@/server/site-url";
 import { supabaseConfigured } from "@/lib/supabase/server";
 import { supabaseAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { logAuthError } from "@/server/auth/log";
 import { emailProblem, normalizeEmail } from "@/lib/account-input";
 import { Badge, Button, CALLOUT_CRITICAL, Card, CardHeader, Input, Select } from "@/components/ui/primitives";
+import { UserRowMenu } from "@/components/settings/user-row-menu";
+import { SaveWhenChanged } from "@/components/settings/save-when-changed";
 import { SalesforceImport } from "@/components/settings/salesforce-import";
 import { accountsSummary, importAccounts, loadSampleAccounts, removeSampleAccounts, sampleCount, type ImportResult } from "@/server/services/salesforce-accounts";
 import { cn } from "@/lib/utils";
@@ -23,13 +26,16 @@ const MESSAGES: Record<string, string> = {
   config: "Sending invitations needs SUPABASE_SERVICE_ROLE_KEY on the server. Add it to the environment and restart.",
   failed: "The invitation could not be sent. Try again in a minute, or check the Supabase email settings.",
   unknown: "That user could not be found.",
+  self: "You cannot remove your own account.",
+  history: "That person has notes or tasks under their name, so they cannot be removed. Untick Active and save to take away their access instead.",
+  removeFailed: "The login could not be deleted in Supabase, so nothing was removed. Try again in a minute.",
 };
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ invited?: string; resent?: string; error?: string }> }) {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ invited?: string; resent?: string; removed?: string; error?: string }> }) {
   const me = await requirePagePermission("settings:manage");
   const raw = await searchParams;
   // Only an email address may be echoed back from the address bar, so a crafted link cannot put its own words on the page.
-  const sp = { ...raw, invited: raw.invited && !emailProblem(raw.invited) ? raw.invited : undefined, resent: raw.resent && !emailProblem(raw.resent) ? raw.resent : undefined };
+  const sp = { ...raw, invited: raw.invited && !emailProblem(raw.invited) ? raw.invited : undefined, resent: raw.resent && !emailProblem(raw.resent) ? raw.resent : undefined, removed: raw.removed && !emailProblem(raw.removed) ? raw.removed : undefined };
   const users = await db.appUser.findMany({ orderBy: { email: "asc" } });
   const clientOptions = await db.clientMapping.findMany({ select: { id: true, displayName: true }, orderBy: { displayName: "asc" } });
   const env = getEnv();
@@ -65,6 +71,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
     const { data, error } = await supabaseAdmin().auth.admin.inviteUserByEmail(email, { redirectTo: `${await siteUrl()}/auth/confirm?next=/set-password` });
     if (error || !data.user) {
+      if (error) logAuthError("invite", error);
       // Already registered in Supabase (for example through the sign-up page) but with no profile yet: nothing to invite.
       redirect(`/settings?error=${error?.status === 422 ? "exists" : "failed"}`);
     }
@@ -82,7 +89,40 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     if (!user || user.lastLogin) redirect("/settings?error=unknown");
     if (!supabaseAdminConfigured()) redirect("/settings?error=config");
     const { error } = await supabaseAdmin().auth.resetPasswordForEmail(user.email, { redirectTo: `${await siteUrl()}/auth/confirm?next=/set-password` });
+    if (error) logAuthError("resend link", error);
     redirect(error ? "/settings?error=failed" : `/settings?resent=${encodeURIComponent(user.email)}`);
+  }
+
+  /**
+   * Deletes a person's login in Supabase and their profile here. Someone with notes or tasks under their name is kept,
+   * so that history keeps its author; switch them to inactive instead.
+   */
+  async function removeUser(form: FormData) {
+    "use server";
+    const actor = await requirePermission("settings:manage");
+    const user = await db.appUser.findUnique({ where: { id: String(form.get("id")) }, include: { _count: { select: { notes: true, created: true } } } });
+    if (!user) redirect("/settings?error=unknown");
+    if (user.id === actor.id) redirect("/settings?error=self");
+    if (user._count.notes > 0 || user._count.created > 0) redirect("/settings?error=history");
+
+    // The login goes first: if that fails nothing is removed, and a login without a profile is never left able to sign in.
+    if (!user.id.startsWith("dev-")) {
+      if (!supabaseAdminConfigured()) redirect("/settings?error=config");
+      const { error } = await supabaseAdmin().auth.admin.deleteUser(user.id);
+      // 404: the login was already deleted in the Supabase dashboard, which is fine.
+      if (error && error.status !== 404) {
+        logAuthError("remove user", error);
+        redirect("/settings?error=removeFailed");
+      }
+    }
+    await db.$transaction([
+      db.alertAck.deleteMany({ where: { userId: user.id } }),
+      db.task.updateMany({ where: { ownerId: user.id }, data: { ownerId: null } }),
+      db.appUser.delete({ where: { id: user.id } }),
+    ]);
+    clearCache("user:");
+    revalidatePath("/settings");
+    redirect(`/settings?removed=${encodeURIComponent(user.email)}`);
   }
 
   async function importSalesforce(_prev: ImportResult | null, form: FormData): Promise<ImportResult> {
@@ -153,10 +193,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         </div>
       </Card>
       <Card>
-        <CardHeader title="User Management" subtitle="Add a person and they receive an email with a link to choose their password" />
+        <CardHeader title="User Management" subtitle="Add a person and they receive an email with a link to choose their password. Save on a row stores that person's role, client and active setting; the three dots hold Resend Link and Remove User" />
         {sp.error && <p role="alert" className={cn("glass mx-4 mt-3 !rounded-xl px-3 py-2 text-xs", CALLOUT_CRITICAL)}>{MESSAGES[sp.error] ?? MESSAGES.failed}</p>}
         {sp.invited && <p role="status" className="glass mx-4 mt-3 !rounded-xl border-emerald-300/60 !bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-300/20 dark:!bg-emerald-400/10 dark:text-emerald-100">Invitation sent to {sp.invited}.</p>}
         {sp.resent && <p role="status" className="glass mx-4 mt-3 !rounded-xl border-emerald-300/60 !bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-300/20 dark:!bg-emerald-400/10 dark:text-emerald-100">A new link was sent to {sp.resent}.</p>}
+        {sp.removed && <p role="status" className="glass mx-4 mt-3 !rounded-xl border-emerald-300/60 !bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-300/20 dark:!bg-emerald-400/10 dark:text-emerald-100">{sp.removed} was removed.</p>}
         <form action={addUser} className="flex flex-wrap items-end gap-3 border-b hairline px-4 py-3">
           <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-medium">Email
             <Input name="email" type="email" placeholder="name@company.com" autoComplete="off" required />
@@ -185,8 +226,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                   {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
                 </Select>
                 <label className="flex items-center gap-1 text-xs"><input type="checkbox" name="active" defaultChecked={u.active} /> Active</label>
-                <Button size="sm">Save</Button>
-                {!u.lastLogin && <Button size="sm" formAction={resend}>Resend Link</Button>}
+                <SaveWhenChanged key={`${u.role}|${u.clientId ?? ""}|${u.active}`} />
+                <UserRowMenu email={u.email} canResend={!u.lastLogin} canRemove={u.id !== me.id} resend={resend} remove={removeUser} />
               </form>
             </li>
           ))}

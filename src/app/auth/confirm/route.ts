@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabaseConfigured, supabaseServer } from "@/lib/supabase/server";
+import { logAuthError } from "@/server/auth/log";
 import { safeCallbackUrl } from "@/lib/safe-redirect";
 
 const TYPES: EmailOtpType[] = ["invite", "recovery", "signup", "email", "magiclink", "email_change"];
@@ -22,10 +23,12 @@ export async function GET(req: NextRequest) {
 
   if (code) {
     const { error } = await sb.auth.exchangeCodeForSession(code);
+    if (error) logAuthError("email link (code)", error);
     return error ? fail() : NextResponse.redirect(new URL(next, req.url));
   }
   if (tokenHash && type && TYPES.includes(type)) {
     const { error } = await sb.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (error) logAuthError(`email link (${type})`, error);
     return error ? fail() : NextResponse.redirect(new URL(next, req.url));
   }
   return fail();

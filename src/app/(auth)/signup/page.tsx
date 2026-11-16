@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { supabaseConfigured, supabaseServer } from "@/lib/supabase/server";
 import { siteUrl } from "@/server/site-url";
+import { logAuthError } from "@/server/auth/log";
 import { emailProblem, knownProblem, normalizeEmail, passwordProblem } from "@/lib/account-input";
 import { AuthCard, AuthLink } from "@/components/auth/auth-card";
 import { Button, Input } from "@/components/ui/primitives";
@@ -22,7 +23,10 @@ export default async function SignUp({ searchParams }: { searchParams: Promise<{
     if (!supabaseConfigured()) redirect("/signup?error=config");
     const sb = await supabaseServer();
     const { error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: `${await siteUrl()}/auth/confirm?next=/` } });
-    if (error) redirect("/signup?error=failed");
+    if (error) {
+      logAuthError("sign-up", error);
+      redirect("/signup?error=failed");
+    }
     // The same message whether or not the address already has an account, so this page cannot be used to find out who does.
     redirect("/signup?sent=1");
   }

@@ -39,14 +39,14 @@ npm run dev              # http://localhost:3000 → "Development login"
 
 ## Real setup (Supabase, free tier)
 1. Create a Supabase project. Copy into `.env`: pooled `DATABASE_URL` (port 6543, `?pgbouncer=true`), `DIRECT_URL` (port 5432), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-2. Supabase dashboard → Authentication: turn **off** public sign-ups, then add your team under Users (email + password).
+2. Supabase dashboard → Authentication: keep public sign-ups **on** if people should use the Create an Account page (staff with a confirmed `@bizgroup.ae` address become Members; anyone else sees nothing until an admin links them to a client). Turn them off to allow invitations only. Under URL Configuration set the Site URL to the live address and add `<address>/auth/confirm` to Redirect URLs (also `http://localhost:3000/auth/confirm` for local work). Paste the three email templates from [docs/email-templates](docs/email-templates/README.md); the account links do not work without them. A free project pauses after about a week without use, and then every sign-in fails until it is restored in the dashboard.
 3. Set `ADMIN_EMAILS=you@bizgroup.ae` (first sign-in of that email becomes Admin; everyone else is Member). Admins change roles in Settings.
 4. `npx prisma migrate deploy && npm run db:seed`.
 5. BigQuery: set `BQ_PROJECT_ID`, `BQ_DATASET` (defaults to `axonify___bizgroup_emea`), `BQ_TENANT_IDS` (the Axonify tenant ids to cover) and `GOOGLE_APPLICATION_CREDENTIALS` (service account with BigQuery Data Viewer + Job User, or `gcloud auth application-default login`). Run `npm run bq:check` to dry-run every query without reading data. A mapping file (`config/bigquery-mapping.example.json`) is only needed to override the built-in client and quarterly queries with your own summary tables.
 6. Set `DATA_ADAPTER=synced`, run `npm run sync` once, then `npm run build && npm start`.
 7. Refresh by hand with `npm run sync:now` (opens the Google sign-in only when it has expired), or double-click `scripts\Refresh Data.cmd`. `npm run sync:schedule` sets up a nightly Task Scheduler run, and `-Morning` adds a weekday check that opens the sign-in when needed. Details and the unattended options: [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
 
-The `service_role` key is never needed and must not be put in this app.
+`SUPABASE_SERVICE_ROLE_KEY` is needed only for Settings → Add User and Resend Link. It stays on the server and must never be given a `NEXT_PUBLIC_` name.
 
 ## Refresh button
 Admins see **Refresh Data** in the top bar. It runs the same sync as the scripts, enforces a 60-second cooldown, refuses to run twice at once, and reports failures without touching existing data. In mock mode it explains there is nothing to refresh. It needs Google access on the machine serving the page, so on Vercel it will fail until the app has its own identity (see DATA_REFRESH.md).

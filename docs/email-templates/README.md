@@ -21,7 +21,9 @@ paste them into the Supabase dashboard.
 
 ## Notes
 
-- `{{ .ConfirmationURL }}` and `{{ .SiteURL }}` are Supabase's own placeholders. Leave them exactly as written.
+- `{{ .SiteURL }}` and `{{ .TokenHash }}` are Supabase's own placeholders. Leave them exactly as written.
+- The links go straight to this site's `/auth/confirm` page with a one-time token, not through `{{ .ConfirmationURL }}`. That is deliberate: the default link fails for invitations, fails when the email is opened in a different browser from the one that signed up, and is used up by email scanners such as Outlook Safe Links.
+- Because the links start with `{{ .SiteURL }}`, every email leads to the Site URL. To test emails against localhost, set the Site URL to `http://localhost:3000` for the test and change it back.
 - The templates use tables and inline styles, because email programs ignore most modern CSS.
 - Supabase's built-in email service is limited to a few messages an hour. For real rollout, add your own SMTP under
   **Authentication → SMTP Settings**.

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { supabaseConfigured, supabaseServer } from "@/lib/supabase/server";
 import { siteUrl } from "@/server/site-url";
+import { logAuthError } from "@/server/auth/log";
 import { emailProblem, normalizeEmail } from "@/lib/account-input";
 import { AuthCard, AuthLink } from "@/components/auth/auth-card";
 import { Button, Input } from "@/components/ui/primitives";
@@ -15,7 +16,8 @@ export default async function ForgotPassword({ searchParams }: { searchParams: P
     if (!supabaseConfigured()) redirect("/forgot-password?error=config");
     const sb = await supabaseServer();
     // Any failure (unknown address, rate limit) gets the same answer, so this page cannot be used to find out who has an account.
-    await sb.auth.resetPasswordForEmail(email, { redirectTo: `${await siteUrl()}/auth/confirm?next=/set-password` });
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${await siteUrl()}/auth/confirm?next=/set-password` });
+    if (error) logAuthError("password reset", error);
     redirect("/forgot-password?sent=1");
   }
 
