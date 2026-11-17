@@ -21,8 +21,8 @@ const NAVY = "#1D2B43";
 
 export interface SeriesDef { key: string; label: string; color?: string }
 
-// Below 10% a whole number would repeat on the axis (0.5% and 0.7% both read "1%"), so small shares keep one decimal.
-const pctFmt = (v: number) => `${(v * 100).toFixed(Math.abs(v) < 0.1 && v !== 0 ? 1 : 0)}%`;
+// Small shares keep decimals so axis labels neither repeat (0.5% and 0.7% both "1%") nor round a tick off (0.25% read "0.3%").
+const pctFmt = (v: number) => `${(v * 100).toFixed(v === 0 ? 0 : Math.abs(v) < 0.01 ? 2 : Math.abs(v) < 0.1 ? 1 : 0)}%`;
 
 export function useChartTheme(entities = false) {
   const dark = useIsDark();

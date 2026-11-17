@@ -41,7 +41,7 @@ export function CardHeader({ title, subtitle, action, badge }: { title: React.Re
   );
 }
 
-const badgeVariants = cva("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", {
+const badgeVariants = cva("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", {
   variants: {
     tone: {
       neutral: "bg-slate-100 text-slate-700 ring-slate-200",

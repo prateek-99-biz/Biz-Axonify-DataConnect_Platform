@@ -16,11 +16,13 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { PeriodNotice } from "@/components/internal/period-notice";
 import { SampleNotice } from "@/components/internal/sample-notice";
 import { InsightsHeader, PlainSummary, Stat, UsageNotice } from "@/components/insights/ui";
-import { fmtHealth, fmtNumber, fmtPct } from "@/lib/utils";
+import { cn, fmtHealth, fmtNumber, fmtPct } from "@/lib/utils";
 import { riskLabel } from "@/lib/labels";
 
 const RENEWAL_TONE: Record<RenewalRisk, "critical" | "warn" | "good" | "neutral"> = { High: "critical", Medium: "warn", Low: "good", Unknown: "neutral" };
 const TOUCH_DAYS = 90;
+/** Adds a full stop unless the sentence already ends with one (names such as "Sarah K." do). */
+const endSentence = (s: string) => (s.endsWith(".") ? s : `${s}.`);
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";
 
 interface Book {
@@ -93,7 +95,7 @@ export default async function CsmPortfolioPage({ searchParams }: { searchParams:
     `${books.length} CSM${books.length === 1 ? "" : "s"} look after ${assigned.length} account${assigned.length === 1 ? "" : "s"}${insights.clients.length > assigned.length ? `; ${insights.clients.length - assigned.length} account${insights.clients.length - assigned.length === 1 ? " has" : "s have"} no CSM on file` : ""}.`,
     bestPart && books.length > 1 ? `${bestPart.name}'s book has the best participation (${fmtPct(bestPart.participation)}).` : "",
     mostRisk && mostRisk.atRisk > 0 ? `${mostRisk.name} has the most accounts needing attention: ${mostRisk.atRisk} At Risk or Critical.` : "No CSM has an account in the At Risk or Critical bands.",
-    quiet.length ? `No notes or tasks logged in the last ${TOUCH_DAYS} days for ${quiet.map((b) => b.name).join(", ")}.` : "",
+    quiet.length ? endSentence(`No notes or tasks logged in the last ${TOUCH_DAYS} days for ${quiet.map((b) => b.name).join(", ")}`) : "",
   ];
 
   return (
@@ -104,7 +106,8 @@ export default async function CsmPortfolioPage({ searchParams }: { searchParams:
       <UsageNotice reason={usageReason} />
       <PlainSummary points={summary} />
 
-      <section aria-label="CSM books" className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      {/* Four books fill one row of four; otherwise rows of three, so no card is left alone on a row when it can be avoided. */}
+      <section aria-label="CSM books" className={cn("grid gap-4 lg:grid-cols-2", books.length % 4 === 0 ? "xl:grid-cols-4" : "2xl:grid-cols-3")}>
         {books.map((b) => (
           <Card key={b.key} className="border-t-4 border-t-brand p-5">
             <div className="flex items-center gap-3">
@@ -124,7 +127,7 @@ export default async function CsmPortfolioPage({ searchParams }: { searchParams:
             </div>
             <p className="mt-3 text-[11px] text-slate-500">
               Average health {fmtHealth(b.health)} · {b.touches} touchpoint{b.touches === 1 ? "" : "s"} (notes and tasks) in {TOUCH_DAYS} days ·{" "}
-              <Link href={`/csm?csm=${encodeURIComponent(b.key)}&period=${period}`} className="underline">Open accounts</Link>
+              <Link href={`/csm?csm=${encodeURIComponent(b.key)}&period=${period}`} className="whitespace-nowrap underline">Open accounts</Link>
             </p>
           </Card>
         ))}

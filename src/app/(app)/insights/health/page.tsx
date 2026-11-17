@@ -5,6 +5,7 @@ import type { SearchParams } from "@/server/services/context";
 import { loadInsights } from "@/server/services/insights-context";
 import { healthyVsStruggling, renewalRisk, type ClientInsight, type RenewalRisk } from "@/server/services/insights";
 import { daysUntil } from "@/server/services/attention";
+import { lowActivity } from "@/server/metrics/calculations";
 import { sampleCount } from "@/server/services/salesforce-accounts";
 import { FEATURES } from "@/server/metrics/features";
 import { HEALTH_WEIGHTS } from "@/server/metrics/definitions";
@@ -49,8 +50,12 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
   const rc = portfolio.riskCounts;
   const needAttention = rc.critical + rc.at_risk;
   const byHealth = [...withData].sort((a, b) => (a.health?.healthScore ?? Infinity) - (b.health?.healthScore ?? Infinity));
-  const worst = byHealth.find((c) => c.health?.healthScore != null);
-  const best = [...byHealth].reverse().find((c) => c.health?.healthScore != null);
+  // An account where almost nobody is active (the Check Data rule on My Accounts) is flagged, not chosen as "needs the most attention".
+  const checkData = (c: ClientInsight) => !!c.health && lowActivity(c.health);
+  const scored = byHealth.filter((c) => c.health?.healthScore != null && !checkData(c));
+  const worst = scored[0];
+  const best = scored.at(-1);
+  const toCheck = withData.filter(checkData);
   const k = portfolio.kpis;
   const healthChange = k.current.healthScore != null && k.previous.healthScore != null ? k.current.healthScore - k.previous.healthScore : null;
 
@@ -64,6 +69,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
     `${withData.length} client${withData.length === 1 ? " has" : "s have"} data for ${label}.${healthKnown ? ` ${rc.healthy} Healthy, ${rc.moderate} Moderate, ${rc.at_risk} At Risk and ${rc.critical} Critical.` : " Health bands need knowledge scores, which this period does not have."}`,
     clientsYearAgo > 0 ? `The client base is ${withData.length} client${withData.length === 1 ? "" : "s"}, against ${clientsYearAgo} in ${yaLabel} (${withData.length - clientsYearAgo >= 0 ? "+" : "−"}${Math.abs(withData.length - clientsYearAgo)}).` : "",
     healthKnown ? `Average health is ${fmtHealth(k.current.healthScore)} out of 100${healthChange != null ? `, ${healthChange >= 0 ? "up" : "down"} ${Math.abs(healthChange).toFixed(1)} points on ${prevLabel}` : ""}.` : "",
+    toCheck.length ? `Check the data for ${toCheck.map((c) => `${c.client.name} (${fmtNumber(c.health!.activeUsers)} active of ${fmtNumber(c.health!.registeredUsers)} registered)`).join(", ")}: so few people are active that the account may be winding down or its users moved. Its scores are left out of the line below.` : "",
     worst && healthKnown && worst !== best ? `${worst.client.name} needs the most attention (health ${fmtHealth(worst.health?.healthScore)}, participation ${fmtPct(worst.health?.participationRate)}); ${best?.client.name} is the healthiest (${fmtHealth(best?.health?.healthScore)}).` : "",
   ];
 
@@ -82,7 +88,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
     return {
       id: c.client.id, href: `/insights/health?period=${period}&focus=${c.client.id}`,
       cells: {
-        account: { v: c.client.name }, csm: { v: c.client.csmName || "Unassigned" },
+        account: { v: c.client.name, node: checkData(c) ? <span>{c.client.name} <Badge tone="warn" title="Only a few registered users are active. Check Axonify before acting.">Check Data</Badge></span> : c.client.name }, csm: { v: c.client.csmName || "Unassigned" },
         licences: { v: c.client.commercial?.licenses ?? null, node: c.client.commercial?.licenses != null ? fmtNumber(c.client.commercial.licenses) : "—" },
         use: { v: c.licenceUse, node: fmtPct(c.licenceUse, 0) },
         participation: { v: c.health?.participationRate ?? null, node: fmtPct(c.health?.participationRate) },
@@ -121,7 +127,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
         <div className="flex flex-wrap items-start justify-between gap-3 border-b hairline px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Account in Focus</p>
-            <h2 className="mt-1 flex flex-wrap items-center gap-2 text-xl font-semibold">{focus.client.name}{focus.risk === "unknown" ? <Badge title="Health needs knowledge scores, which this period does not have">No Health Score</Badge> : <RiskBadge risk={focus.risk} />}</h2>
+            <h2 className="mt-1 flex flex-wrap items-center gap-2 text-xl font-semibold">{focus.client.name}{focus.risk === "unknown" ? <Badge title="Health needs knowledge scores, which this period does not have">No Health Score</Badge> : <RiskBadge risk={focus.risk} />}{checkData(focus) && <Badge tone="warn" title="Only a few registered users are active. Check Axonify before acting.">Check Data</Badge>}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
               CSM {focus.client.csmName || "not recorded"}
               {focus.client.commercial?.renewalDate ? <> · renews {focus.client.commercial.renewalDate}{fDays != null && fDays >= 0 ? ` (in ${fDays} days)` : ""} · renewal risk <Badge tone={RENEWAL_TONE[fRenewal]}>{fRenewal}</Badge></> : " · no renewal date on file"}

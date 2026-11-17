@@ -42,7 +42,8 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
   const trend = allMonths.map((m) => {
     let q = 0, u = 0, a = 0;
     for (const c of insights.clients) { const r = c.monthly.get(m); if (r) { q += r.maxQueries; u += r.maxUsers; a += r.activeUsers; } }
-    return { month: monthName(m), questions: q, people: u, adoption: a > 0 ? u / a : null };
+    // The month the data stops in is only partly counted, so it says so instead of looking like a fall.
+    return { month: m === ctx.asOf.slice(0, 7) ? `${monthName(m)} (to date)` : monthName(m), questions: q, people: u, adoption: a > 0 ? u / a : null };
   });
   const firstMaxMonth = allMonths.find((m) => insights.clients.some((c) => (c.monthly.get(m)?.maxQueries ?? 0) > 0));
   const shownTrend = firstMaxMonth ? trend.slice(Math.max(0, allMonths.indexOf(firstMaxMonth) - 1)) : trend;
@@ -60,7 +61,7 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
     return {
       id: c.client.id, href: `/clients/${c.client.id}?period=${period}`,
       cells: {
-        client: { v: c.client.name }, csm: { v: c.client.csmName || "Unassigned" },
+        client: { v: c.client.name }, csm: { v: c.client.csmName || "Unassigned", node: <span className="whitespace-nowrap">{c.client.csmName || "Unassigned"}</span> },
         questions: { v: u.maxQueries, node: fmtNumber(u.maxQueries) },
         change: { v: change, node: <Change value={change} format="growth" /> },
         people: { v: u.maxUsers, node: fmtNumber(u.maxUsers) },
@@ -89,11 +90,11 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader title="Questions and People Over Time" subtitle="All clients together, by month" />
-          <div className="p-4"><TrendChart entities data={shownTrend} xKey="month" format="number" series={[{ key: "questions", label: "Questions Asked" }, { key: "people", label: "People Asking" }]} /></div>
+          <CardHeader title="Questions Asked Over Time" subtitle="All clients together, by month. The last month is counted to date." />
+          <div className="p-4"><TrendChart entities data={shownTrend} xKey="month" format="number" series={[{ key: "questions", label: "Questions Asked" }]} /></div>
         </Card>
         <Card>
-          <CardHeader title="Max Adoption Over Time" subtitle="Share of all active users who asked Max a question, by month" />
+          <CardHeader title="Max Adoption Over Time" subtitle="Share of all active users who asked Max a question, by month: how many people, not how often" />
           <div className="p-4"><TrendChart data={shownTrend} xKey="month" series={[{ key: "adoption", label: "Adoption", color: "#682685" }]} /></div>
         </Card>
       </div>
@@ -101,7 +102,7 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
       <Card>
         <CardHeader title="Max Adoption by Client" subtitle="Share of each client's active users who asked Max a question in an average month, highest first" />
         <div className="px-5 py-3">
-          {[...using].sort((a, b) => (b.usage.maxAdoption ?? 0) - (a.usage.maxAdoption ?? 0)).map((c) => <MeterRow key={c.client.id} label={c.client.name} href={`/insights/benchmarks?period=${period}&focus=${c.client.id}`} value={c.usage.maxAdoption} marker={t.usage.maxAdoption} markerLabel="All clients" tone="purple" note={`${fmtNumber(c.usage.maxQueries)} questions`} />)}
+          {[...using].sort((a, b) => (b.usage.maxAdoption ?? 0) - (a.usage.maxAdoption ?? 0)).map((c) => <MeterRow key={c.client.id} label={c.client.name} href={`/insights/benchmarks?period=${period}&focus=${c.client.id}`} value={c.usage.maxAdoption} marker={t.usage.maxAdoption} markerLabel="All clients" tone="purple" note={`${fmtNumber(c.usage.maxQueries)} question${c.usage.maxQueries === 1 ? "" : "s"}`} />)}
           {using.length === 0 && <EmptyState title="No client used Max in this period" />}
         </div>
       </Card>

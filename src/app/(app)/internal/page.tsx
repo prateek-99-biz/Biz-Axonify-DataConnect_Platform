@@ -69,7 +69,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
     { name: "Client Leaderboard", href: "/insights/leaderboard", value: aiLeader ? aiLeader.insight.client.name : String(insights.clients.length), note: aiLeader ? "uses Max the most · see who leads on every measure" : "clients ranked on participation, engagement and growth" },
     { name: "Max AI Usage", href: "/insights/ai", value: insights.hasUsage ? fmtNumber(insights.total.usage.maxQueries) : "—", note: insights.hasUsage ? `questions asked · ${fmtPct(insights.total.usage.maxAdoption)} of active users ask Max` : "waiting for the monthly usage refresh" },
     { name: "Benchmarks and Features", href: "/insights/benchmarks", value: insights.hasUsage ? fmtPct(insights.total.usage.engagement) : "—", note: "engagement across all clients · compare one client with its peers" },
-    { name: "Cost To Serve", href: "/insights/cost", value: String(atRiskValue), note: "accounts with contract value At Risk or Under-Used" },
+    { name: "Cost to Serve", href: "/insights/cost", value: String(atRiskValue), note: "accounts with contract value At Risk or Under-Used" },
   ];
 
   return (

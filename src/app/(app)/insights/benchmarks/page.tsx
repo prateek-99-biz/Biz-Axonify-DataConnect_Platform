@@ -111,7 +111,7 @@ export default async function BenchmarksPage({ searchParams }: { searchParams: P
       </Card>
 
       {insights.hasUsage && (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid items-start gap-4 xl:grid-cols-2">
           <Card>
             <CardHeader title="Feature Utilisation" subtitle="Share of active users who used each feature in an average month. The black tick is the Biz Group average." />
             <div className="px-5 py-3">

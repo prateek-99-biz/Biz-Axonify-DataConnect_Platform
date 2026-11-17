@@ -15,8 +15,10 @@ import { Badge } from "@/components/ui/primitives";
 import { RefreshButton } from "@/components/shell/refresh-button";
 import { StaleDataBanner } from "@/components/shell/stale-banner";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { NAV } from "@/components/shell/nav";
 
-const ALL_PERMS: Permission[] = ["dashboard:read", "dashboard:internal", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run"];
+// Every permission a menu item needs is included, so a new page (Cost to Serve needs commercial:read) is never left out of the menu.
+const ALL_PERMS: Permission[] = [...new Set<Permission>(["dashboard:read", "dashboard:internal", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run", ...NAV.map((n) => n.perm)])];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();

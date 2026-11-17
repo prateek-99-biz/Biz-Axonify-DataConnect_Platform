@@ -18,7 +18,8 @@ import { riskLabel } from "@/lib/labels";
 
 const STATUS_TONE: Record<ValueStatus, "good" | "warn" | "critical" | "neutral"> = { "Good Value": "good", "Under-Used": "warn", "At Risk": "critical", Unknown: "neutral" };
 const TOUCH_DAYS = 90;
-const money = (currency: string, v: number | null) => (v == null ? "—" : `${currency} ${fmtNumber(Math.round(v))}`);
+// A non-breaking space keeps "USD 1,240" on one line in narrow table cells.
+const money = (currency: string, v: number | null) => (v == null ? "—" : `${currency} ${fmtNumber(Math.round(v))}`);
 
 export default async function CostToServePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("commercial:read");
@@ -59,6 +60,9 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
     return { currency, total: sum(() => true), atRisk: sum((c) => status(c) === "At Risk"), underUsed: sum((c) => status(c) === "Under-Used"), count: inCur.length };
   });
   const main = [...totals].sort((a, b) => b.total - a.total)[0];
+  // "USD 565,890 and AED 28,516": every currency that has some of the value, so a count of accounts never hides another currency.
+  const byCurrency = (k: "atRisk" | "underUsed") => totals.filter((t) => t[k] > 0).sort((a, b) => b[k] - a[k]).map((t) => money(t.currency, t[k])).join(" and ");
+  const otherCurrencies = (k: "atRisk" | "underUsed") => totals.filter((t) => t !== main && t[k] > 0).map((t) => money(t.currency, t[k])).join(", ");
 
   const byValue = [...priced].sort((a, b) => value(b) - value(a));
   const atRisk = byValue.filter((c) => status(c) === "At Risk");
@@ -68,7 +72,7 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
 
   const summary = [
     `${priced.length} account${priced.length === 1 ? " has a" : "s have a"} contract value on file, worth ${totals.map((t) => money(t.currency, t.total)).join(" and ")} a year.`,
-    atRisk.length ? `${money(main.currency, main.atRisk)} sits with ${atRisk.length} account${atRisk.length === 1 ? "" : "s"} in the At Risk or Critical bands: ${atRisk.slice(0, 4).map((c) => c.client.name).join(", ")}${atRisk.length > 4 ? " and more" : ""}.` : "No contract value sits with an At Risk or Critical account.",
+    atRisk.length ? `${byCurrency("atRisk")} sits with ${atRisk.length} account${atRisk.length === 1 ? "" : "s"} in the At Risk or Critical bands: ${atRisk.slice(0, 4).map((c) => c.client.name).join(", ")}${atRisk.length > 4 ? " and more" : ""}.` : "No contract value sits with an At Risk or Critical account.",
     underUsed.length ? `${underUsed.length} account${underUsed.length === 1 ? " uses" : "s use"} under half of the licences paid for (${underUsed.slice(0, 4).map((c) => `${c.client.name} ${fmtPct(c.licenceUse, 0)}`).join(", ")}). These are the adoption conversations to have before renewal.` : "",
     priciest ? `${priciest.client.name} has the highest cost per engaged user: ${money(main.currency, perEngaged(priciest))} a year for each person who logs in.` : "",
     neglected.length ? `No notes or tasks in ${TOUCH_DAYS} days for ${neglected.slice(0, 4).map((c) => c.client.name).join(", ")}, though they are At Risk or Under-Used.` : "",
@@ -79,7 +83,7 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
     return {
       id: c.client.id, href: `/clients/${c.client.id}?period=${period}`,
       cells: {
-        account: { v: c.client.name }, csm: { v: c.client.csmName || "Unassigned" },
+        account: { v: c.client.name }, csm: { v: c.client.csmName || "Unassigned", node: <span className="whitespace-nowrap">{c.client.csmName || "Unassigned"}</span> },
         value: { v: value(c), node: money(cur(c), value(c)) },
         licences: { v: c.client.commercial?.licenses ?? null, node: fmtNumber(c.client.commercial?.licenses ?? null) },
         active: { v: c.usage.avgActiveUsers, node: fmtNumber(c.usage.avgActiveUsers) },
@@ -103,8 +107,8 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
 
       <section aria-label="Contract value" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Annual Contract Value" value={money(main.currency, main.total)} note={`${main.count} account${main.count === 1 ? "" : "s"}${totals.length > 1 ? ` · plus ${totals.filter((t) => t !== main).map((t) => money(t.currency, t.total)).join(", ")}` : ""}`} />
-        <Stat label="Value at Risk" value={money(main.currency, main.atRisk)} tone={main.atRisk > 0 ? "critical" : undefined} note="At Risk or Critical accounts" />
-        <Stat label="Value Under-Used" value={money(main.currency, main.underUsed)} tone={main.underUsed > 0 ? "warn" : undefined} note="Under half of licences in use" />
+        <Stat label="Value at Risk" value={money(main.currency, main.atRisk)} tone={main.atRisk > 0 ? "critical" : undefined} note={`At Risk or Critical accounts${otherCurrencies("atRisk") ? ` · plus ${otherCurrencies("atRisk")}` : ""}`} />
+        <Stat label="Value Under-Used" value={money(main.currency, main.underUsed)} tone={main.underUsed > 0 ? "warn" : undefined} note={`Under half of licences in use${otherCurrencies("underUsed") ? ` · plus ${otherCurrencies("underUsed")}` : ""}`} />
         <Stat label={`Touchpoints, ${TOUCH_DAYS} Days`} value={fmtNumber(priced.reduce((s, c) => s + touchOf(c), 0))} note="Notes and tasks logged here" />
       </section>
 
@@ -121,7 +125,7 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
           ]} />
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid items-start gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader title="Licence Use" subtitle="Average active users ÷ licences paid for. Under 50% is flagged." />
           <div className="px-5 py-3">

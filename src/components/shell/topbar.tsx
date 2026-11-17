@@ -7,10 +7,11 @@ import { Bell, ChevronRight, LogOut, Search } from "lucide-react";
 import { Badge, Input } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { humanize } from "@/lib/labels";
+import { NAV } from "./nav";
 
 export interface NotificationItem { key: string; clientId: string; clientName: string; severity: "warning" | "critical"; title: string; detail: string }
 
-const LABELS: Record<string, string> = { portfolio: "Portfolio", clients: "Clients", csm: "My Accounts", internal: "Internal Home", alerts: "Alerts and Watchlist", renewals: "Renewals", metrics: "What the Metrics Mean", "how-it-works": "How It Works", "data-reliability": "Data Reliability", settings: "Settings", compare: "Compare Clients" };
+const LABELS: Record<string, string> = { portfolio: "Portfolio", clients: "Clients", csm: "My Accounts", internal: "Internal Home", alerts: "Alerts and Watchlist", renewals: "Renewals", metrics: "What the Metrics Mean", "how-it-works": "How It Works", "data-reliability": "Data Reliability", settings: "Settings", compare: "Compare Clients", insights: "Insights" };
 
 export function Breadcrumbs() {
   const path = usePathname();
@@ -20,7 +21,8 @@ export function Breadcrumbs() {
       <Link href="/portfolio" className="hover:text-ink">Home</Link>
       {parts.map((p, i) => {
         const href = "/" + parts.slice(0, i + 1).join("/");
-        const label = LABELS[p] ?? (i === 1 && parts[0] === "clients" ? "Client 360" : p);
+        // The menu label for the full path wins, so /insights/csm reads "CSM Portfolio" rather than the label for /csm.
+        const label = NAV.find((n) => n.href === href)?.label ?? LABELS[p] ?? (i === 1 && parts[0] === "clients" ? "Client 360" : p);
         return (
           <span key={href} className="flex items-center gap-1">
             <ChevronRight className="h-3 w-3" aria-hidden />

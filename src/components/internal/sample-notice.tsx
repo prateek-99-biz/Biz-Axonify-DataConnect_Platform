@@ -7,8 +7,11 @@ export function SampleNotice({ count, canRemove }: { count: number; canRemove: b
   return (
     <p role="note" className="glass flex flex-wrap items-center gap-2 !rounded-xl px-4 py-2 text-xs text-slate-600">
       <Badge tone="warn">Sample Data</Badge>
-      CSMs, licences, values and renewal dates on this page are made up.
-      {canRemove ? <> <Link href="/settings" className="underline">Remove them in Settings</Link>.</> : " An admin can remove them."}
+      {/* One span, so the flex gap does not separate the full stop from the link. */}
+      <span>
+        CSMs, licences, values and renewal dates on this page are made up.
+        {canRemove ? <> <Link href="/settings" className="underline">Remove them in Settings</Link>.</> : " An admin can remove them."}
+      </span>
     </p>
   );
 }

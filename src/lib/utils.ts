@@ -17,6 +17,9 @@ export function fmtCompact(n: number | null | undefined) {
 
 export function fmtPct(n: number | null | undefined, digits = 1) {
   if (n == null || Number.isNaN(n)) return "—";
+  // A share that is not zero must never read as zero: 2 people in 7,000 is "<0.1%", not "0.0%".
+  const smallest = 0.5 * 10 ** -(digits + 2);
+  if (n > 0 && n < smallest) return `<${(2 * smallest * 100).toFixed(digits)}%`;
   return `${(n * 100).toFixed(digits)}%`;
 }
 

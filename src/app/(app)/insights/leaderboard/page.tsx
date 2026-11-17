@@ -53,7 +53,8 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   // Bars for the chosen measure: shares on their own 0-100% scale, everything else against the leader.
   const isShare = chosen.m.format === "pct";
   const top = Math.max(...chosen.ranked.map((r) => Math.abs(r.value)), 0);
-  const scale = (v: number) => (isShare ? v : top > 0 ? Math.max(0, v) / top : 0);
+  // A fall is drawn too (in red, by its size), so a client that shrank does not look like it has no value.
+  const scale = (v: number) => (isShare ? v : top > 0 ? Math.abs(v) / top : 0);
   const excluded = chosen.m.needsSize ? candidates.filter((c) => !c.ranked && chosen.m.value(c) != null) : [];
 
   const tableRows: TableRow[] = candidates.map((c) => ({
