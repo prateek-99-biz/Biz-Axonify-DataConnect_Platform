@@ -89,7 +89,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
         engagement: { v: c.usage.engagement, node: fmtPct(c.usage.engagement) },
         knowledge: { v: c.health?.avgKnowledge ?? null, node: fmtPct(c.health?.avgKnowledge) },
         health: { v: c.health?.healthScore ?? null, node: fmtHealth(c.health?.healthScore) },
-        status: { v: riskLabel(c.risk), node: <RiskBadge risk={c.risk} /> },
+        status: c.risk === "unknown" ? { v: null, node: <span className="text-xs text-slate-500">No score</span> } : { v: riskLabel(c.risk), node: <RiskBadge risk={c.risk} /> },
         renewal: { v: d, node: c.client.commercial?.renewalDate ? <span>{c.client.commercial.renewalDate} <Badge tone={RENEWAL_TONE[rr]}>{rr}</Badge></span> : "—" },
       },
     };
@@ -121,7 +121,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
         <div className="flex flex-wrap items-start justify-between gap-3 border-b hairline px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Account in Focus</p>
-            <h2 className="mt-1 flex flex-wrap items-center gap-2 text-xl font-semibold">{focus.client.name}<RiskBadge risk={focus.risk} /></h2>
+            <h2 className="mt-1 flex flex-wrap items-center gap-2 text-xl font-semibold">{focus.client.name}{focus.risk === "unknown" ? <Badge title="Health needs knowledge scores, which this period does not have">No Health Score</Badge> : <RiskBadge risk={focus.risk} />}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
               CSM {focus.client.csmName || "not recorded"}
               {focus.client.commercial?.renewalDate ? <> · renews {focus.client.commercial.renewalDate}{fDays != null && fDays >= 0 ? ` (in ${fDays} days)` : ""} · renewal risk <Badge tone={RENEWAL_TONE[fRenewal]}>{fRenewal}</Badge></> : " · no renewal date on file"}

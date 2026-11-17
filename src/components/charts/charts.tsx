@@ -21,7 +21,8 @@ const NAVY = "#1D2B43";
 
 export interface SeriesDef { key: string; label: string; color?: string }
 
-const pctFmt = (v: number) => `${(v * 100).toFixed(0)}%`;
+// Below 10% a whole number would repeat on the axis (0.5% and 0.7% both read "1%"), so small shares keep one decimal.
+const pctFmt = (v: number) => `${(v * 100).toFixed(Math.abs(v) < 0.1 && v !== 0 ? 1 : 0)}%`;
 
 export function useChartTheme(entities = false) {
   const dark = useIsDark();

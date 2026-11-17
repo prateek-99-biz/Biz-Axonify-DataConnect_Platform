@@ -242,8 +242,10 @@ Done
 - [x] Tests: `metrics/features.ts` and `services/insights.ts` unit-tested; `insights/pages.test.ts` renders all six pages and Alerts against mock data. Typecheck, lint, all tests and the production build pass.
 
 Open
-- [ ] **Apply migration 0007** to Supabase (`npm run db:deploy`), then refresh the data. Until then the Insights pages show health only and say feature and Max usage is not available. The sync checks the table exists first, so a refresh before the migration still succeeds.
-- [ ] Not run against live BigQuery: the Google sign-in had expired. Run `npm run bq:check` (dry run) and then a refresh; check one client's Max questions against Axonify's Max report.
-- [ ] Confirm `max_user_query.feedback` and `status` values. Negative feedback is matched on words like "negative", "down", "unhelpful"; if the real values differ, Rated Helpful is wrong.
-- [ ] Not checked in a browser here (the preview server cannot reach Supabase from the sandbox). Pages were checked by rendering them in tests.
+- [x] Migration 0007 applied to Supabase and data refreshed (2026-11-17): 16 clients, 368 monthly rows.
+- [x] `npm run bq:check`: all 15 queries valid; `clientMonthly` scans about 5 GB per refresh. Max use is concentrated in gm (about 40k questions), nfxp, adidas, jlearning and mylearning.
+- [ ] Check one client's Max question count against Axonify's own Max report.
+- [x] Feedback values confirmed: `thumbs-up`, or `thumbs-down` with an optional `-incorrect`, `-confusing` or `-irrelevant`. Status is Retrieved Sources, No Retrieved Sources, Technical Issues, Other Errors, Blocked or General Training Request.
+- [x] Checked in the browser against live data (dev server, desktop and phone width). Fixed: repeated axis labels for small percentages; "No Data" badge on accounts that have data but no health score for the period.
+- [ ] CSM Portfolio and Cost to Serve show their empty state until the Salesforce CSV is imported.
 - [ ] Gross profit needs a delivery-cost column from finance; meetings and emails need the live Salesforce connection; an Axonify-wide industry benchmark is not in DataConnect.

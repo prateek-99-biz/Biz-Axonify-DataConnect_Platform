@@ -113,7 +113,7 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "max_helpful",
     name: "Max Rated Helpful",
-    description: "Of the Max answers people rated, the share not rated negatively. Hidden below 10 ratings. The exact feedback values in DataConnect are still to be confirmed.",
+    description: "Of the Max answers people rated, the share not rated negatively. Hidden below 10 ratings. DataConnect records thumbs-up, or thumbs-down with an optional reason (incorrect, confusing, irrelevant).",
     formula: "1 − negative ratings ÷ all ratings",
     unit: "ratio",
     status: "provisional",
