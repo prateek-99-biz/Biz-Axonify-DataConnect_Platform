@@ -8,8 +8,8 @@ const NONE: FilterScope = { client: false, industry: false, period: false };
 // Pages that ignore the filters entirely.
 const UNFILTERED = ["/settings", "/data-reliability", "/how-it-works", "/metrics", "/renewals"];
 
-// The internal pages pick their own clients (a CSM's book, or everyone), so only the quarter applies.
-const PERIOD_PAGES = ["/csm", "/alerts", "/internal"];
+// The internal and Insights pages pick their own clients (a CSM's book, a client to focus on, or everyone), so only the period applies.
+const PERIOD_PAGES = ["/csm", "/alerts", "/internal", "/insights"];
 
 /**
  * A client's profile is already one client, and Compare picks its own clients with tick boxes, so both use only the period.

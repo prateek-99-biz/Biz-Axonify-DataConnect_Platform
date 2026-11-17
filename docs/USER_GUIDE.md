@@ -21,6 +21,12 @@ After sign-in, a Customer Success Manager whose email matches the CSM column of 
 | | Clients | Open a client profile (health history, tasks, notes) |
 | | Compare Clients | Put clients side by side, quarter by quarter |
 | | Client Dashboards | The ten quarterly review pages for one client |
+| Insights | Client Leaderboard | Who leads on AI and Max use, participation, engagement, growth over the year, communications, knowledge and feature use |
+| | Account Health | Every account's health and renewal risk; one account in focus with what drives its score, month by month |
+| | Benchmarks and Features | One client against the other Biz Group clients, feature by feature, and the features it has not switched on |
+| | Max AI Usage | Questions asked to Max, who asks, adoption, answers from the client's own content, ratings, clients not using it |
+| | CSM Portfolio | Every CSM's book side by side, plus renewals in the next twelve months |
+| | Cost to Serve | Contract value against usage: licence use, cost per user, value at risk, touchpoints logged |
 | Internal | Internal Home | Every internal page on one screen |
 | | My Accounts | One CSM's accounts: this week's agenda, renewal timeline, an account card each |
 | | Alerts and Watchlist | Who needs a conversation now, and why |
@@ -29,7 +35,9 @@ After sign-in, a Customer Success Manager whose email matches the CSM column of 
 | | Settings | Users and Salesforce data |
 | Help | How It Works, What the Metrics Mean | Plain-language explanations |
 
-Pages that take one client show a client filter; pages that do not, do not.
+Pages that take one client show a client filter; pages that do not, do not. The Insights pages use only the period filter; Account Health and Benchmarks have their own client picker. Choose a full year (FY) in the period filter to rank the whole year on the Client Leaderboard.
+
+Every Insights page opens with **In Plain Words**: the main points as sentences. Engagement on these pages is people who logged in ÷ active users (Axonify's Average Participation); Participation is people who trained ÷ active users. Rates and growth on the leaderboard leave out clients averaging fewer than 25 active users a month.
 
 ## Reading the numbers
 - **Health** = half participation (people who trained out of people who were active) and half knowledge. Bands: Healthy 75 or more, Moderate 60, At Risk 45, Critical below 45. The number shown is rounded down, so a 44.7 reads 44 and is Critical.

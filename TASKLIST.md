@@ -231,3 +231,19 @@ Open
 - [ ] Untested end to end: the CSM landing redirect (dev login needs an @bizgroup.ae address; unit-tested only) and the Windows schedule scripts' real runs (only the check-only run and input validation were exercised).
 - [ ] Provisional metrics still need sign-off (see A12). Items A4 to A13, B1 to B4 and E to K above that are not ticked remain open.
 - [ ] Not reproduced: the theme switching by itself (likely the OS or browser-pane colour scheme).
+
+## S. Insights pages, Max AI and the Client Leaderboard (2026-11-17)
+From the Power BI deck's first five pages (Account Health, Benchmarks & Value, CSM Portfolio, Alerts & Watchlist, Cost to Serve) and its review comments, plus a request to compare all clients on AI use, Max, participation, engagement, growth and communications.
+
+Done
+- [x] New BigQuery query `clientMonthly` (client × month, last 25 months): active, logged-in and training users, learning time, Max questions, askers, answers citing client content, ratings, and users of games, rewards, recognition, broadcasts, chat, communities, Discover, tasks, forms and events. Stored in `SyncClientMonth` (migration 0007). Non-fatal in the sync; it also fills Features Used on the quarterly rows, so Feature Adoption is no longer always empty.
+- [x] Insights menu group: Client Leaderboard, Account Health, Benchmarks and Features, Max AI Usage, CSM Portfolio, Cost to Serve. Each opens with an In Plain Words summary. Alerts and Watchlist gains Usage Drops (engagement, Max, broadcast reach). Internal Home's two Not Yet tiles now link to live pages.
+- [x] Deck comments answered: whole client base and client count against a year ago; previous month (Month by Month on Account Health); client vs same-industry vs all Biz Group clients, with feature and communication utilisation instead of value realisation; what each CSM card is based on; contract value instead of hours; effort from notes and tasks logged here instead of timesheets.
+- [x] Tests: `metrics/features.ts` and `services/insights.ts` unit-tested; `insights/pages.test.ts` renders all six pages and Alerts against mock data. Typecheck, lint, all tests and the production build pass.
+
+Open
+- [ ] **Apply migration 0007** to Supabase (`npm run db:deploy`), then refresh the data. Until then the Insights pages show health only and say feature and Max usage is not available. The sync checks the table exists first, so a refresh before the migration still succeeds.
+- [ ] Not run against live BigQuery: the Google sign-in had expired. Run `npm run bq:check` (dry run) and then a refresh; check one client's Max questions against Axonify's Max report.
+- [ ] Confirm `max_user_query.feedback` and `status` values. Negative feedback is matched on words like "negative", "down", "unhelpful"; if the real values differ, Rated Helpful is wrong.
+- [ ] Not checked in a browser here (the preview server cannot reach Supabase from the sandbox). Pages were checked by rendering them in tests.
+- [ ] Gross profit needs a delivery-cost column from finance; meetings and emails need the live Salesforce connection; an Axonify-wide industry benchmark is not in DataConnect.

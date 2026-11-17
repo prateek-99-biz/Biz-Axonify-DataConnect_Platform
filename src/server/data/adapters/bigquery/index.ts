@@ -6,7 +6,7 @@
 import { bigQueryClient } from "@/server/google/bigquery-client";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import type { AnalyticsPort, ClientPeriodRow, ClientSummary, Result } from "../../ports";
+import type { AnalyticsPort, ClientMonthRow, ClientPeriodRow, ClientSummary, Result } from "../../ports";
 import { bqConfig, runQuery } from "@/server/dashboard/bigquery/load";
 
 const asNum = (v: unknown) => { const x = v && typeof v === "object" && "value" in v ? (v as { value: unknown }).value : v; const n = Number(x); return Number.isFinite(n) ? n : 0; };
@@ -35,6 +35,22 @@ const mappingSchema = z.object({
 type Mapping = z.infer<typeof mappingSchema>;
 
 const unavailable = (reason: string): Result<never> => ({ status: "unavailable", reason, source: "bigquery" });
+
+/** Maps one `clientMonthly` result row (snake_case, possibly BigQuery numeric wrappers) to the port's shape. */
+export function toMonthRow(r: Record<string, unknown>): ClientMonthRow {
+  return {
+    clientId: String(asNum(r.tenant_id)), month: String(r.month),
+    activeUsers: asNum(r.active_users), loggedInUsers: asNum(r.logged_in_users), trainingUsers: asNum(r.training_users),
+    learningSeconds: asNum(r.learning_seconds),
+    maxQueries: asNum(r.max_queries), maxUsers: asNum(r.max_users), maxGrounded: asNum(r.max_grounded), maxRated: asNum(r.max_rated), maxNegative: asNum(r.max_negative),
+    gameUsers: asNum(r.game_users), gamesPlayed: asNum(r.games_played), rewardUsers: asNum(r.reward_users),
+    recognitionsSent: asNum(r.recognitions_sent), recognitionUsers: asNum(r.recognition_users),
+    broadcastsSent: asNum(r.broadcasts_sent), commsReachUsers: asNum(r.comms_reach_users), commsResponseUsers: asNum(r.comms_response_users),
+    chatMessages: asNum(r.chat_messages), chatUsers: asNum(r.chat_users), communityUsers: asNum(r.community_users), discoverUsers: asNum(r.discover_users),
+    tasksCompleted: asNum(r.tasks_completed), taskUsers: asNum(r.task_users), formsSubmitted: asNum(r.forms_submitted), formUsers: asNum(r.form_users),
+    eventAttendees: asNum(r.event_attendees),
+  };
+}
 
 let cached: Mapping | null | undefined;
 function loadMapping(): Mapping | null {
@@ -110,6 +126,14 @@ export const bigqueryAnalytics: AnalyticsPort = {
       params: clientIds?.length ? { ids: clientIds } : undefined,
     });
     return { status: "ok", data: rows as ClientPeriodRow[], source: "bigquery", asOf: new Date().toISOString() };
+  },
+
+  async getClientMonthRows(clientIds) {
+    const cfg = bqConfig();
+    if (!cfg || cfg.tenants.length === 0) return unavailable("Set BQ_PROJECT_ID and BQ_TENANT_IDS to read monthly feature usage.");
+    const tenants = clientIds?.length ? clientIds.map(Number).filter(Number.isInteger) : cfg.tenants;
+    const rows = await runQuery(cfg, "clientMonthly", tenants);
+    return { status: "ok", data: rows.map(toMonthRow), source: "bigquery", asOf: new Date().toISOString() };
   },
 
   async getTeamTree() {

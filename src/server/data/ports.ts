@@ -55,6 +55,45 @@ export interface ClientPeriodRow {
   featuresUsed: number;
 }
 
+/**
+ * One row per client per calendar month: how many people used each Axonify feature, and Max (AI assistant) activity.
+ * User counts are distinct users in that month. Months are written YYYY-MM.
+ */
+export interface ClientMonthRow {
+  clientId: string;
+  month: string;
+  /** Distinct users with an active account (Axonify "Employees"). Denominator for every share on the feature pages. */
+  activeUsers: number;
+  /** Active users with at least one session in the month (Axonify "Logged in"). */
+  loggedInUsers: number;
+  trainingUsers: number;
+  /** Total seconds spent in the platform. */
+  learningSeconds: number;
+  /** Questions asked to Max, the people who asked them, questions whose answer cited the client's own content, and feedback. */
+  maxQueries: number;
+  maxUsers: number;
+  maxGrounded: number;
+  maxRated: number;
+  maxNegative: number;
+  gameUsers: number;
+  gamesPlayed: number;
+  rewardUsers: number;
+  recognitionsSent: number;
+  recognitionUsers: number;
+  broadcastsSent: number;
+  commsReachUsers: number;
+  commsResponseUsers: number;
+  chatMessages: number;
+  chatUsers: number;
+  communityUsers: number;
+  discoverUsers: number;
+  tasksCompleted: number;
+  taskUsers: number;
+  formsSubmitted: number;
+  formUsers: number;
+  eventAttendees: number;
+}
+
 export interface TeamNode {
   id: string;
   name: string;
@@ -89,6 +128,8 @@ export interface AnalyticsPort {
   listClients(): Promise<Result<ClientSummary[]>>;
   /** All quarterly rows for the given clients (all clients when omitted). */
   getClientPeriodRows(clientIds?: string[]): Promise<Result<ClientPeriodRow[]>>;
+  /** Monthly feature and Max usage for the given clients (all clients when omitted). */
+  getClientMonthRows(clientIds?: string[]): Promise<Result<ClientMonthRow[]>>;
   getTeamTree(clientId: string, period: string): Promise<Result<TeamNode[]>>;
   getUsers(clientId: string, period: string): Promise<Result<UserRow[]>>;
   getSourceCoverage(): Promise<Result<SourceCoverageRow[]>>;

@@ -442,6 +442,84 @@ export const QUERIES = {
     FROM pool_summary p LEFT JOIN answer_summary a USING (tenant_id)`,
 
   /**
+   * One row per client per month for the last 25 months: Max (AI assistant) questions and feedback, and how many people
+   * used each other feature. Users are distinct within the month. Active, logged-in and training users come from the
+   * user-level participation view (Axonify's "All Users" basis, so they can sit slightly above the team-based QBR counts).
+   */
+  clientMonthly: (t: T) => {
+    const SINCE = "DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 24 MONTH)";
+    const m = (expr: string) => `FORMAT_DATE('%Y-%m', DATE(${expr}))`;
+    // One CTE per source: tenant, month and the measures it adds.
+    const part = (name: string, view: string, dateCol: string, select: string, where = "") => `
+    ${name} AS (
+      SELECT tenant_id, ${m(dateCol)} AS month, ${select}
+      FROM ${t(view)}
+      WHERE ${TENANT} AND DATE(${dateCol}) >= ${SINCE}${where ? ` AND ${where}` : ""}
+      GROUP BY 1, 2
+    )`;
+    const parts = [
+      part("time_spent", "foundation_user_daily_time_spent", "date", "SUM(COALESCE(seconds, 0)) AS learning_seconds"),
+      part("max_q", "max_user_query", "create_date", `COUNT(*) AS max_queries, COUNT(DISTINCT user_id) AS max_users,
+        COUNTIF(feedback IS NOT NULL AND TRIM(feedback) != '' AND LOWER(TRIM(feedback)) NOT IN ('none', 'null')) AS max_rated,
+        COUNTIF(REGEXP_CONTAINS(LOWER(COALESCE(feedback, '')), r'neg|down|unhelpful|not_helpful|not helpful|dislike|bad|wrong|incorrect')) AS max_negative`,
+        "COALESCE(status, '') NOT IN ('Deleted', 'Cancelled')"),
+      part("games", "game_play", "create_date", "COUNT(DISTINCT user_id) AS game_users, COUNT(*) AS games_played", `${LIVE} AND is_game_played = TRUE`),
+      part("rewards", "reward_point_transaction", "create_date", "COUNT(DISTINCT user_id) AS reward_users",
+        `${LIVE} AND type IN ('Spin-to-Win Purchase', 'Raffle Ticket Purchase', 'Auction Won', 'Buy Now Purchase')`),
+      part("recognition", "recognition_pin_award", "award_date", "COUNT(*) AS recognitions_sent, COUNT(DISTINCT sent_by_user_id) AS recognition_users",
+        "delete_date IS NULL AND COALESCE(is_historical_import, FALSE) = FALSE"),
+      part("broadcasts", "comms_message_configuration", "COALESCE(start_date_local_time, start_date, create_date)", "COUNT(DISTINCT id) AS broadcasts_sent", "status IN ('Live', 'Expired')"),
+      part("comms_reach", "comms_user_message_impression", "create_date", "COUNT(DISTINCT user_id) AS comms_reach_users"),
+      part("comms_response", "comms_user_message_response", "create_date", "COUNT(DISTINCT user_id) AS comms_response_users", "delete_date IS NULL"),
+      part("chat", "chat_user_message", "create_date", "COUNT(*) AS chat_messages, COUNT(DISTINCT user_id) AS chat_users", "delete_date IS NULL"),
+      part("community", "channel_user_post_view", "view_date", "COUNT(DISTINCT user_id) AS community_users"),
+      part("discover", "discover_user_page_view", "view_date", "COUNT(DISTINCT user_id) AS discover_users"),
+      part("tasks", "task_instance", "complete_date", "COUNT(*) AS tasks_completed, COUNT(DISTINCT completed_by_user_id) AS task_users", "complete_date IS NOT NULL AND delete_date IS NULL"),
+      part("forms", "checkpoint_submission", "create_date", "COUNT(*) AS forms_submitted, COUNT(DISTINCT submitter_user_id) AS form_users", "delete_date IS NULL"),
+      part("events", "event_user_enrollment", "create_date", "COUNT(DISTINCT user_id) AS event_attendees", "delete_date IS NULL AND attended = TRUE"),
+    ];
+    const measures: [cte: string, cols: string[]][] = [
+      ["time_spent", ["learning_seconds"]],
+      ["max_q", ["max_queries", "max_users", "max_rated", "max_negative"]],
+      ["max_grounded", ["max_grounded"]],
+      ["games", ["game_users", "games_played"]],
+      ["rewards", ["reward_users"]],
+      ["recognition", ["recognitions_sent", "recognition_users"]],
+      ["broadcasts", ["broadcasts_sent"]],
+      ["comms_reach", ["comms_reach_users"]],
+      ["comms_response", ["comms_response_users"]],
+      ["chat", ["chat_messages", "chat_users"]],
+      ["community", ["community_users"]],
+      ["discover", ["discover_users"]],
+      ["tasks", ["tasks_completed", "task_users"]],
+      ["forms", ["forms_submitted", "form_users"]],
+      ["events", ["event_attendees"]],
+    ];
+    return `
+    WITH base AS (
+      SELECT tenant_id, FORMAT_DATE('%Y-%m', month) AS month,
+        COUNT(DISTINCT IF(${ACTIVE_USER()}, user_id, NULL)) AS active_users,
+        COUNT(DISTINCT IF(${ACTIVE_USER()} AND COALESCE(total_sessions_30_day, 0) > 0, user_id, NULL)) AS logged_in_users,
+        COUNT(DISTINCT IF(${ACTIVE_USER()} AND COALESCE(training_sessions_30_day, 0) > 0, user_id, NULL)) AS training_users
+      FROM ${t("foundation_user_monthly_participation")}
+      WHERE ${TENANT} AND month >= ${SINCE}
+      GROUP BY 1, 2
+    ),
+    -- Questions whose answer cited at least one page, topic, module or file from the client's own content.
+    max_grounded AS (
+      SELECT q.tenant_id, ${m("q.create_date")} AS month, COUNT(DISTINCT q.id) AS max_grounded
+      FROM ${t("max_user_query")} q
+      JOIN ${t("max_response_sources")} s ON s.tenant_id = q.tenant_id AND s.user_query_id = q.id
+      WHERE q.${TENANT} AND DATE(q.create_date) >= ${SINCE}
+      GROUP BY 1, 2
+    ),${parts.join(",")}
+    SELECT base.tenant_id, base.month, base.active_users, base.logged_in_users, base.training_users,
+      ${measures.flatMap(([cte, cols]) => cols.map((c) => `COALESCE(${cte}.${c}, 0) AS ${c}`)).join(",\n      ")}
+    FROM base
+    ${measures.map(([cte]) => `LEFT JOIN ${cte} ON ${cte}.tenant_id = base.tenant_id AND ${cte}.month = base.month`).join("\n    ")}`;
+  },
+
+  /**
    * Quarterly client rows for the portfolio (registered, active, training, retained, sessions, knowledge snapshot).
    * Registered = on the books at any point in the quarter (created by its end, not removed before its start). Counting
    * only users still present on the last day dropped people who were active and then left within the quarter, which

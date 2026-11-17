@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { requirePagePermission } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
-import { loadContext, type SearchParams } from "@/server/services/context";
+import type { SearchParams } from "@/server/services/context";
+import { loadInsights } from "@/server/services/insights-context";
+import { usageDrops } from "@/server/services/insights";
 import { buildPortfolio, deriveAlerts } from "@/server/services/portfolio";
 import { ackedAlertKeys } from "@/server/services/alert-acks";
 import { buildWatchlist, type WatchAction } from "@/server/services/accounts";
@@ -21,9 +23,9 @@ const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).
 
 export default async function AlertsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("dashboard:internal");
-  const loaded = await loadContext(await searchParams);
+  const loaded = await loadInsights(await searchParams);
   if (!loaded.ok) return <SourceUnavailable reason={loaded.reason} />;
-  const { ctx } = loaded;
+  const { ctx, insights } = loaded;
   const period = periodKey(ctx.filters.period);
 
   const view = buildPortfolio(ctx.clients, ctx.rows, { ...ctx.filters, client: null, industry: null });
@@ -32,6 +34,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   const open = every.filter((a) => !acked.has(a.key));
   const watch = buildWatchlist(view.clients, ctx.rows, ctx.filters.period, ctx.filters.inProgress);
   const sample = await sampleCount();
+  // Falls are not flagged while less than half the period has data: a few weeks against a whole quarter is not like for like.
+  const drops = ctx.filters.inProgress ? [] : usageDrops(insights.clients);
   const csmOf = new Map(ctx.clients.map((c) => [c.id, c.csmName || "Unassigned"]));
 
   const rows: TableRow[] = watch.map((w) => ({
@@ -60,6 +64,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         { label: "Open Alerts", value: String(open.length) },
         { label: "Critical", value: String(open.filter((a) => a.severity === "critical").length) },
         { label: "On The Watchlist", value: String(watch.length) },
+        ...(insights.hasUsage ? [{ label: "Usage Drops", value: String(drops.length) }] : []),
         { label: "Cleared By You", value: String(every.length - open.length) },
       ]} />
 
@@ -104,6 +109,28 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
           {" "}Accounts in the Critical or At Risk bands are marked <RiskBadge risk="critical" /> or <RiskBadge risk="at_risk" /> on their client page.
         </p>
       </Card>
+
+      {insights.hasUsage && (
+        <Card>
+          <CardHeader title="Usage Drops" subtitle="Sharp falls against the previous period: engagement down 10 points or more, Max questions down 40% or more, or broadcast reach down 15 points or more" />
+          {drops.length === 0 ? (
+            <EmptyState title="No sharp drops">{ctx.filters.inProgress ? "The period is less than half over, so falls are not flagged yet." : "No client's engagement, Max use or broadcast reach fell sharply."}</EmptyState>
+          ) : (
+            <ul className="divide-y divide-line">
+              {drops.map((d) => (
+                <li key={`${d.clientId}:${d.what}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3">
+                  <span className="w-24 shrink-0"><Badge tone={d.severity === "critical" ? "critical" : "warn"}>{d.severity === "critical" ? "Critical" : "Warning"}</Badge></span>
+                  <span className="min-w-0 flex-1 basis-64">
+                    <Link href={`/insights/health?period=${period}&focus=${d.clientId}`} className="font-semibold hover:underline">{d.name}</Link>
+                    <span className="text-xs text-slate-500"> · {d.csm}</span>
+                    <span className="block text-xs text-slate-600"><span className="font-medium text-ink">{d.what}.</span> {d.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

@@ -2,7 +2,9 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
-import { loadContext, type SearchParams } from "@/server/services/context";
+import type { SearchParams } from "@/server/services/context";
+import { loadInsights } from "@/server/services/insights-context";
+import { LEADER_METRICS, rankBy, valueStatus } from "@/server/services/insights";
 import { buildPortfolio, deriveAlerts } from "@/server/services/portfolio";
 import { ackedAlertKeys } from "@/server/services/alert-acks";
 import { bookSummary, buildAccountCards, buildRenewals, buildWatchlist, csmKey, csmKeyForEmail, NO_SIGNAL, renewalValueByCurrency } from "@/server/services/accounts";
@@ -11,7 +13,7 @@ import { periodKey, periodLabel } from "@/server/metrics/period";
 import { Badge, Card, SourceUnavailable } from "@/components/ui/primitives";
 import { PeriodNotice } from "@/components/internal/period-notice";
 import { SampleNotice } from "@/components/internal/sample-notice";
-import { cn, fmtNumber, fmtHealth } from "@/lib/utils";
+import { cn, fmtNumber, fmtHealth, fmtPct } from "@/lib/utils";
 
 interface Tile { name: string; href: string | null; value: string; note: string; status?: string }
 
@@ -31,9 +33,9 @@ function TileView({ t }: { t: Tile }) {
 
 export default async function InternalHomePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("dashboard:internal");
-  const loaded = await loadContext(await searchParams);
+  const loaded = await loadInsights(await searchParams);
   if (!loaded.ok) return <SourceUnavailable reason={loaded.reason} />;
-  const { ctx } = loaded;
+  const { ctx, insights } = loaded;
   const period = periodKey(ctx.filters.period);
   const today = new Date().toISOString().slice(0, 10);
   const sample = await sampleCount();
@@ -44,6 +46,10 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
   const watch = buildWatchlist(view.clients, ctx.rows, ctx.filters.period, ctx.filters.inProgress);
   const renewals = buildRenewals(ctx.clients, view.clients, today, 90);
   const renewTotals = renewalValueByCurrency(renewals);
+
+  const aiBoard = LEADER_METRICS.find((m) => m.key === "maxPer100");
+  const aiLeader = aiBoard ? rankBy(insights.clients, aiBoard)[0] : undefined;
+  const atRiskValue = insights.clients.filter((c) => c.client.commercial?.licenseValue != null && valueStatus(c.licenceUse, c.risk) !== "Good Value" && valueStatus(c.licenceUse, c.risk) !== "Unknown").length;
 
   const mine = csmKeyForEmail(user.email, ctx.clients);
   const books = new Set(ctx.clients.map(csmKey).filter((k) => k !== ""));
@@ -59,9 +65,11 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
     accountsTile,
     { name: "Alerts and Watchlist", href: "/alerts", value: String(openAlerts.length), note: `${openAlerts.filter((a) => a.severity === "critical").length} critical · ${watch.length} on the watchlist` },
     { name: "Renewals", href: "/renewals", value: String(renewals.length), note: renewTotals.length ? `in 90 days · ${renewTotals.map((t) => `${t.currency} ${fmtNumber(Math.round(t.total))}`).join(" · ")}` : "in 90 days" },
-    { name: "Account Health", href: "/portfolio", value: fmtHealth(view.kpis.current.healthScore), note: `portfolio average · ${view.riskCounts.critical + view.riskCounts.at_risk} Critical or At Risk` },
-    { name: "Benchmarks and Value", href: null, value: "—", note: "Needs industry and an Axonify-wide benchmark, plus learning hours.", status: "Not Yet" },
-    { name: "Cost To Serve", href: null, value: "—", note: "Admins and finance. Needs CSM and technical hours, and cost per hour.", status: "Not Yet" },
+    { name: "Account Health", href: "/insights/health", value: fmtHealth(view.kpis.current.healthScore), note: `portfolio average · ${view.riskCounts.critical + view.riskCounts.at_risk} Critical or At Risk` },
+    { name: "Client Leaderboard", href: "/insights/leaderboard", value: aiLeader ? aiLeader.insight.client.name : String(insights.clients.length), note: aiLeader ? "uses Max the most · see who leads on every measure" : "clients ranked on participation, engagement and growth" },
+    { name: "Max AI Usage", href: "/insights/ai", value: insights.hasUsage ? fmtNumber(insights.total.usage.maxQueries) : "—", note: insights.hasUsage ? `questions asked · ${fmtPct(insights.total.usage.maxAdoption)} of active users ask Max` : "waiting for the monthly usage refresh" },
+    { name: "Benchmarks and Features", href: "/insights/benchmarks", value: insights.hasUsage ? fmtPct(insights.total.usage.engagement) : "—", note: "engagement across all clients · compare one client with its peers" },
+    { name: "Cost To Serve", href: "/insights/cost", value: String(atRiskValue), note: "accounts with contract value At Risk or Under-Used" },
   ];
 
   return (
@@ -78,7 +86,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
       <section aria-label="Internal pages" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {tiles.map((t) => <TileView key={t.name} t={t} />)}
       </section>
-      <p className="text-xs text-slate-500">Period {period}. Pages marked Not Yet are waiting on data that no system holds today. See <Link href="/how-it-works" className="underline">How It Works</Link>.</p>
+      <p className="text-xs text-slate-500">Period {period}. See <Link href="/how-it-works" className="underline">How It Works</Link>.</p>
     </div>
   );
 }

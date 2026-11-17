@@ -1,0 +1,33 @@
+-- Monthly feature and Max (AI assistant) usage per client, filled by the sync.
+CREATE TABLE "SyncClientMonth" (
+    "clientId" TEXT NOT NULL,
+    "month" TEXT NOT NULL,
+    "activeUsers" INTEGER NOT NULL DEFAULT 0,
+    "loggedInUsers" INTEGER NOT NULL DEFAULT 0,
+    "trainingUsers" INTEGER NOT NULL DEFAULT 0,
+    "learningSeconds" INTEGER NOT NULL DEFAULT 0,
+    "maxQueries" INTEGER NOT NULL DEFAULT 0,
+    "maxUsers" INTEGER NOT NULL DEFAULT 0,
+    "maxGrounded" INTEGER NOT NULL DEFAULT 0,
+    "maxRated" INTEGER NOT NULL DEFAULT 0,
+    "maxNegative" INTEGER NOT NULL DEFAULT 0,
+    "gameUsers" INTEGER NOT NULL DEFAULT 0,
+    "gamesPlayed" INTEGER NOT NULL DEFAULT 0,
+    "rewardUsers" INTEGER NOT NULL DEFAULT 0,
+    "recognitionsSent" INTEGER NOT NULL DEFAULT 0,
+    "recognitionUsers" INTEGER NOT NULL DEFAULT 0,
+    "broadcastsSent" INTEGER NOT NULL DEFAULT 0,
+    "commsReachUsers" INTEGER NOT NULL DEFAULT 0,
+    "commsResponseUsers" INTEGER NOT NULL DEFAULT 0,
+    "chatMessages" INTEGER NOT NULL DEFAULT 0,
+    "chatUsers" INTEGER NOT NULL DEFAULT 0,
+    "communityUsers" INTEGER NOT NULL DEFAULT 0,
+    "discoverUsers" INTEGER NOT NULL DEFAULT 0,
+    "tasksCompleted" INTEGER NOT NULL DEFAULT 0,
+    "taskUsers" INTEGER NOT NULL DEFAULT 0,
+    "formsSubmitted" INTEGER NOT NULL DEFAULT 0,
+    "formUsers" INTEGER NOT NULL DEFAULT 0,
+    "eventAttendees" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "SyncClientMonth_pkey" PRIMARY KEY ("clientId","month")
+);

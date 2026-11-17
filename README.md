@@ -2,7 +2,7 @@
 
 Internal Next.js app for customer-success teams: portfolio and client analytics from Axonify DataConnect (BigQuery), plus notes, tasks and alerts. Built for a small team (5–10 users) and a zero-cost setup: **Supabase** (Postgres + Auth, free tier) and one machine to run it.
 
-**Status:** live on Vercel against synced BigQuery data. Includes the portfolio and Client 360, the ten quarterly review pages, and the internal pages (Internal Home, My Accounts, Alerts and Watchlist, Renewals). Salesforce data (CSM, licences, renewals) comes from a static CSV imported in Settings; there is no live Salesforce connection. Sample accounts can be loaded and removed with one button. Unattended nightly sync is not in place yet: it needs Google Cloud admin access ([docs/DATA_REFRESH.md](docs/DATA_REFRESH.md)). Open items: [TASKLIST.md](TASKLIST.md).
+**Status:** live on Vercel against synced BigQuery data. Includes the portfolio and Client 360, the ten quarterly review pages, the Insights pages (Client Leaderboard, Account Health, Benchmarks and Features, Max AI Usage, CSM Portfolio, Cost to Serve), and the internal pages (Internal Home, My Accounts, Alerts and Watchlist, Renewals). Salesforce data (CSM, licences, renewals) comes from a static CSV imported in Settings; there is no live Salesforce connection. Sample accounts can be loaded and removed with one button. Unattended nightly sync is not in place yet: it needs Google Cloud admin access ([docs/DATA_REFRESH.md](docs/DATA_REFRESH.md)). Open items: [TASKLIST.md](TASKLIST.md).
 
 ## Documentation
 | File | For |

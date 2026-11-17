@@ -24,8 +24,12 @@ Each BigQuery query costs about a second or more and is billed by data scanned. 
 |---|---|---|
 | client dimension | client | id, name, industry, csm email/name, Axonify tenant ID, Salesforce Account ID |
 | client-period summary | client × calendar quarter | registeredUsers, activeUsers, trainingUsers, knowledgeLearners, avgKnowledge, retainedUsers, previousActiveUsers, sessions, featuresAvailable, featuresUsed |
+| client-month usage (`clientMonthly` query → `SyncClientMonth`) | client × calendar month, last 25 months | active, logged-in and training users, learning seconds, Max questions / askers / grounded / rated / negative, and users of games, rewards, recognition, broadcasts, chat, communities, Discover, tasks, forms, events |
 
 Team hierarchy, user lists and source coverage are **not** in the synced summaries yet, so those tabs show “unavailable” on the synced adapter (they work on mock data). Adding them means extra summary tables, sync tables and adapter methods.
+
+## Insights pages
+Client Leaderboard, Account Health, Benchmarks and Features, Max AI Usage, CSM Portfolio and Cost to Serve (`/insights/*`) read the quarterly rows, the monthly usage rows and the Salesforce overlay through `loadInsights` (`services/insights-context.ts`). Every figure comes from pure, unit-tested functions: `metrics/features.ts` (monthly shares, Max measures, feature counts, year-ago comparison) and `services/insights.ts` (one `ClientInsight` per client, leaderboard rankings, renewal risk, value status, usage drops). The monthly query is an add-on in the sync: if it fails, the rest of the refresh goes ahead, the previous monthly rows stay, and the run message says so. It also fills Features Used on the quarterly rows. `pages.test.ts` renders every Insights page against the mock data.
 
 ## Internal pages
 My Accounts, Alerts and Watchlist, Renewals and Internal Home read the synced client-period rows plus the Salesforce overlay, and `account-signals.ts` (open tasks, last note). All the decisions (health band, partial-period guard, Check Data, renewal windows, who is a CSM) are in `accounts.ts` and `metrics/` and are unit-tested. Sample rows are prefixed `MOCK-SF-` with `@sample.invalid` emails so they can be removed without touching real data.

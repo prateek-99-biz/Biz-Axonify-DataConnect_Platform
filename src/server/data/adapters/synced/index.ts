@@ -4,7 +4,7 @@
  */
 import { db } from "@/server/db";
 import { cached, SNAPSHOT_STALE_MS, SNAPSHOT_TTL_MS } from "@/server/cache";
-import type { AnalyticsPort, ClientPeriodRow, ClientSummary, Result } from "../../ports";
+import type { AnalyticsPort, ClientMonthRow, ClientPeriodRow, ClientSummary, Result } from "../../ports";
 import { applySalesforce, fromDb } from "../../salesforce-overlay";
 
 const unavailable = (reason: string): Result<never> => ({ status: "unavailable", reason, source: "synced" });
@@ -17,6 +17,7 @@ function lastSync(): Promise<Date | null> {
 }
 
 const NO_SYNC = "No data has been synced yet. An admin can press “Refresh data” once the BigQuery mapping is configured.";
+const NO_MONTHS = "Monthly feature and Max usage has not been synced yet. Apply the latest database migration (npm run db:deploy), then refresh the data.";
 
 export const syncedAnalytics: AnalyticsPort = {
   kind: "synced",
@@ -37,6 +38,20 @@ export const syncedAnalytics: AnalyticsPort = {
     const [at, rows] = await Promise.all([lastSync(), cached(`snap:periods:${clientIds ? [...clientIds].sort().join(",") : "*"}`, SNAPSHOT_TTL_MS, () => db.syncClientPeriod.findMany({ where: clientIds ? { clientId: { in: clientIds } } : undefined }), SNAPSHOT_STALE_MS)]);
     if (!at) return unavailable(NO_SYNC);
     return { status: "ok", data: rows as ClientPeriodRow[], source: "synced", asOf: at.toISOString() };
+  },
+
+  async getClientMonthRows(clientIds) {
+    const at = await lastSync();
+    if (!at) return unavailable(NO_SYNC);
+    try {
+      const rows = await cached(`snap:months:${clientIds ? [...clientIds].sort().join(",") : "*"}`, SNAPSHOT_TTL_MS,
+        () => db.syncClientMonth.findMany({ where: clientIds ? { clientId: { in: clientIds } } : undefined }), SNAPSHOT_STALE_MS);
+      if (rows.length === 0) return unavailable(NO_MONTHS);
+      return { status: "ok", data: rows as ClientMonthRow[], source: "synced", asOf: at.toISOString() };
+    } catch {
+      // The table arrives with migration 0007; until it is applied the feature pages explain instead of failing.
+      return unavailable(NO_MONTHS);
+    }
   },
 
   async getTeamTree() {

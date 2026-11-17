@@ -11,6 +11,8 @@ import { bqConfig, fetchDashboards } from "@/server/dashboard/bigquery/load";
 import type { DashboardData } from "@/server/dashboard/types";
 import { SECTION_NAMES, splitDashboard } from "@/server/dashboard/sections";
 import { carryKnowledge } from "./knowledge-history";
+import { featuresByQuarter } from "@/server/metrics/features";
+import type { ClientMonthRow } from "@/server/data/ports";
 
 const STALE_RUN_MS = 10 * 60_000;
 const COOLDOWN_MS = 60_000;
@@ -53,9 +55,37 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
       dashboards = res.data;
     }
 
+    // Monthly feature and Max usage is an add-on: if its query fails, the rest of the refresh still goes ahead and the
+    // previous monthly rows are kept, and the run message says so.
+    let months: ClientMonthRow[] | null = null;
+    let monthsNote = "";
+    try {
+      const m = await bigqueryAnalytics.getClientMonthRows();
+      if (m.status === "ok" && m.data.length > 0) months = m.data;
+      else monthsNote = `Feature and Max usage was not refreshed: ${m.status === "ok" ? "the query returned no rows" : m.reason}`;
+    } catch (e) {
+      monthsNote = `Feature and Max usage was not refreshed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    if (months) {
+      // The table comes with migration 0007. Without it, writing would fail the whole refresh.
+      try {
+        await db.syncClientMonth.count();
+      } catch {
+        months = null;
+        monthsNote = "Feature and Max usage was not saved: apply the latest database migration (npm run db:deploy).";
+      }
+    }
+
     // Knowledge only exists for the latest quarter in BigQuery. Keep what was recorded for quarters that have since ended.
     const saved = await db.syncClientPeriod.findMany({ where: { avgKnowledge: { not: null } }, select: { clientId: true, period: true, knowledgeLearners: true, avgKnowledge: true } });
-    const { rows: periodRows, carried } = carryKnowledge(rows.data, saved);
+    const carriedResult = carryKnowledge(rows.data, saved);
+    const { carried } = carriedResult;
+    // Features used per quarter come from the monthly rows (they were always 0 before them).
+    const featureCounts = months ? featuresByQuarter(months) : null;
+    const periodRows = carriedResult.rows.map((r) => {
+      const f = featureCounts?.get(`${r.clientId}|${r.period}`);
+      return f ? { ...r, featuresUsed: f.used, featuresAvailable: f.available } : r;
+    });
 
     let skipped = 0;
     await db.$transaction(async (tx) => {
@@ -63,6 +93,10 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
       await tx.syncClient.deleteMany();
       await tx.syncClient.createMany({ data: clients.data });
       await tx.syncClientPeriod.createMany({ data: periodRows });
+      if (months) {
+        await tx.syncClientMonth.deleteMany();
+        await tx.syncClientMonth.createMany({ data: months });
+      }
       if (dashboards) {
         // A tenant whose query returned nothing keeps its previous snapshot instead of being replaced by an empty one.
         const usable = [...dashboards].filter(([, d]) => d.months.length > 0);
@@ -89,6 +123,7 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
     const notes = [
       skipped ? `${skipped} client dashboard(s) had no data; their previous snapshot was kept.` : "",
       carried ? `Knowledge kept for ${carried} past client quarter(s).` : "",
+      monthsNote.slice(0, 200),
     ].filter(Boolean);
     await db.syncRun.update({ where: { id: run.id }, data: { status: "ok", finishedAt, clientCount: clients.data.length, rowCount: rows.data.length, message: notes.length ? notes.join(" ") : null } });
     return { ok: true, clients: clients.data.length, rows: rows.data.length, finishedAt: finishedAt.toISOString() };

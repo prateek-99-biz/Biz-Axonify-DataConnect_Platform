@@ -7,7 +7,7 @@ import type {
 import type { QueryName } from "./queries";
 
 export type Row = Record<string, unknown>;
-export type RowSet = Record<Exclude<QueryName, "clients" | "clientPeriod">, Row[]>;
+export type RowSet = Record<Exclude<QueryName, "clients" | "clientPeriod" | "clientMonthly">, Row[]>;
 
 /** BigQuery returns INT64/FLOAT64 as numbers (or wrappers with .value) and DATE/DATETIME as wrappers. */
 const raw = (v: unknown): unknown => (v && typeof v === "object" && "value" in (v as object) ? (v as { value: unknown }).value : v);

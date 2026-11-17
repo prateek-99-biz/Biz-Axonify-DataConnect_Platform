@@ -167,6 +167,42 @@ model SyncClientPeriod {
   @@id([clientId, period])
 }
 
+/// Monthly feature and Max (AI assistant) usage per client, filled by the sync from the `clientMonthly` query.
+/// User counts are distinct users within the month.
+model SyncClientMonth {
+  clientId           String
+  /// YYYY-MM
+  month              String
+  activeUsers        Int    @default(0)
+  loggedInUsers      Int    @default(0)
+  trainingUsers      Int    @default(0)
+  learningSeconds    Int    @default(0)
+  maxQueries         Int    @default(0)
+  maxUsers           Int    @default(0)
+  maxGrounded        Int    @default(0)
+  maxRated           Int    @default(0)
+  maxNegative        Int    @default(0)
+  gameUsers          Int    @default(0)
+  gamesPlayed        Int    @default(0)
+  rewardUsers        Int    @default(0)
+  recognitionsSent   Int    @default(0)
+  recognitionUsers   Int    @default(0)
+  broadcastsSent     Int    @default(0)
+  commsReachUsers    Int    @default(0)
+  commsResponseUsers Int    @default(0)
+  chatMessages       Int    @default(0)
+  chatUsers          Int    @default(0)
+  communityUsers     Int    @default(0)
+  discoverUsers      Int    @default(0)
+  tasksCompleted     Int    @default(0)
+  taskUsers          Int    @default(0)
+  formsSubmitted     Int    @default(0)
+  formUsers          Int    @default(0)
+  eventAttendees     Int    @default(0)
+
+  @@id([clientId, month])
+}
+
 /// One JSON snapshot of every dashboard dataset per client (filled by the sync, read by /qbr).
 model SyncDashboard {
   clientId String   @id

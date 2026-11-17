@@ -15,7 +15,13 @@ const PLAIN: Record<string, { plain: string; read: string }> = {
   avg_knowledge: { plain: "How well people currently score on the topics they have been given, averaged across everyone with a score.", read: "High knowledge with low participation means the few who train do well, not that the whole team is learning." },
   retention_rate: { plain: "Of last quarter's active people, the share who were active again this quarter.", read: "Low retention points to turnover or people dropping out of the programme." },
   engagement_rate: { plain: "The share of registered users whose account is live. Because live means a live account, it sits close to 100% for most clients.", read: "It says little on its own. Treat it as low-signal and rely on Participation." },
-  feature_adoption: { plain: "The share of Axonify features available to the client that were used.", read: "Not available from the data yet, so it is hidden wherever it has no value." },
+  feature_adoption: { plain: "How many of the 12 Axonify features the dashboard can see were used by anyone at the client.", read: "A low number points to features the client pays for but has not switched on. Benchmarks and Features shows which ones." },
+  login_engagement: { plain: "Of the people with a live account, the share who logged in during a typical month.", read: "The fairest single answer to who has the highest engagement. It is always at least as high as Participation, because people log in without training." },
+  max_adoption: { plain: "The share of a client's people who asked Max, Axonify's AI assistant, a question in a typical month.", read: "Shows how widely Max has been rolled out. Zero usually means Max is switched off or nobody has been shown it." },
+  max_per_100: { plain: "How many questions Max gets for every 100 people, in a typical month.", read: "Use it to compare AI use between clients of different sizes. Total questions favour the biggest clients." },
+  max_grounded: { plain: "How often Max answered using the client's own training content, not general knowledge.", read: "Low values suggest the client's content does not cover what people ask about: a content gap to raise." },
+  max_helpful: { plain: "Of the answers people rated, the share they did not mark as unhelpful.", read: "Only a minority of answers get rated, so read it as a warning light, not a satisfaction score." },
+  licence_use: { plain: "How many of the licences a client pays for are used by an active person in a typical month.", read: "Well under half before a renewal is the moment for an adoption plan. Over 100% means more active users than licences on file." },
   health_score: { plain: "One number from 0 to 100 that blends participation and knowledge equally.", read: "Use it to sort and spot trouble, then open the client to see which half moved." },
 };
 
@@ -23,6 +29,7 @@ const SECTIONS: { title: string; subtitle: string; keys: string[] }[] = [
   { title: "People", subtitle: "Who is on the books and who is using the platform", keys: ["registered_users", "active_users", "training_users"] },
   { title: "Learning", subtitle: "Whether training is happening and whether it sticks", keys: ["participation_rate", "avg_knowledge"] },
   { title: "Usage and Retention", subtitle: "How steady and broad the usage is", keys: ["retention_rate", "engagement_rate", "feature_adoption"] },
+  { title: "Features and Max AI", subtitle: "How widely the platform is used, used on the Insights pages and the Client Leaderboard", keys: ["login_engagement", "max_adoption", "max_per_100", "max_grounded", "max_helpful", "licence_use"] },
   { title: "Overall", subtitle: "The single score used to rank clients", keys: ["health_score"] },
 ];
 

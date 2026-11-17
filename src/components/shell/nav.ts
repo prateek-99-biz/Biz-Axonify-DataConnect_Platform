@@ -1,18 +1,24 @@
-import { BookOpen, Building2, GitCompareArrows, LayoutDashboard, LifeBuoy, Presentation, Settings, ShieldCheck, UsersRound, Compass, BellRing, CalendarClock, type LucideIcon } from "lucide-react";
+import { Bot, Coins, HeartPulse, Medal, Trophy, Contact, BookOpen, Building2, GitCompareArrows, LayoutDashboard, LifeBuoy, Presentation, Settings, ShieldCheck, UsersRound, Compass, BellRing, CalendarClock, type LucideIcon } from "lucide-react";
 import type { Permission } from "@/server/auth/rbac";
 
-export type NavGroup = "Analyse" | "Internal" | "Admin" | "Help";
+export type NavGroup = "Analyse" | "Insights" | "Internal" | "Admin" | "Help";
 
 export interface NavItem { href: string; label: string; icon: LucideIcon; perm: Permission; group: NavGroup; hint: string }
 
 /** Headings in the order they appear. Only routes that exist and work are listed; unbuilt phases are in docs/ROADMAP.md. */
-export const NAV_GROUPS: NavGroup[] = ["Analyse", "Internal", "Admin", "Help"];
+export const NAV_GROUPS: NavGroup[] = ["Analyse", "Insights", "Internal", "Admin", "Help"];
 
 export const NAV: NavItem[] = [
   { href: "/portfolio", label: "Portfolio", icon: LayoutDashboard, perm: "portfolio:read", group: "Analyse", hint: "All clients at a glance" },
   { href: "/clients", label: "Clients", icon: Building2, perm: "clients:read", group: "Analyse", hint: "Directory and client profiles" },
   { href: "/clients/compare", label: "Compare Clients", icon: GitCompareArrows, perm: "clients:read", group: "Analyse", hint: "Side by side, by quarter" },
   { href: "/qbr", label: "Client Dashboards", icon: Presentation, perm: "dashboard:read", group: "Analyse", hint: "Quarterly review pages" },
+  { href: "/insights/leaderboard", label: "Client Leaderboard", icon: Medal, perm: "dashboard:internal", group: "Insights", hint: "Who leads on AI, engagement and growth" },
+  { href: "/insights/health", label: "Account Health", icon: HeartPulse, perm: "dashboard:internal", group: "Insights", hint: "Every account's health and what drives it" },
+  { href: "/insights/benchmarks", label: "Benchmarks and Features", icon: Trophy, perm: "dashboard:internal", group: "Insights", hint: "A client against its peers, feature by feature" },
+  { href: "/insights/ai", label: "Max AI Usage", icon: Bot, perm: "dashboard:internal", group: "Insights", hint: "Who asks Max, how often, and how it answers" },
+  { href: "/insights/csm", label: "CSM Portfolio", icon: Contact, perm: "dashboard:internal", group: "Insights", hint: "Every CSM's book side by side" },
+  { href: "/insights/cost", label: "Cost to Serve", icon: Coins, perm: "commercial:read", group: "Insights", hint: "Contract value against usage and effort" },
   { href: "/internal", label: "Internal Home", icon: Compass, perm: "dashboard:internal", group: "Internal", hint: "Every internal page at a glance" },
   { href: "/csm", label: "My Accounts", icon: UsersRound, perm: "dashboard:internal", group: "Internal", hint: "A CSM's accounts and week" },
   { href: "/alerts", label: "Alerts and Watchlist", icon: BellRing, perm: "dashboard:internal", group: "Internal", hint: "Who needs a conversation" },

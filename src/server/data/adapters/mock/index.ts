@@ -3,7 +3,7 @@
  * Client names are fictional. Selected only when DATA_ADAPTER=mock (refused in production).
  */
 import type {
-  AnalyticsPort, ClientPeriodRow, ClientSummary, CrmPort, Result, SourceCoverageRow, TeamNode, UserRow, UserLifecycle,
+  AnalyticsPort, ClientMonthRow, ClientPeriodRow, ClientSummary, CrmPort, Result, SourceCoverageRow, TeamNode, UserRow, UserLifecycle,
 } from "../../ports";
 import { quarterRange } from "@/server/metrics/period";
 
@@ -100,6 +100,55 @@ function rowsFor(c: (typeof CLIENTS)[number]): ClientPeriodRow[] {
 }
 
 const ROWS = CLIENTS.flatMap(rowsFor);
+
+/** Monthly feature and Max usage, derived from each client's quarterly row so the two never disagree. Max appears from 2025. */
+function monthRowsFor(c: (typeof CLIENTS)[number]): ClientMonthRow[] {
+  const r = rng(`months-${c.id}`);
+  const p = c.profile;
+  // Some clients never switch Max on; the rest start at different months and take it up at different speeds.
+  const maxStart = r() < 0.2 ? null : 2025 * 12 + Math.floor(r() * 14);
+  const maxAppetite = 0.08 + r() * 0.4;
+  const featureMix = Array.from({ length: 10 }, () => (r() < 0.15 ? 0 : 0.05 + r() * 0.6));
+  const out: ClientMonthRow[] = [];
+  for (const q of ROWS.filter((x) => x.clientId === c.id)) {
+    const year = Number(q.period.slice(0, 4));
+    const quarter = Number(q.period.slice(6));
+    for (let k = 0; k < 3; k++) {
+      const mi = (quarter - 1) * 3 + k;
+      const month = `${year}-${String(mi + 1).padStart(2, "0")}`;
+      if (month > MOCK_AS_OF.slice(0, 7)) break;
+      const wobble = () => 0.9 + r() * 0.2;
+      const active = Math.round(q.activeUsers * wobble());
+      const loggedIn = Math.min(active, Math.round(active * Math.min(0.95, p.participation * 1.15) * wobble()));
+      const training = Math.min(loggedIn, Math.round(q.trainingUsers * wobble()));
+      const idx = year * 12 + mi;
+      const maxMonths = maxStart == null ? -1 : idx - maxStart;
+      const maxShare = maxMonths < 0 ? 0 : Math.min(0.85, maxAppetite * (1 - Math.exp(-(maxMonths + 1) / 5)));
+      const maxUsers = Math.round(loggedIn * maxShare * wobble());
+      const maxQueries = Math.round(maxUsers * (1.5 + r() * 4));
+      const rated = Math.round(maxQueries * (0.1 + r() * 0.15));
+      const share = (i: number) => Math.min(loggedIn, Math.round(loggedIn * featureMix[i] * wobble()));
+      const chatUsers = share(4);
+      const taskUsers = share(7);
+      const formUsers = share(8);
+      out.push({
+        clientId: c.id, month, activeUsers: active, loggedInUsers: loggedIn, trainingUsers: training,
+        learningSeconds: Math.round(training * (900 + r() * 2400)),
+        maxQueries, maxUsers, maxGrounded: Math.round(maxQueries * (0.55 + r() * 0.35)), maxRated: rated, maxNegative: Math.round(rated * (0.05 + r() * 0.25)),
+        gameUsers: share(0), gamesPlayed: share(0) * Math.round(2 + r() * 6), rewardUsers: share(1),
+        recognitionUsers: share(2), recognitionsSent: share(2) * Math.round(1 + r() * 3),
+        broadcastsSent: featureMix[3] === 0 ? 0 : Math.round(2 + r() * 12), commsReachUsers: featureMix[3] === 0 ? 0 : Math.round(active * (0.4 + r() * 0.5)),
+        commsResponseUsers: featureMix[3] === 0 ? 0 : Math.round(active * (0.1 + r() * 0.3)),
+        chatUsers, chatMessages: chatUsers * Math.round(3 + r() * 20), communityUsers: share(5), discoverUsers: share(6),
+        taskUsers, tasksCompleted: taskUsers * Math.round(1 + r() * 8), formUsers, formsSubmitted: formUsers * Math.round(1 + r() * 4),
+        eventAttendees: share(9),
+      });
+    }
+  }
+  return out;
+}
+
+const MONTH_ROWS = CLIENTS.flatMap(monthRowsFor);
 
 const ok = <T,>(data: T): Result<T> => ({ status: "ok", data, source: SOURCE, asOf: MOCK_AS_OF });
 
@@ -209,6 +258,10 @@ export const mockAnalytics: AnalyticsPort = {
   async getClientPeriodRows(clientIds) {
     const set = clientIds ? new Set(clientIds) : null;
     return ok(ROWS.filter((r) => !set || set.has(r.clientId)));
+  },
+  async getClientMonthRows(clientIds) {
+    const set = clientIds ? new Set(clientIds) : null;
+    return ok(MONTH_ROWS.filter((r) => !set || set.has(r.clientId)));
   },
   async getTeamTree(clientId, period) {
     return ok(teamTree(clientId, period));
