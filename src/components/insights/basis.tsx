@@ -62,7 +62,7 @@ export function BasisGapNotice({ gaps, names, basis }: { gaps: BasisGap[]; names
   if (gaps.length === 0) return null;
   return (
     <div role="note" className="glass !rounded-xl px-4 py-3 text-xs leading-relaxed text-slate-600">
-      <p className="font-semibold text-slate-700 dark:text-slate-200">
+      <p className="font-semibold">
         {gaps.length === 1 ? "One client has" : `${gaps.length} clients have`} many people who are not in a training program yet
         {basis === "all" ? ", which pulls their All Users figures down:" : ". These figures leave them out:"}
       </p>
