@@ -31,10 +31,11 @@ export function RefreshButton({ asOf }: { asOf: string | null }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       {msg && <span role="status" className={`hidden max-w-[16rem] truncate text-xs lg:inline ${msg.ok ? "text-brand-ink" : "text-critical"}`} title={msg.text}>{msg.text}</span>}
       <Button size="sm" onClick={run} disabled={busy} title={asOf ? `Last synced ${asOf.slice(0, 16).replace("T", " ")} UTC` : "Not synced yet"}>
-        <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden /> {busy ? "Refreshing…" : "Refresh Data"}
+        {/* Just the icon where the header is tight: on a phone, and on a tablet where the side menu takes 16rem. */}
+        <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden /><span className="sr-only sm:not-sr-only md:sr-only lg:not-sr-only">{busy ? "Refreshing…" : "Refresh Data"}</span>
       </Button>
     </div>
   );

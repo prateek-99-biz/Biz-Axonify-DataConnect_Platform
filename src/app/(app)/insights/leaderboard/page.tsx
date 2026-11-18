@@ -91,8 +91,9 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       <section aria-label="Category winners" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {boards.map(({ m, ranked }) => (
           <Card key={m.key} className="flex flex-col p-5">
-            <div className="flex items-start justify-between gap-2">
-              <div>
+            {/* Wraps so a long title ("Most Communications Use" in a narrow card) moves the tag down rather than out of the card. */}
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
                 <p className="text-[15px] font-semibold">{m.label}</p>
                 <p className="mt-0.5 text-xs text-slate-500">{m.question}</p>
               </div>
@@ -141,7 +142,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
           ))}
         </div>
         {(excluded.length > 0 || chosen.ranked.length < candidates.length) && (
-          <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
+          <p className="border-t hairline py-3 pl-5 pr-[max(1.25rem,calc(100%_-_120ch))] text-xs text-slate-500">
             {excluded.length > 0 && `Not ranked because they average fewer than ${MIN_RANKED_USERS} active users a month, or had fewer than ${MIN_RANKED_USERS} by the end of ${label}: ${excluded.map((c) => c.client.name).join(", ")}. `}
             {candidates.length - chosen.ranked.length - excluded.length > 0 && `${candidates.length - chosen.ranked.length - excluded.length} client${candidates.length - chosen.ranked.length - excluded.length === 1 ? " has" : "s have"} no value for this measure in ${label}.`}
           </p>
@@ -178,7 +179,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             { key: "client", header: "Client" }, { key: "users", header: "Active Users", align: "right", hint: "Average active users per month" },
             ...boards.map((b) => ({ key: b.m.key, header: b.m.label, align: "right" as const, hint: b.m.how })),
           ]} />
-        <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
+        <p className="border-t hairline py-3 pl-5 pr-[max(1.25rem,calc(100%_-_120ch))] text-xs text-slate-500">
           Rates and growth leave out clients averaging fewer than {MIN_RANKED_USERS} active users a month, and clients that had dropped below {MIN_RANKED_USERS} by the end of the period, so a very small or dormant client cannot top a ranking. Growth and Participation Gain also need {MIN_RANKED_USERS} or more people logging in a month a year earlier, so a launch does not count as growth. Widest Feature Use counts {FEATURES.length} features: {FEATURES.map((f) => f.label).join(", ")}.
         </p>
       </Card>

@@ -71,7 +71,9 @@ export function Sidebar({ allowed }: { allowed: Permission[] }) {
                             <n.icon className="h-4 w-4" aria-hidden />
                           </span>
                           <span className={cn("min-w-0 leading-tight", reveal)}>
-                            <span className="block truncate">{n.label}</span>
+                            {/* A page name wraps rather than being cut ("Benchmarks and Featur…" when bold). The folded
+                                rail keeps it to one line, or the narrow rail would stack it a word per line. */}
+                            <span className={cn("block", collapsed ? "truncate" : "whitespace-normal")}>{n.label}</span>
                             <span className={cn("block truncate text-[11px] font-normal", active ? "text-navy/70" : "text-slate-500")}>{n.hint}</span>
                           </span>
                         </Link>

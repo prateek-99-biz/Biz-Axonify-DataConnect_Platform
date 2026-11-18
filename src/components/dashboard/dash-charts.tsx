@@ -121,6 +121,21 @@ export function ProgressStack({ data, labelKey = "label", height, percent = fals
   );
 }
 
+/**
+ * A slice's share beside the ring, held inside the chart: on a phone the ring nearly fills the width, and a label
+ * placed at the usual spot to its left or right ran off the edge ("00.0%" for a single 100% slice).
+ */
+function PieShareLabel(p: { x?: number; y?: number; cx?: number; percent?: number; textAnchor?: string; fill?: string }) {
+  const share = p.percent ?? 0;
+  if (share < 0.04) return null;
+  const text = `${(share * 100).toFixed(1)}%`;
+  const w = text.length * 7 + 4;
+  const right = 2 * (p.cx ?? 0);
+  const anchor = p.textAnchor === "end" ? "end" : p.textAnchor === "start" ? "start" : "middle";
+  const x = anchor === "end" ? Math.max(p.x ?? 0, w) : anchor === "start" ? Math.min(p.x ?? 0, right - w) : (p.x ?? 0);
+  return <text x={x} y={p.y} textAnchor={anchor} dominantBaseline="central" fill={p.fill} fontSize={12}>{text}</text>;
+}
+
 export function Donut({ data, height = 260 }: { data: { name: string; value: number }[]; height?: number }) {
   const t = useChartTheme();
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
@@ -130,8 +145,8 @@ export function Donut({ data, height = 260 }: { data: { name: string; value: num
       <PieChart>
         <Tooltip formatter={(v, n) => [`${new Intl.NumberFormat("en-US").format(Number(v))} (${((Number(v) / total) * 100).toFixed(1)}%)`, n]} contentStyle={t.tooltip} itemStyle={{ color: t.tooltip.color }} />
         <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} formatter={(v) => <span style={{ color: t.tick }}>{v}</span>} />
-        <Pie isAnimationActive={false} data={data} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="86%" paddingAngle={2} stroke="none"
-          label={({ percent }) => ((percent ?? 0) >= 0.04 ? `${((percent ?? 0) * 100).toFixed(1)}%` : "")} labelLine={false}>
+        <Pie isAnimationActive={false} data={data} dataKey="value" nameKey="name" innerRadius="52%" outerRadius="76%" paddingAngle={2} stroke="none"
+          label={PieShareLabel} labelLine={false}>
           {data.map((d, i) => <Cell key={d.name} fill={palette[i % palette.length]} />)}
         </Pie>
       </PieChart>

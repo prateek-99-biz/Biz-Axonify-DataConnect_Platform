@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Text, Tooltip, XAxis, YAxis } from "recharts";
 import { useIsDark } from "@/components/shell/theme-toggle";
 import { fmtAxisPct } from "@/lib/utils";
 
@@ -102,17 +102,63 @@ export function TrendChart({
 /** Dashed guide lines at fixed values, such as the Health band thresholds, so a bar's meaning shows without a legend lookup. */
 export interface RefLine { y: number; label: string }
 
+/** Average width of an 11-pixel character, for estimating how much room category labels need. */
+const CHAR_W = 6.2;
+/** A tilted label longer than this is shortened; the tooltip still names the bar in full. */
+const MAX_TILT_CHARS = 18;
+
+interface CategoryLayout { tilt: boolean; slot: number; height: number }
+
+/** Lines a label needs when wrapped at word breaks into `width` pixels. */
+function lineCount(label: string, width: number): number {
+  let lines = 1, used = 0;
+  for (const word of label.split(/\s+/).filter(Boolean)) {
+    const w = word.length * CHAR_W;
+    if (used > 0 && used + CHAR_W + w > width) { lines += 1; used = w; } else used += (used > 0 ? CHAR_W : 0) + w;
+  }
+  return lines;
+}
+
+/**
+ * How to write the category names under a bar chart in the room each group of bars has. They wrap onto up to three
+ * lines when every word fits its slot, and are tilted when one does not (a phone, or many clients side by side), so
+ * neighbouring names never run into each other. The axis is made tall enough for either.
+ */
+export function categoryLayout(labels: string[], plotWidth: number): CategoryLayout {
+  if (plotWidth <= 0 || labels.length === 0) return { tilt: false, slot: Infinity, height: 30 };
+  const slot = plotWidth / labels.length;
+  const room = slot - 6;
+  const longestWord = Math.max(...labels.flatMap((l) => l.split(/\s+/)).map((w) => w.length)) * CHAR_W;
+  if (longestWord <= room) return { tilt: false, slot, height: 14 + Math.min(3, Math.max(...labels.map((l) => lineCount(l, room)))) * 13 };
+  const longest = Math.min(MAX_TILT_CHARS, Math.max(...labels.map((l) => l.length))) * CHAR_W;
+  return { tilt: true, slot, height: Math.ceil(longest * Math.SQRT1_2) + 20 };
+}
+
+function CategoryTick({ x, y, payload, layout, fill }: { x?: number | string; y?: number | string; payload?: { value?: unknown }; layout: CategoryLayout; fill: string }) {
+  const label = String(payload?.value ?? "");
+  const px = Number(x ?? 0), py = Number(y ?? 0) + 4;
+  if (!layout.tilt) {
+    return <Text x={px} y={py} width={Number.isFinite(layout.slot) ? layout.slot - 6 : undefined} maxLines={3} textAnchor="middle" verticalAnchor="start" fontSize={11} fill={fill}>{label}</Text>;
+  }
+  const short = label.length > MAX_TILT_CHARS ? `${label.slice(0, MAX_TILT_CHARS - 1)}…` : label;
+  return <Text x={px} y={py} angle={-45} textAnchor="end" verticalAnchor="middle" fontSize={11} fill={fill}>{short}</Text>;
+}
+
 export function CompareBars({
   data, series, xKey, format = "pct", height = 260, refLines, entities,
 }: { data: Record<string, number | string | null>[]; series: SeriesDef[]; xKey: string; format?: "pct" | "number"; height?: number; refLines?: RefLine[]; entities?: boolean }) {
   const t = useChartTheme(entities);
   const f = (v: number) => (format === "pct" ? pctFmt(v) : new Intl.NumberFormat("en-US").format(v));
+  const [width, setWidth] = useState(0);
+  const right = refLines ? 76 : 12;
+  const layout = categoryLayout(data.map((d) => String(d[xKey] ?? "")), width - 44 - right);
   return (
-    <ChartFrame height={height} label={`Comparison of ${series.map((s) => s.label).join(", ")} by ${xKey}`}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: refLines ? 76 : 12, bottom: 0, left: 0 }} barGap={4}>
+    // Tilted or wrapped names take height from the bars, so the frame grows by what the axis needs beyond one line.
+    <ChartFrame height={height + Math.max(0, layout.height - 30)} label={`Comparison of ${series.map((s) => s.label).join(", ")} by ${xKey}`}>
+      <ResponsiveContainer width="100%" height="100%" onResize={(w) => setWidth(w)}>
+        <BarChart data={data} margin={{ top: 8, right, bottom: 0, left: 0 }} barGap={4}>
           <CartesianGrid stroke={t.grid} vertical={false} />
-          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} interval={0} dy={6} />
+          <XAxis dataKey={xKey} tick={(p: object) => <CategoryTick {...p} layout={layout} fill={t.tick} />} height={layout.height} tickLine={false} axisLine={false} interval={0} />
           <YAxis tick={{ fontSize: 11, fill: t.tick }} tickLine={false} axisLine={false} tickFormatter={f} width={44} domain={refLines ? [0, 100] : undefined} />
           <Tooltip formatter={(v) => f(Number(v))} contentStyle={t.tooltip} labelStyle={{ color: t.tooltip.color, fontWeight: 600 }} itemStyle={{ color: t.tooltip.color }} cursor={{ fill: t.cursor }} />
           {refLines?.map((r) => (

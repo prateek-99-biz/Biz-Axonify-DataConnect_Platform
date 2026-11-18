@@ -81,7 +81,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   );
 
   const tabs = (
-    <nav aria-label="Client sections" className="glass inline-flex max-w-full gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none]">
+    <nav aria-label="Client sections" className="glass inline-flex max-w-full flex-wrap gap-1 !rounded-2xl p-1">
       {visibleTabs.map(([k, label]) => (
         <Link key={k} href={qs(k)} aria-current={tab === k ? "page" : undefined}
           className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm transition-all", tab === k ? "bg-brand font-semibold text-navy shadow-[0_6px_18px_-8px_rgb(var(--brand)/0.9)]" : "text-slate-600 hover:bg-slate-100 hover:text-ink")}>{label}</Link>
@@ -117,7 +117,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           dataCheck: lowActivity(m) ? { active: m.activeUsers, registered: m.registeredUsers } : null,
           renewalDate: client.commercial?.renewalDate ?? null, today: new Date().toISOString().slice(0, 10),
         })} />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <KpiCard label="Registered Users" unit="pct" value={fmtNumber(m.registeredUsers)} vsPrev={delta(m.registeredUsers, mPrev.registeredUsers)} vsYear={delta(m.registeredUsers, mYa.registeredUsers)} />
           <KpiCard label="Participation" accent="green" value={fmtPct(m.participationRate)} vsPrev={delta(m.participationRate, mPrev.participationRate)} vsYear={delta(m.participationRate, mYa.participationRate)} />
           <KpiCard label="Knowledge" accent="purple" value={fmtPct(m.avgKnowledge)} vsPrev={delta(m.avgKnowledge, mPrev.avgKnowledge)} vsYear={delta(m.avgKnowledge, mYa.avgKnowledge)} />

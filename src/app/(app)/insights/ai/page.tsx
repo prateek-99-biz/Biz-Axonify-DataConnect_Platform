@@ -122,7 +122,7 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
             { key: "grounded", header: "From Client Content", align: "right", hint: "Answers that cited a page, topic, module or file from the client's Axonify" },
             { key: "helpful", header: "Rated Helpful", align: "right", hint: "Rated answers not marked unhelpful" },
           ]} />
-        <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
+        <p className="border-t hairline py-3 pl-5 pr-[max(1.25rem,calc(100%_-_120ch))] text-xs text-slate-500">
           Max data comes from the DataConnect views max_user_query and max_response_sources. Question text is never copied into this platform. <Link href="/metrics" className="underline">What the metrics mean</Link>.
         </p>
       </Card>

@@ -69,7 +69,10 @@ export function QbrShell(p: QbrShellProps) {
   const asOf = p.asOf ? new Date(p.asOf).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : null;
 
   return (
-    <div className="flex h-screen gap-3 overflow-hidden p-3">
+    // With the side menu (lg up) the frame fills the screen and only the page scrolls. Below that the client, date and
+    // page pickers would take a third of a phone screen, so the whole page scrolls instead. Past 1920 pixels the frame
+    // stops growing and sits in the middle of the screen.
+    <div className="mx-auto flex min-h-screen w-full max-w-[1920px] gap-3 p-3 lg:h-screen lg:overflow-hidden">
       {/* The rail keeps a fixed 4.5rem slot; the panel grows over the page on hover or keyboard focus. */}
       <div className={cn("relative z-30 hidden shrink-0 transition-[width] duration-300 lg:block", collapsed ? "w-[4.5rem]" : "w-64")}>
       <aside className={cn("glass-nav group/side absolute inset-y-0 left-0 flex flex-col overflow-hidden whitespace-nowrap transition-[width] duration-300", collapsed ? "w-[4.5rem] hover:w-64 has-[:focus-visible]:w-64" : "w-full")} aria-label="Dashboard Pages">
@@ -93,7 +96,8 @@ export function QbrShell(p: QbrShellProps) {
                 <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", active ? "bg-white/35" : "bg-brand/10 text-brand-ink group-hover:bg-brand/20")}>
                   <n.icon className="h-4 w-4" aria-hidden />
                 </span>
-                <span className={cn("truncate", reveal)}>{n.label}</span>
+                {/* Wraps when the menu is open ("Knowledge & Confidence Matrix"); the folded rail keeps one line. */}
+                <span className={cn(collapsed ? "truncate" : "min-w-0 whitespace-normal leading-tight", reveal)}>{n.label}</span>
               </Link>
             );
           })}
@@ -187,7 +191,7 @@ export function QbrShell(p: QbrShellProps) {
           )}
         </nav>
 
-        <main className="-mx-1 flex-1 overflow-y-auto px-1 pb-4">{p.children}</main>
+        <main className="-mx-1 flex-1 px-1 pb-4 lg:overflow-y-auto">{p.children}</main>
         {asOf && <p className="shrink-0 text-center text-xs text-slate-500">Data updated {asOf} · Source: Axonify DataConnect (BigQuery)</p>}
       </div>
     </div>

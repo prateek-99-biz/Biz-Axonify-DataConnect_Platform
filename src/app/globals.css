@@ -127,9 +127,18 @@
   *:focus-visible { @apply outline-2 outline-offset-2 outline-brand; }
   ::selection { background: rgb(var(--brand) / 0.35); }
   * { scrollbar-width: thin; scrollbar-color: rgb(var(--slate-300)) transparent; }
+  /* Lines longer than about 120 characters are hard to follow, and on a wide screen a note would otherwise run the
+     whole width of its card. Paragraphs laid out as a row, centred, right-aligned, cut to one line or drawing a border
+     keep their full width. :where keeps this weaker than any max-w-* utility. */
+  main :where(p:not(.flex, .inline-flex, .text-center, .text-right, .truncate, [class*="border"])) { max-width: 120ch; }
 }
 
 @layer components {
+  /* A grid with no column count yet (most grids on a phone) gets one column that is allowed to shrink. Without this,
+     one long line of text or a chart sets the column's width and pushes the page wider than the screen. Any
+     grid-cols-* utility overrides it, because utilities come after components. */
+  .grid { grid-template-columns: minmax(0, 1fr); }
+
   .glass {
     @apply rounded-2xl border shadow-glass;
     background-color: rgb(var(--glass) / var(--glass-alpha));

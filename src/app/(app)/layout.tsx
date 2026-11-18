@@ -44,13 +44,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen gap-3 overflow-hidden p-3">
+    // From md up the frame fills the screen and only the page body scrolls. On a phone that left a third of the screen
+    // to the header, menu and filters, so there the whole page scrolls and only the slim header stays in view.
+    // Past 1920 pixels the frame stops growing and sits in the middle, so rows and cards do not stretch across an
+    // ultrawide screen with their labels and numbers far apart.
+    <div className="mx-auto flex min-h-screen w-full max-w-[1920px] gap-3 p-3 md:h-screen md:overflow-hidden">
       <Suspense fallback={<aside className="glass-nav hidden w-64 md:block" />}>
         <Sidebar allowed={allowed} />
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <header className="glass relative z-20 flex h-14 shrink-0 items-center gap-3 px-4">
-          <div className="hidden min-w-0 flex-1 overflow-hidden whitespace-nowrap lg:block"><Breadcrumbs /></div>
+        <header className="glass relative z-20 flex h-14 shrink-0 items-center gap-2 px-3 max-md:sticky max-md:top-3 sm:gap-3 sm:px-4">
+          {/* The breadcrumb shows from xl up: between 1024 and 1280 pixels there is no room for it beside the search,
+              so the slot stays empty and only keeps the buttons at the right-hand end. */}
+          <div className="hidden min-w-0 flex-1 overflow-hidden whitespace-nowrap lg:block"><div className="hidden xl:block"><Breadcrumbs /></div></div>
           <GlobalSearch />
           {loaded.ok && loaded.ctx.source === "mock" && (
             <Badge tone="warn" className="shrink-0" title="All figures are synthetic development data">MOCK DATA</Badge>
@@ -82,7 +88,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Suspense>
         )}
         {loaded.ok && <StaleDataBanner asOf={loaded.ctx.asOf} isAdmin={can(user.role, "sync:run")} />}
-        <main className="-mx-1 flex-1 overflow-y-auto px-1 pb-6">{children}</main>
+        <main className="-mx-1 flex-1 px-1 pb-6 md:overflow-y-auto">{children}</main>
       </div>
     </div>
   );

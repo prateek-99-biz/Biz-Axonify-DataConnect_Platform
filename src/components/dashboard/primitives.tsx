@@ -45,12 +45,14 @@ export function ScopeTag({ scope, label }: { scope: Scope; label?: string }) {
 
 export function KpiTile({ label, value, hint, scope, scopeLabel, metric }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string; metric?: KpiMetric }) {
   return (
-    <Card className={cn("relative py-4 pl-6 pr-4", metric && "cursor-help")} title={metric ? KPI_DEFS[metric] : hint}>
+    <Card className={cn("relative flex flex-col py-4 pl-6 pr-4", metric && "cursor-help")} title={metric ? KPI_DEFS[metric] : hint}>
       <span aria-hidden className={cn("absolute bottom-4 left-3 top-4 w-1 rounded-full bg-gradient-to-b", ACCENT[accentForKpi(metric)].bar)} />
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">{value}</p>
-      {hint && <p className="mt-0.5 truncate text-[11px] text-slate-400">{hint}</p>}
-      {scope && <div className="mt-2"><ScopeTag scope={scope} label={scopeLabel} /></div>}
+      {/* The hint wraps rather than being cut off in a narrow tile, and the tag sits at the bottom, so the tags in a
+          row line up whatever the hint's length. */}
+      {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
+      {scope && <div className="mt-auto pt-2"><ScopeTag scope={scope} label={scopeLabel} /></div>}
     </Card>
   );
 }
@@ -72,7 +74,8 @@ export function BodySkeleton() {
 
 export function KpiStrip({ children, cols = 5 }: { children: ReactNode; cols?: 3 | 4 | 5 | 6 | 8 }) {
   const map = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5", 6: "lg:grid-cols-6", 8: "lg:grid-cols-4 xl:grid-cols-8" } as const;
-  return <section className={cn("grid gap-4 sm:grid-cols-2", map[cols])}>{children}</section>;
+  // Two to a row even on a phone, so five tiles are three rows rather than five full-height ones.
+  return <section className={cn("grid grid-cols-2 gap-3 sm:gap-4", map[cols])}>{children}</section>;
 }
 
 /** In-cell bar for tables (value 0-1). */

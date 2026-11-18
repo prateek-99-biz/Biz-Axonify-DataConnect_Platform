@@ -63,9 +63,10 @@ export function GlobalSearch() {
   }, [q]);
 
   return (
-    <div ref={ref} className="relative w-full max-w-sm">
+    // Narrower on laptop screens, so the breadcrumb beside it has room for the full page name.
+    <div ref={ref} className="relative w-full max-w-sm xl:max-w-[16rem] 2xl:max-w-sm">
       <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
-      <Input aria-label="Search clients" placeholder="Search clients…" className="rounded-full pl-9" value={q} onChange={(e) => setQ(e.target.value)} onFocus={() => hits.length && setOpen(true)} />
+      <Input aria-label="Search clients" placeholder="Search clients…" className="rounded-full pl-9 text-ellipsis" value={q} onChange={(e) => setQ(e.target.value)} onFocus={() => hits.length && setOpen(true)} />
       {open && (
         <ul className="glass-strong absolute z-30 mt-2 w-full overflow-hidden p-1" role="listbox">
           {hits.length === 0 && <li className="px-3 py-2 text-xs text-slate-500">No clients match “{q}”.</li>}

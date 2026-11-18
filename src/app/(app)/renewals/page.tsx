@@ -81,7 +81,7 @@ export default async function RenewalsPage({ searchParams }: { searchParams: Pro
       {header}
       <SampleNotice count={sample} canRemove={isAdmin} />
 
-      <nav aria-label="Renewal window" className="glass inline-flex max-w-full gap-1 overflow-x-auto !rounded-full p-1 [scrollbar-width:none]">
+      <nav aria-label="Renewal window" className="glass inline-flex max-w-full flex-wrap gap-1 !rounded-2xl p-1">
         {WINDOWS.map((w) => (
           <Link key={w.key} href={`/renewals?window=${w.key}&period=${period}`} aria-current={w.key === win.key ? "page" : undefined}
             className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm transition-all", w.key === win.key ? "bg-brand font-semibold text-navy" : "text-slate-600 hover:bg-slate-100 hover:text-ink")}>{w.label}</Link>

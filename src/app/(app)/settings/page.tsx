@@ -225,7 +225,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <li key={u.id}>
               <form action={setRole} className="flex flex-wrap items-center gap-3 px-4 py-2">
                 <input type="hidden" name="id" value={u.id} />
-                <span className="min-w-0 flex-1 truncate">{u.name ?? u.email}<span className="ml-2 text-xs text-slate-500">{u.email}{u.id === me.id ? " (you)" : ""}</span>{!u.lastLogin && <Badge tone="warn" className="ml-2">Invited</Badge>}</span>
+                <span className="min-w-0 flex-1 basis-48 [overflow-wrap:anywhere]">{u.name ?? u.email}<span className="ml-2 text-xs text-slate-500">{u.email}{u.id === me.id ? " (you)" : ""}</span>{!u.lastLogin && <Badge tone="warn" className="ml-2">Invited</Badge>}</span>
                 <Select name="role" defaultValue={u.role} aria-label={`Role for ${u.email}`}>{(Object.keys(ROLE_LABEL) as (keyof typeof ROLE_LABEL)[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</Select>
                 <Select name="clientId" defaultValue={u.clientId ?? ""} aria-label={`Client for ${u.email} (Client role only)`} className="max-w-[12rem]">
                   <option value="">No client</option>

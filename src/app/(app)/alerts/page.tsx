@@ -104,7 +104,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
               { key: "knowledge", header: "Knowledge", align: "right" }, { key: "streak", header: "Declining For", align: "right" }, { key: "action", header: "Suggested Action" },
             ]} rows={rows} />
         )}
-        <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
+        <p className="border-t hairline py-3 pl-5 pr-[max(1.25rem,calc(100%_-_120ch))] text-xs text-slate-500">
           <span className={cn("font-medium text-ink")}>Escalate</span> for Critical accounts, <span className="font-medium text-ink">Review</span> for At Risk accounts or two quarters of decline, <span className="font-medium text-ink">Monitor</span> otherwise.
           {" "}Accounts in the Critical or At Risk bands are marked <RiskBadge risk="critical" /> or <RiskBadge risk="at_risk" /> on their client page.
         </p>

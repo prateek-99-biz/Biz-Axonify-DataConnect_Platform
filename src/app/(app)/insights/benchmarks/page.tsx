@@ -107,7 +107,7 @@ export default async function BenchmarksPage({ searchParams }: { searchParams: P
       <Card>
         <CardHeader title="Client vs Peers" subtitle={sameIndustry.length ? `${focus.client.name}, other ${industry} clients and all other Biz Group clients` : `${focus.client.name} against all other Biz Group clients`} />
         <div className="p-4"><CompareBars entities data={chart} xKey="measure" series={groups.map((g) => ({ key: g.key, label: g.label }))} height={300} /></div>
-        <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
+        <p className="border-t hairline py-3 pl-5 pr-[max(1.25rem,calc(100%_-_120ch))] text-xs text-slate-500">
           An Axonify-wide industry benchmark is not in DataConnect, which holds Biz Group clients only. To compare divisions inside this client, open its <Link href={`/qbr/teams?client=${focus.client.id}`} className="underline">Team Performance</Link> dashboard.
         </p>
       </Card>

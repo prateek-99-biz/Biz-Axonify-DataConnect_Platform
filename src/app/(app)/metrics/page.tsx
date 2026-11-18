@@ -125,7 +125,7 @@ export default async function MetricsPage() {
             </li>
           ))}
         </ul>
-        <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
+        <p className="border-t hairline py-3 pl-5 pr-[max(1.25rem,calc(100%_-_120ch))] text-xs text-slate-500">
           <strong>Approved</strong> means the definition matches Biz Group&rsquo;s Power BI report. <strong>Provisional</strong> means it is in use but not yet signed off.
         </p>
       </Card>
