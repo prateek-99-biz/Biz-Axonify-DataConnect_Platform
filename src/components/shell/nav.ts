@@ -35,3 +35,27 @@ export function activeHref(path: string): string | null {
   return hits.sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
 }
 
+
+/**
+ * Permissions the app shell checks to decide what the menu shows. Every menu item's permission is included, so a new page
+ * (Cost to Serve needs commercial:read) can never be left out of the menu by a list nobody updated.
+ */
+export const SHELL_PERMISSIONS: Permission[] = [...new Set<Permission>([
+  "dashboard:read", "dashboard:internal", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run",
+  ...NAV.map((n) => n.perm),
+])];
+
+const CRUMB_LABELS: Record<string, string> = {
+  portfolio: "Portfolio", clients: "Clients", csm: "My Accounts", internal: "Internal Home", alerts: "Alerts and Watchlist", renewals: "Renewals",
+  metrics: "What the Metrics Mean", "how-it-works": "How It Works", "data-reliability": "Data Reliability", settings: "Settings", compare: "Compare Clients", insights: "Insights",
+};
+
+/** Breadcrumb trail for a path. The menu label for the full path wins, so /insights/csm reads "CSM Portfolio", not the label for /csm. */
+export function breadcrumbs(path: string): { href: string; label: string }[] {
+  const parts = path.split("/").filter(Boolean);
+  return parts.map((p, i) => {
+    const href = "/" + parts.slice(0, i + 1).join("/");
+    const label = NAV.find((n) => n.href === href)?.label ?? CRUMB_LABELS[p] ?? (i === 1 && parts[0] === "clients" ? "Client 360" : p);
+    return { href, label };
+  });
+}

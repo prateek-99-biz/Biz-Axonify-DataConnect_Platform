@@ -3,6 +3,7 @@
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useIsDark } from "@/components/shell/theme-toggle";
+import { fmtAxisPct } from "@/lib/utils";
 
 /** Axonify green leads, then Biz Group purple and orange from the logo. The dark set is lifted so every series keeps >= 3:1 contrast against the dark glass. */
 export const PALETTE = {
@@ -21,8 +22,7 @@ const NAVY = "#1D2B43";
 
 export interface SeriesDef { key: string; label: string; color?: string }
 
-// Small shares keep decimals so axis labels neither repeat (0.5% and 0.7% both "1%") nor round a tick off (0.25% read "0.3%").
-const pctFmt = (v: number) => `${(v * 100).toFixed(v === 0 ? 0 : Math.abs(v) < 0.01 ? 2 : Math.abs(v) < 0.1 ? 1 : 0)}%`;
+const pctFmt = fmtAxisPct;
 
 export function useChartTheme(entities = false) {
   const dark = useIsDark();

@@ -27,3 +27,8 @@ export function fmtPct(n: number | null | undefined, digits = 1) {
 export function fmtHealth(score: number | null | undefined): string {
   return score == null || Number.isNaN(score) ? "—" : String(Math.floor(score));
 }
+
+/** Percent for chart axes and tooltips: whole numbers, with decimals kept for small shares so ticks neither repeat (0.5% and 0.7% both "1%") nor round off (0.25% read "0.3%"). */
+export function fmtAxisPct(v: number): string {
+  return `${(v * 100).toFixed(v === 0 ? 0 : Math.abs(v) < 0.01 ? 2 : Math.abs(v) < 0.1 ? 1 : 0)}%`;
+}

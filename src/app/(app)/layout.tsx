@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LifeBuoy } from "lucide-react";
 import { auth, signOut } from "@/server/auth";
-import { can, ROLE_LABEL, type Permission } from "@/server/auth/rbac";
+import { can, ROLE_LABEL } from "@/server/auth/rbac";
 import { ackedAlertKeys } from "@/server/services/alert-acks";
 import { loadContext } from "@/server/services/context";
 import { buildPortfolio, deriveAlerts } from "@/server/services/portfolio";
@@ -15,17 +15,14 @@ import { Badge } from "@/components/ui/primitives";
 import { RefreshButton } from "@/components/shell/refresh-button";
 import { StaleDataBanner } from "@/components/shell/stale-banner";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
-import { NAV } from "@/components/shell/nav";
-
-// Every permission a menu item needs is included, so a new page (Cost to Serve needs commercial:read) is never left out of the menu.
-const ALL_PERMS: Permission[] = [...new Set<Permission>(["dashboard:read", "dashboard:internal", "portfolio:read", "clients:read", "reliability:read", "settings:manage", "clients:notes:write", "sync:run", ...NAV.map((n) => n.perm)])];
+import { SHELL_PERMISSIONS } from "@/components/shell/nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/signin");
   const user = session.user;
   if (user.role === "CLIENT") redirect("/qbr");
-  const allowed = ALL_PERMS.filter((p) => can(user.role, p));
+  const allowed = SHELL_PERMISSIONS.filter((p) => can(user.role, p));
 
   // Independent queries: start both so the layout waits for one round trip, not two.
   const [loaded, ackRows] = await Promise.all([

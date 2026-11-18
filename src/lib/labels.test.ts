@@ -25,6 +25,11 @@ describe("titleCase", () => {
     expect(titleCase("last loaded (utc)")).toBe("Last Loaded (UTC)");
   });
 
+  it("writes AI in capitals, as on the Max AI Usage page", () => {
+    expect(titleCase("max ai usage")).toBe("Max AI Usage");
+    expect(titleCase("who uses ai the most")).toBe("Who Uses AI the Most");
+  });
+
   it("is stable when applied twice", () => {
     expect(titleCase(titleCase("training participation and average frequency by month"))).toBe("Training Participation and Average Frequency by Month");
   });

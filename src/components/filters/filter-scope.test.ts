@@ -6,7 +6,7 @@ describe("filterScope", () => {
     for (const p of ["/portfolio", "/clients"]) expect(filterScope(p), p).toEqual({ client: true, industry: true, period: true });
   });
   it("gives a client profile and Compare only the period", () => {
-    for (const p of ["/clients/384", "/clients/384/anything", "/clients/compare", "/csm", "/alerts", "/internal"]) expect(filterScope(p), p).toEqual({ client: false, industry: false, period: true });
+    for (const p of ["/clients/384", "/clients/384/anything", "/clients/compare", "/csm", "/alerts", "/internal", "/insights", "/insights/leaderboard", "/insights/cost"]) expect(filterScope(p), p).toEqual({ client: false, industry: false, period: true });
   });
   it("hides the bar where nothing is filtered", () => {
     for (const p of ["/settings", "/data-reliability", "/how-it-works", "/metrics", "/renewals"]) expect(filterScope(p), p).toEqual({ client: false, industry: false, period: false });
