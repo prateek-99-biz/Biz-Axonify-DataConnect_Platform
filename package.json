@@ -16,7 +16,8 @@
     "sync:now": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-now.ps1",
     "sync:schedule": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/schedule-sync.ps1",
     "bq:check": "tsx --env-file=.env scripts/bq-check.ts",
-    "reconcile": "tsx --env-file=.env scripts/reconcile.ts"
+    "reconcile": "tsx --env-file=.env scripts/reconcile.ts",
+    "reconcile:usage": "tsx --env-file=.env scripts/reconcile-usage.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^9.4.0",

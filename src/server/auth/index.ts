@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { db } from "@/server/db";
 import { cached, clearCache, PROFILE_TTL_MS } from "@/server/cache";
@@ -17,7 +18,8 @@ const adminEmails = () => (process.env.ADMIN_EMAILS ?? "").split(",").map((s) =>
  * Current user, or null. Production identity is Supabase Auth (JWT verified with Supabase on every call).
  * The cookie-based dev login only works when NODE_ENV !== "production" and AUTH_DEV_LOGIN=true.
  */
-export async function auth(): Promise<Session | null> {
+// Checked once per request: the layout and the page both ask, and each check is a call to Supabase Auth.
+export const auth = cache(async (): Promise<Session | null> => {
   const store = await cookies();
 
   if (devLoginEnabled()) {
@@ -41,7 +43,7 @@ export async function auth(): Promise<Session | null> {
   const name = (data.user.user_metadata?.full_name as string | undefined) ?? null;
   const row = await upsertProfile(data.user.id, email, name, seedRole(email, adminEmails(), !!data.user.email_confirmed_at));
   return row.active ? { user: { id: row.id, email: row.email, name: row.name, role: row.role, clientId: row.clientId } } : null;
-}
+});
 
 /** Creates the profile on first sight. After that the stored role (managed in Settings) wins; ADMIN_EMAILS and the company domain only seed the first role. */
 async function upsertProfile(id: string, email: string, name: string | null, initialRole: Role) {
