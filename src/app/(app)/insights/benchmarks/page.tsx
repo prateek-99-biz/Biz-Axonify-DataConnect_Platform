@@ -9,6 +9,7 @@ import { Card, CardHeader, EmptyState, SourceUnavailable } from "@/components/ui
 import { CompareBars } from "@/components/charts/charts";
 import { PeriodNotice } from "@/components/internal/period-notice";
 import { ClientPicker, InsightsHeader, MeterRow, PlainSummary, Stat, UsageNotice } from "@/components/insights/ui";
+import { CountingBar } from "@/components/insights/basis";
 import { cn, fmtNumber, fmtPct } from "@/lib/utils";
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -87,6 +88,7 @@ export default async function BenchmarksPage({ searchParams }: { searchParams: P
       </InsightsHeader>
       <PeriodNotice label={label} progress={ctx.progress} asOf={ctx.asOf} />
       <UsageNotice reason={usageReason} />
+      <CountingBar basis={loaded.basis} available={loaded.programsAvailable} gaps={loaded.gaps} names={Object.fromEntries(ctx.clients.map((c) => [c.id, c.name]))} />
       <PlainSummary points={summary} />
 
       <section aria-label="Headline comparison" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

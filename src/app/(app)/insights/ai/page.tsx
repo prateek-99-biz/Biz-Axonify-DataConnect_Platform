@@ -11,6 +11,7 @@ import { TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { PeriodNotice } from "@/components/internal/period-notice";
 import { Change, InsightsHeader, MeterRow, PlainSummary, UsageNotice } from "@/components/insights/ui";
+import { CountingBar } from "@/components/insights/basis";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 
 const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "short", year: "2-digit", timeZone: "UTC" });
@@ -79,6 +80,7 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
       {header}
       <PeriodNotice label={label} progress={ctx.progress} asOf={ctx.asOf} />
       <UsageNotice reason={usageReason} />
+      <CountingBar basis={loaded.basis} available={loaded.programsAvailable} gaps={loaded.gaps} names={Object.fromEntries(ctx.clients.map((c) => [c.id, c.name]))} />
       <PlainSummary points={summary} />
 
       <KpiStrip items={[

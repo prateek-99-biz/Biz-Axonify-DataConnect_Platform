@@ -73,8 +73,8 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "feature_adoption",
     name: "Feature Adoption",
-    description: "Share of the 12 Axonify features the platform can see in DataConnect (training, Max, broadcasts, chat, communities, knowledge base, games, rewards, recognition, tasks, forms, events) that anyone at the client used in the period.",
-    formula: "Features used by at least one person ÷ 12",
+    description: "Share of the 12 Axonify features the platform can see in DataConnect (training, Max, broadcasts, chat, communities, knowledge base, games, rewards, recognition, tasks, forms, events) that at least 1% of the client's active users used in an average month. One person trying a feature (an admin testing chat) does not count.",
+    formula: "Features used by at least 1% of active users in an average month ÷ 12",
     unit: "ratio",
     status: "provisional",
   },

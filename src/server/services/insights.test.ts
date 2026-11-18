@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ClientMonthRow, ClientPeriodRow, ClientSummary } from "@/server/data/ports";
-import { FEATURES, featuresByQuarter, growth, monthsIn, monthYearAgo, quarterOfMonth, sumMonths, usageComparison, deriveUsage, MIN_MAX_RATINGS, withMonthlyParticipation } from "@/server/metrics/features";
+import { FEATURES, featuresByQuarter, growth, monthsIn, monthYearAgo, quarterOfMonth, sumMonths, usageComparison, deriveUsage, MIN_MAX_RATINGS, withMonthlyParticipation, onBasis, basisGaps, parseUserBasis } from "@/server/metrics/features";
+import { withProgramCounts } from "@/server/sync";
 import { buildInsights, healthyVsStruggling, LEADER_METRICS, MIN_RANKED_USERS, peerAverage, podiumCounts, rankBy, renewalRisk, usageDrops, valueStatus } from "./insights";
 
 const Q3 = { year: 2026, quarter: 3 as const };
@@ -36,6 +37,47 @@ describe("months and periods", () => {
     expect(rows[0]).toMatchObject({ monthActiveSum: 220, monthTrainingSum: 40 });
     expect(rows[1].monthActiveSum).toBeUndefined(); // no months that far back
     expect(rows[2].monthActiveSum).toBeUndefined(); // another client's months are not borrowed
+  });
+});
+
+describe("All Users and Users in Active Training Programs", () => {
+  // PureHealth, November 2026: 20,214 active accounts, 1,839 of them in training programs (AdminZone shows 1,839).
+  const nov = month("ph", "2026-11", { activeUsers: 20214, loggedInUsers: 994, trainingUsers: 742, programActiveUsers: 1839, programLoggedInUsers: 986, programTrainingUsers: 740, maxUsers: 18 });
+  const oct = month("ph", "2026-10", { activeUsers: 2168, loggedInUsers: 1022, trainingUsers: 767 }); // before the refresh stored program counts
+
+  it("keeps All Users unless asked, and swaps in the training-program counts for the other view", () => {
+    expect(onBasis([nov], "all")[0].activeUsers).toBe(20214);
+    const p = onBasis([nov, oct], "programs");
+    expect(p[0]).toMatchObject({ activeUsers: 1839, loggedInUsers: 986, trainingUsers: 740, maxUsers: 18 });
+    expect(p[1].activeUsers).toBe(2168); // a month without program counts keeps its own
+    expect(deriveUsage(sumMonths(p.slice(0, 1), ["2026-11"])).engagement).toBeCloseTo(986 / 1839, 10);
+    expect(parseUserBasis("programs")).toBe("programs");
+    expect(parseUserBasis("anything else")).toBe("all");
+  });
+
+  it("flags a client with many people outside training programs, in its latest month", () => {
+    const gaps = basisGaps([oct, nov, month("ok", "2026-11", { activeUsers: 500, programActiveUsers: 490, programLoggedInUsers: 250 })], ["2026-10", "2026-11", "2026-12"]);
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0]).toMatchObject({ clientId: "ph", month: "2026-11", outside: 20214 - 1839, programActive: 1839 });
+    expect(gaps[0].allEngagement).toBeCloseTo(994 / 20214, 10);
+    expect(gaps[0].programEngagement).toBeCloseTo(986 / 1839, 10);
+  });
+
+  it("does not flag small differences (a few archived users)", () => {
+    expect(basisGaps([month("j", "2026-10", { activeUsers: 8505, loggedInUsers: 5555, programActiveUsers: 8033, programLoggedInUsers: 5535 })], ["2026-10"])).toEqual([]);
+  });
+
+  it("the refresh copies the dashboards' training-program months onto the monthly rows", () => {
+    const out = withProgramCounts([oct], new Map([["ph", { months: [{ month: "2026-10", activeUsers: 2077, loggedInUsers: 1018, trainingUsers: 765, frequency: 0, avgTimePerDayMin: 0 }] }]]));
+    expect(out[0]).toMatchObject({ activeUsers: 2168, programActiveUsers: 2077, programLoggedInUsers: 1018, programTrainingUsers: 765 });
+  });
+});
+
+describe("feature use", () => {
+  it("counts a feature only when at least 1% of active users used it", () => {
+    const t = deriveUsage(sumMonths([month("f", "2026-07", { activeUsers: 1000, chatUsers: 1, gameUsers: 10, taskUsers: 200 })], ["2026-07"]));
+    // Daily training (40%), tasks (20%) and games (1%) count; one person trying chat does not.
+    expect(t.featuresUsed).toBe(3);
   });
 });
 
@@ -105,7 +147,7 @@ describe("client insights and the leaderboard", () => {
     quarter("none", "2026-Q3", 0.5, 0.7),
   ];
   const months = [
-    month("a", "2026-07", { activeUsers: 100, maxUsers: 50, maxQueries: 200, commsReachUsers: 90 }), month("a", "2025-07", { activeUsers: 80 }),
+    month("a", "2026-07", { activeUsers: 100, loggedInUsers: 60, maxUsers: 50, maxQueries: 200, commsReachUsers: 90 }), month("a", "2025-07", { activeUsers: 80, loggedInUsers: 48 }),
     month("b", "2026-07", { activeUsers: 400, maxUsers: 40, maxQueries: 400 }), month("b", "2025-07", { activeUsers: 400 }),
     month("small", "2026-07", { activeUsers: MIN_RANKED_USERS - 1, maxUsers: 20, maxQueries: 500 }),
     month("none", "2026-07", { activeUsers: 100 }),
@@ -120,6 +162,35 @@ describe("client insights and the leaderboard", () => {
     expect(byId("b").participationGainYoY).toBeCloseTo(-0.1);
     expect(byId("none").licenceUse).toBeCloseTo(0.5);
     expect(byId("small").ranked).toBe(false);
+  });
+
+  it("measures growth in people logging in, not in accounts", () => {
+    // 18,000 accounts created, the same people logging in: no growth (PureHealth, November 2026).
+    const s = buildInsights([client("p")], [], [month("p", "2026-07", { activeUsers: 20000, loggedInUsers: 1000 }), month("p", "2025-07", { activeUsers: 2000, loggedInUsers: 1000 })], Q3);
+    expect(s.clients[0].userGrowth).toBe(0);
+  });
+
+  it("does not count a launch as growth or participation gain", () => {
+    // A year ago the accounts existed but nobody used Axonify (Valor, MunichRE before their launch).
+    const s = buildInsights([client("new")], [quarter("new", "2026-Q3", 0.75, 0.9), quarter("new", "2025-Q3", 0, 0.9)],
+      [month("new", "2026-07", { activeUsers: 400, loggedInUsers: 350 }), month("new", "2025-07", { activeUsers: 400, loggedInUsers: MIN_RANKED_USERS - 1 })], Q3);
+    expect(s.clients[0].userGrowth).toBeNull();
+    expect(s.clients[0].participationGainYoY).toBeNull();
+  });
+
+  it("leaves a client that has gone quiet by the end of the period out of the rankings", () => {
+    // adidas in 2026: 220 users in the first half, 3 by November.
+    const year = { year: 2026, quarter: null };
+    const rows = [
+      ...["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"].map((m) => month("quiet", m, { activeUsers: 220, maxUsers: 40, maxQueries: 400 })),
+      ...["2026-07", "2026-08", "2026-09", "2026-10", "2026-11"].map((m) => month("quiet", m, { activeUsers: 3, loggedInUsers: 1 })),
+      ...["2026-01", "2026-11"].map((m) => month("live", m, { activeUsers: 300 })),
+    ];
+    const s = buildInsights([client("quiet"), client("live")], [], rows, year, true);
+    const quiet = s.clients.find((c) => c.client.id === "quiet")!;
+    expect(quiet.activeAtEnd).toBe(3);
+    expect(quiet.ranked).toBe(false);
+    expect(s.clients.find((c) => c.client.id === "live")!.ranked).toBe(true);
   });
 
   it("ranks fairly by size and leaves small clients out of rate measures", () => {

@@ -200,6 +200,11 @@ model SyncClientMonth {
   formsSubmitted     Int    @default(0)
   formUsers          Int    @default(0)
   eventAttendees     Int    @default(0)
+  /// The same three counts for users in active training programs only (AdminZone's default Participation view),
+  /// from the team-level view the client dashboards use. 0 when that view had no rows for the month.
+  programActiveUsers   Int  @default(0)
+  programLoggedInUsers Int  @default(0)
+  programTrainingUsers Int  @default(0)
 
   @@id([clientId, month])
 }

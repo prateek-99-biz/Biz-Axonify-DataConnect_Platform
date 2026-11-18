@@ -6,7 +6,7 @@
 import type { ClientMonthRow, ClientPeriodRow, ClientSummary } from "@/server/data/ports";
 import { aggregate, type DerivedMetrics, type RiskLevel } from "@/server/metrics/calculations";
 import { previousPeriod, yearAgo, quartersIn, type Period } from "@/server/metrics/period";
-import { FEATURES, growth, monthsIn, usageComparison, type UsageMetrics } from "@/server/metrics/features";
+import { FEATURES, growth, MIN_FEATURE_SHARE, monthsIn, usageComparison, type UsageMetrics } from "@/server/metrics/features";
 import { buildPortfolio, type ClientRowView } from "./portfolio";
 
 /** Clients with fewer active users than this in an average month are left out of rate rankings: 9 of 10 is not a win. */
@@ -30,12 +30,17 @@ export interface ClientInsight {
   healthYearAgo: DerivedMetrics;
   /** Average active users per month ÷ licences. */
   licenceUse: number | null;
-  /** Change in average monthly active users against the same months a year earlier. */
+  /**
+   * Change in people logging in per month against the same months a year earlier. Null unless the client already had
+   * MIN_RANKED_USERS logging in a month back then: a launch is not growth, and accounts created in bulk are not usage.
+   */
   userGrowth: number | null;
-  /** Change in participation against the same period a year earlier, in ratio points. */
+  /** Change in participation against the same period a year earlier, in ratio points; null under the same rule. */
   participationGainYoY: number | null;
   maxGrowth: number | null;
-  /** Big enough for rate rankings. */
+  /** Active users in the last month of the period that has data; null when the period has no monthly data. */
+  activeAtEnd: number | null;
+  /** Big enough for rate rankings, on average and still at the end of the period (a client that has gone quiet is not a leader). */
   ranked: boolean;
 }
 
@@ -58,6 +63,8 @@ export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriod
   const monthsByClient = new Map<string, ClientMonthRow[]>();
   for (const r of monthRows) monthsByClient.set(r.clientId, [...(monthsByClient.get(r.clientId) ?? []), r]);
   const ya = quartersIn(yearAgo(period));
+  const monthSet = new Set(months);
+  const lastMonth = [...new Set(monthRows.map((r) => r.month))].filter((m) => monthSet.has(m)).sort().at(-1) ?? null;
 
   const list: ClientInsight[] = clients.map((client) => {
     const view = viewById.get(client.id) ?? null;
@@ -68,16 +75,22 @@ export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriod
     const avgActive = cmp.current.avgActiveUsers;
     const partNow = view?.current.participationRate ?? null;
     const partThen = healthYearAgo.participationRate;
+    const perMonth = (n: number, m: number) => (m > 0 ? n / m : null);
+    const loggedNow = perMonth(cmp.current.loggedInUsers, cmp.current.months);
+    const loggedThen = perMonth(cmp.yearAgo.loggedInUsers, cmp.yearAgo.months);
+    const liveYearAgo = (loggedThen ?? 0) >= MIN_RANKED_USERS;
+    const activeAtEnd = lastMonth ? (mine.find((r) => r.month === lastMonth)?.activeUsers ?? 0) : null;
     return {
       client, view, health: view?.current ?? null, risk: view?.risk ?? "unknown",
       usage: cmp.current, usagePrev: cmp.previous, usageYearAgo: cmp.yearAgo, monthsCovered: cmp.monthsCovered, monthly: new Map(mine.map((r) => [r.month, r])),
       hasUsage: cmp.current.months > 0,
       healthYearAgo,
       licenceUse: licences && licences > 0 && avgActive != null ? avgActive / licences : null,
-      userGrowth: growth(avgActive, cmp.yearAgo.avgActiveUsers),
-      participationGainYoY: partNow != null && partThen != null ? partNow - partThen : null,
+      userGrowth: liveYearAgo ? growth(loggedNow, loggedThen) : null,
+      participationGainYoY: liveYearAgo && partNow != null && partThen != null ? partNow - partThen : null,
       maxGrowth: growth(cmp.current.maxQueries, cmp.yearAgo.maxQueries),
-      ranked: (avgActive ?? 0) >= MIN_RANKED_USERS,
+      activeAtEnd,
+      ranked: (avgActive ?? 0) >= MIN_RANKED_USERS && (activeAtEnd == null || activeAtEnd >= MIN_RANKED_USERS),
     };
   });
 
@@ -190,10 +203,10 @@ export const LEADER_METRICS: LeaderMetric[] = [
     question: "Who uses communications (broadcasts) the most?", how: "Share of active users who opened a broadcast in an average month.",
     value: (c) => (c.usage.commsReachUsers > 0 ? c.usage.commsReach : null) },
   { key: "userGrowth", label: "Biggest Growth This Year", group: "Growth", format: "growth", needsSize: true,
-    question: "Which client has grown the most this year?", how: "Change in average monthly active users against the same months a year earlier.",
+    question: "Which client has grown the most this year?", how: `Change in people logging in per month against the same months a year earlier. Accounts that nobody uses do not count, and clients with fewer than ${MIN_RANKED_USERS} people logging in a year earlier are left out.`,
     value: (c) => c.userGrowth },
   { key: "participationGain", label: "Biggest Participation Gain", group: "Growth", format: "pts", needsSize: true,
-    question: "Whose participation improved most over the year?", how: "Participation now minus participation in the same period a year earlier, in points.",
+    question: "Whose participation improved most over the year?", how: `Participation now minus participation in the same period a year earlier, in points. Clients that were not yet live a year earlier (fewer than ${MIN_RANKED_USERS} people logging in a month) are left out, so a launch does not count as improvement.`,
     value: (c) => c.participationGainYoY },
   { key: "knowledge", label: "Highest Knowledge", group: "Learning", format: "pct", needsSize: true,
     question: "Whose people know their material best?", how: "Average current knowledge score across every learner and topic.",
@@ -201,8 +214,9 @@ export const LEADER_METRICS: LeaderMetric[] = [
   { key: "hoursPerUser", label: "Most Learning Time", group: "Learning", format: "hours", needsSize: true,
     question: "Whose people spend the most time learning?", how: "Hours in Axonify per active user in an average month.",
     value: (c) => (c.usage.learningSeconds > 0 ? c.usage.hoursPerUser : null) },
-  { key: "features", label: "Widest Feature Use", group: "Features", format: "number", needsSize: false,
-    question: "Who uses the most Axonify features?", how: `How many of the ${FEATURES.length} tracked features anyone at the client used in the period.`,
+  // Needs a real size too: with three users, one person per feature is a third of the client.
+  { key: "features", label: "Widest Feature Use", group: "Features", format: "number", needsSize: true,
+    question: "Who uses the most Axonify features?", how: `How many of the ${FEATURES.length} tracked features at least ${MIN_FEATURE_SHARE * 100}% of active users used in an average month. One person trying a feature does not count.`,
     value: (c) => (c.hasUsage ? c.usage.featuresUsed : null) },
   { key: "health", label: "Healthiest Account", group: "Engagement", format: "score", needsSize: true,
     question: "Who is our healthiest account?", how: "Health Score: 50% participation plus 50% knowledge.",

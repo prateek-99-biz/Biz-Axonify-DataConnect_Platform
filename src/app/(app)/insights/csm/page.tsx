@@ -16,6 +16,7 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { PeriodNotice } from "@/components/internal/period-notice";
 import { SampleNotice } from "@/components/internal/sample-notice";
 import { InsightsHeader, PlainSummary, Stat, UsageNotice } from "@/components/insights/ui";
+import { CountingBar } from "@/components/insights/basis";
 import { cn, fmtHealth, fmtNumber, fmtPct } from "@/lib/utils";
 import { riskLabel } from "@/lib/labels";
 
@@ -104,6 +105,7 @@ export default async function CsmPortfolioPage({ searchParams }: { searchParams:
       <PeriodNotice label={label} progress={ctx.progress} asOf={ctx.asOf} />
       <SampleNotice count={sample} canRemove={isAdmin} />
       <UsageNotice reason={usageReason} />
+      <CountingBar basis={loaded.basis} available={loaded.programsAvailable} gaps={loaded.gaps} names={Object.fromEntries(ctx.clients.map((c) => [c.id, c.name]))} />
       <PlainSummary points={summary} />
 
       {/* Four books fill one row of four; otherwise rows of three, so no card is left alone on a row when it can be avoided. */}

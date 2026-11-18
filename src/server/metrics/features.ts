@@ -8,8 +8,60 @@
 import type { ClientMonthRow, ClientPeriodRow } from "@/server/data/ports";
 import type { Period } from "./period";
 import { ratio } from "./calculations";
+import type { BasisGap, UserBasis } from "./basis";
 
-type CountKey = Exclude<keyof ClientMonthRow, "clientId" | "month">;
+export { parseUserBasis, type BasisGap, type UserBasis } from "./basis";
+
+type CountKey = Exclude<keyof ClientMonthRow, "clientId" | "month" | "programActiveUsers" | "programLoggedInUsers" | "programTrainingUsers">;
+
+/** True when a month has the training-program counts (a refresh after migration 0008). */
+const hasProgramCounts = (r: ClientMonthRow) => (r.programActiveUsers ?? 0) > 0;
+
+/**
+ * Monthly rows on the chosen basis. For "programs", active, logged-in and training users are swapped for their
+ * training-program counts, so every share that divides by active users (engagement, participation, Max adoption,
+ * broadcast reach) follows. A month without program counts keeps its All Users counts.
+ */
+export function onBasis(rows: ClientMonthRow[], basis: UserBasis): ClientMonthRow[] {
+  if (basis === "all") return rows;
+  return rows.map((r) => (hasProgramCounts(r)
+    ? { ...r, activeUsers: r.programActiveUsers!, loggedInUsers: r.programLoggedInUsers ?? 0, trainingUsers: r.programTrainingUsers ?? 0 }
+    : r));
+}
+
+/** Below this share of a client's active users in training programs, its two views tell different stories and it is flagged. */
+export const PROGRAM_GAP_SHARE = 0.75;
+/** ...and only when at least this many people are outside the programs. */
+export const PROGRAM_GAP_MIN_PEOPLE = 100;
+
+/**
+ * Clients whose All Users and training-program counts differ enough to change how they read, in the latest month of
+ * `months` that has both counts: many accounts not yet in a training program (a rollout under way, archived teams).
+ * Largest gap first.
+ */
+export function basisGaps(rows: ClientMonthRow[], months: string[]): BasisGap[] {
+  const set = new Set(months);
+  const latest = new Map<string, ClientMonthRow>();
+  for (const r of rows) {
+    if (!set.has(r.month) || !hasProgramCounts(r)) continue;
+    const cur = latest.get(r.clientId);
+    if (!cur || r.month > cur.month) latest.set(r.clientId, r);
+  }
+  return [...latest.values()]
+    .map((r) => ({
+      clientId: r.clientId, month: r.month, allActive: r.activeUsers, programActive: r.programActiveUsers!,
+      outside: Math.max(0, r.activeUsers - r.programActiveUsers!),
+      allEngagement: ratio(r.loggedInUsers, r.activeUsers), programEngagement: ratio(r.programLoggedInUsers ?? 0, r.programActiveUsers!),
+    }))
+    .filter((g) => g.outside >= PROGRAM_GAP_MIN_PEOPLE && g.programActive < PROGRAM_GAP_SHARE * g.allActive)
+    .sort((a, b) => b.outside - a.outside);
+}
+
+/**
+ * A feature counts as in use when at least this share of active users used it in an average month. One person trying
+ * it once (an admin testing chat) is not adoption, and it made Widest Feature Use and Feature Adoption read high.
+ */
+export const MIN_FEATURE_SHARE = 0.01;
 
 export interface FeatureDef {
   key: string;
@@ -119,7 +171,7 @@ export interface UsageMetrics extends MonthTotals {
   commsResponse: number | null;
   /** Share of active users who used each feature, by feature key. */
   featureShare: Record<string, number | null>;
-  /** How many of FEATURES anyone used in the period. */
+  /** How many of FEATURES at least MIN_FEATURE_SHARE of active users used in an average month. */
   featuresUsed: number;
   featureBreadth: number | null;
 }
@@ -127,7 +179,7 @@ export interface UsageMetrics extends MonthTotals {
 export function deriveUsage(t: MonthTotals): UsageMetrics {
   const a = t.activeUsers;
   const featureShare = Object.fromEntries(FEATURES.map((f) => [f.key, ratio(t[f.users], a)]));
-  const featuresUsed = FEATURES.filter((f) => t[f.users] > 0).length;
+  const featuresUsed = FEATURES.filter((f) => t[f.users] > 0 && t[f.users] >= MIN_FEATURE_SHARE * a).length;
   const learningHours = t.learningSeconds / 3600;
   return {
     ...t,

@@ -10,6 +10,7 @@ import { Badge, Button, Card, CardHeader, EmptyState, Select, SourceUnavailable 
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { PeriodNotice } from "@/components/internal/period-notice";
 import { fmtLeader, InsightsHeader, Medal, MeterRow, PlainSummary, UsageNotice, type BarTone } from "@/components/insights/ui";
+import { CountingBar } from "@/components/insights/basis";
 import { cn, fmtNumber } from "@/lib/utils";
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -32,6 +33,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
   // Measures with at least one ranked client; the Max ones drop out until the monthly data is synced.
   const boards = LEADER_METRICS.map((m) => ({ m, ranked: rankBy(candidates, m) })).filter((b) => b.ranked.length > 0);
+  const missing = LEADER_METRICS.filter((m) => !boards.some((b) => b.m === m));
   const chosen = boards.find((b) => b.m.key === one(sp.by)) ?? boards[0];
   const leader = (key: string) => boards.find((b) => b.m.key === key)?.ranked[0];
   const overall = podiumCounts(candidates, boards.map((b) => b.m));
@@ -45,7 +47,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
     line("maxPer100", (n, v) => `Most AI use: ${n}, with ${v} Max questions per 100 active users a month.`),
     line("maxAdoption", (n, v) => `Widest Max rollout: ${n}, where ${v} of active users ask Max in an average month.`),
     line("participation", (n, v) => `Best participation: ${n} at ${v}.`) + " " + line("engagement", (n, v) => `Highest engagement: ${n} at ${v}.`),
-    line("userGrowth", (n, v) => `Biggest growth: ${n}, with active users ${v} against the same months in ${yaLabel}.`),
+    line("userGrowth", (n, v) => `Biggest growth: ${n}, with people logging in ${v} against the same months in ${yaLabel}.`),
     line("commsReach", (n, v) => `Most communications use: ${n}, where ${v} of active users open broadcasts.`),
     overall[0] ? `Overall, ${overall[0].insight.client.name} leads ${overall[0].golds} of the ${boards.length} rankings and is in the top three of ${overall[0].podiums}.` : "",
   ].map((s) => s.trim());
@@ -76,7 +78,15 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
         subtitle={`Every client compared in ${label}: who uses AI and Max the most, who has the best participation and engagement, who grew the most, and who uses communications the most.${isYear ? "" : " Pick a full year in the period filter to rank the whole year."}`} />
       <PeriodNotice label={label} progress={ctx.progress} asOf={ctx.asOf} />
       <UsageNotice reason={usageReason} />
+      <CountingBar basis={loaded.basis} available={loaded.programsAvailable} gaps={loaded.gaps} names={Object.fromEntries(ctx.clients.map((c) => [c.id, c.name]))} />
       <PlainSummary title="Who Leads" points={summary} />
+      {missing.length > 0 && (
+        <p className="text-xs text-slate-500">
+          Not shown for {label}: {missing.map((m) => m.label).join(", ")}. {missing.some((m) => m.key === "knowledge" || m.key === "health")
+            ? "Axonify keeps only each learner's current knowledge score, so knowledge (and the Health Score built on it) exists from the quarter this platform started recording it. Pick the current quarter or year to see them."
+            : "No client has a value for them in this period."}
+        </p>
+      )}
 
       <section aria-label="Category winners" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {boards.map(({ m, ranked }) => (
@@ -132,7 +142,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
         </div>
         {(excluded.length > 0 || chosen.ranked.length < candidates.length) && (
           <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
-            {excluded.length > 0 && `Not ranked because they average fewer than ${MIN_RANKED_USERS} active users a month: ${excluded.map((c) => c.client.name).join(", ")}. `}
+            {excluded.length > 0 && `Not ranked because they average fewer than ${MIN_RANKED_USERS} active users a month, or had fewer than ${MIN_RANKED_USERS} by the end of ${label}: ${excluded.map((c) => c.client.name).join(", ")}. `}
             {candidates.length - chosen.ranked.length - excluded.length > 0 && `${candidates.length - chosen.ranked.length - excluded.length} client${candidates.length - chosen.ranked.length - excluded.length === 1 ? " has" : "s have"} no value for this measure in ${label}.`}
           </p>
         )}
@@ -169,7 +179,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             ...boards.map((b) => ({ key: b.m.key, header: b.m.label, align: "right" as const, hint: b.m.how })),
           ]} />
         <p className="border-t hairline px-5 py-3 text-xs text-slate-500">
-          Rates and growth leave out clients averaging fewer than {MIN_RANKED_USERS} active users a month, so a very small client cannot top a ranking by chance. Widest Feature Use counts {FEATURES.length} features: {FEATURES.map((f) => f.label).join(", ")}.
+          Rates and growth leave out clients averaging fewer than {MIN_RANKED_USERS} active users a month, and clients that had dropped below {MIN_RANKED_USERS} by the end of the period, so a very small or dormant client cannot top a ranking. Growth and Participation Gain also need {MIN_RANKED_USERS} or more people logging in a month a year earlier, so a launch does not count as growth. Widest Feature Use counts {FEATURES.length} features: {FEATURES.map((f) => f.label).join(", ")}.
         </p>
       </Card>
     </div>

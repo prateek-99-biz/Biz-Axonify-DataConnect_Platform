@@ -99,6 +99,14 @@ export interface ClientMonthRow {
   formsSubmitted: number;
   formUsers: number;
   eventAttendees: number;
+  /**
+   * Active, logged-in and training users among users in active training programs only: AdminZone's default
+   * Participation view ("Users in Active Training Programs"). The fields above are its "All Users" view. Absent or 0
+   * when the month has no team-level data.
+   */
+  programActiveUsers?: number;
+  programLoggedInUsers?: number;
+  programTrainingUsers?: number;
 }
 
 export interface TeamNode {

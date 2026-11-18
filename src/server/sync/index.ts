@@ -14,6 +14,16 @@ import { carryKnowledge } from "./knowledge-history";
 import { featuresByQuarter } from "@/server/metrics/features";
 import type { ClientMonthRow } from "@/server/data/ports";
 
+/** Adds each month's training-program counts (from the client dashboard's account-level months) to the monthly rows. */
+export function withProgramCounts(months: ClientMonthRow[], dashboards: Map<string, Pick<DashboardData, "months">>): ClientMonthRow[] {
+  const byKey = new Map<string, DashboardData["months"][number]>();
+  for (const [clientId, d] of dashboards) for (const m of d.months) byKey.set(`${clientId}|${m.month}`, m);
+  return months.map((r) => {
+    const p = byKey.get(`${r.clientId}|${r.month}`);
+    return p ? { ...r, programActiveUsers: p.activeUsers, programLoggedInUsers: p.loggedInUsers, programTrainingUsers: p.trainingUsers } : r;
+  });
+}
+
 const STALE_RUN_MS = 10 * 60_000;
 const COOLDOWN_MS = 60_000;
 
@@ -74,6 +84,18 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
         months = null;
         monthsNote = "Feature and Max usage was not saved: apply the latest database migration (npm run db:deploy).";
       }
+    }
+    if (months && dashboards) {
+      // Users in active training programs (AdminZone's default Participation view) come from the dashboards' team-level
+      // months, already added up over the top of each team tree. Their columns arrive with migration 0008.
+      let hasColumns = true;
+      try {
+        await db.$queryRawUnsafe('SELECT "programActiveUsers" FROM "SyncClientMonth" LIMIT 1');
+      } catch {
+        hasColumns = false;
+        monthsNote = [monthsNote, "Training-program counts were not saved: apply the latest database migration (npm run db:deploy)."].filter(Boolean).join(" ");
+      }
+      if (hasColumns) months = withProgramCounts(months, dashboards);
     }
 
     // Knowledge only exists for the latest quarter in BigQuery. Keep what was recorded for quarters that have since ended.
