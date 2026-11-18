@@ -38,7 +38,7 @@ npm run dev              # http://localhost:3000 → "Development login"
 ```
 
 ## Real setup (Supabase, free tier)
-1. Create a Supabase project. Copy into `.env`: pooled `DATABASE_URL` (port 6543, `?pgbouncer=true`), `DIRECT_URL` (port 5432), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+1. Create a Supabase project. Copy into `.env`: `DATABASE_URL` and `DIRECT_URL` (both the session pooler, port 5432, for a machine that stays running; see `.env.example`), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Vercel uses the transaction pooler instead (see Hosting on Vercel).
 2. Supabase dashboard → Authentication: keep public sign-ups **on** if people should use the Create an Account page (staff with a confirmed `@bizgroup.ae` address become Members; anyone else sees nothing until an admin links them to a client). Turn them off to allow invitations only. Under URL Configuration set the Site URL to the live address and add `<address>/auth/confirm` to Redirect URLs (also `http://localhost:3000/auth/confirm` for local work). Paste the three email templates from [docs/email-templates](docs/email-templates/README.md); the account links do not work without them. A free project pauses after about a week without use, and then every sign-in fails until it is restored in the dashboard.
 3. Set `ADMIN_EMAILS=you@bizgroup.ae` (first sign-in of that email becomes Admin; everyone else is Member). Admins change roles in Settings.
 4. `npx prisma migrate deploy && npm run db:seed`.
@@ -47,6 +47,12 @@ npm run dev              # http://localhost:3000 → "Development login"
 7. Refresh by hand with `npm run sync:now` (opens the Google sign-in only when it has expired), or double-click `scripts\Refresh Data.cmd`. `npm run sync:schedule` sets up a nightly Task Scheduler run, and `-Morning` adds a weekday check that opens the sign-in when needed. Details and the unattended options: [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
 
 `SUPABASE_SERVICE_ROLE_KEY` is needed only for Settings → Add User and Resend Link. It stays on the server and must never be given a `NEXT_PUBLIC_` name.
+
+## Hosting on Vercel
+- Every push to `main` deploys. `vercel.json` pins the server code to `bom1` (Mumbai), next to the Supabase database in ap-south-1; in the default US region each page took 2 to 4 seconds because every database call crossed the world.
+- `DATABASE_URL` in Vercel (Production and Preview) is Supabase's **transaction pooler**: `...pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5&pool_timeout=20`. Serverless instances start and stop often, and the transaction pooler lets them share a small number of database connections. `pgbouncer=true` turns off the prepared statements the pooler cannot keep. `connection_limit=5` rather than 1, because Fluid compute serves several requests from one instance at a time. `DIRECT_URL` stays on the session pooler (port 5432) and is only used for migrations.
+- Both are stored as Secrets, so Vercel does not show them again. To change one: `npx vercel link`, then `npx vercel env update DATABASE_URL --environment production --sensitive` (it covers Preview too), then redeploy. A changed variable takes effect only on the next deployment.
+- Google access for the refresh on Vercel: [docs/DATA_REFRESH.md](docs/DATA_REFRESH.md).
 
 ## Refresh button
 Admins see **Refresh Data** in the top bar. It runs the same sync as the scripts, enforces a 60-second cooldown, refuses to run twice at once, and reports failures without touching existing data. In mock mode it explains there is nothing to refresh. It needs Google access on the machine serving the page, so on Vercel it will fail until the app has its own identity (see DATA_REFRESH.md).

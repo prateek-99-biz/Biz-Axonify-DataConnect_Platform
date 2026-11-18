@@ -40,5 +40,8 @@ Entry points: `npm run sync`, the Refresh Data button (`POST /api/sync`), and th
 ## Metrics
 All formulas live in `src/server/metrics/definitions.ts` and are shown in the UI. Participation, knowledge, health score and health bands mirror the Power BI report; engagement, retention and feature adoption are provisional. Portfolio rates are ratio-of-sums. Full-year active and training users = mean of quarterly values; registered users and knowledge = latest quarter.
 
+## Hosting
+Vercel, with the server code pinned to `bom1` (Mumbai) in `vercel.json` so it sits next to Supabase (ap-south-1). On Vercel, `DATABASE_URL` is Supabase's transaction pooler (port 6543, `pgbouncer=true&connection_limit=5`); a machine that stays running uses the session pooler (port 5432). `auth()` is wrapped in React `cache`, so a page checks the session once however many server components ask. Details and how to change the settings: README, Hosting on Vercel.
+
 ## Security
 Supabase session cookies are verified with Supabase on each request (`getUser`). Middleware is only a redirect convenience; authorization is in server code. Only the public anon key is used in this app.

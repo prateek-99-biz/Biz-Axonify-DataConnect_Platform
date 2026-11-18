@@ -20,3 +20,5 @@ Axonify-CSM-PowerBI-Dash*.pdf
 
 # Output of the scheduled data refresh
 /logs/
+
+.vercel
