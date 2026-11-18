@@ -99,7 +99,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       <NeedsAttention attention={attention} scopeCount={view.clients.length} periodLabel={periodLabel(f.period)} periodKey={periodKey(f.period)} healthAvailable={kpis.current.healthScore != null} />
 
       <section aria-label="Headline indicators" className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Participation" accent="green" value={fmtPct(kpis.current.participationRate)} hint="Training users ÷ active users" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
+        <KpiCard label="Participation" accent="green" value={fmtPct(kpis.current.participationRate)} hint="Training users ÷ active users, average month" vsPrev={delta(kpis.current.participationRate, kpis.previous.participationRate)} vsYear={delta(kpis.current.participationRate, kpis.yearAgo.participationRate)} />
         <KpiCard label="Knowledge" accent="purple" value={fmtPct(kpis.current.avgKnowledge)} hint="Average current knowledge" vsPrev={delta(kpis.current.avgKnowledge, kpis.previous.avgKnowledge)} vsYear={delta(kpis.current.avgKnowledge, kpis.yearAgo.avgKnowledge)} />
         <KpiCard label="Health Score" accent="green" unit="abs" value={fmtHealth(kpis.current.healthScore)} hint="50% participation + 50% knowledge" vsPrev={delta(kpis.current.healthScore, kpis.previous.healthScore)} vsYear={delta(kpis.current.healthScore, kpis.yearAgo.healthScore)} />
         {kpis.current.healthScore == null && (

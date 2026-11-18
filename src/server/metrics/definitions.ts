@@ -49,8 +49,8 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "participation_rate",
     name: "Participation",
-    description: "Share of active users that trained in the period (report: Team Participation).",
-    formula: "Training users ÷ active users",
+    description: "Share of active users who completed training, in an average month. This is Axonify's 'Average Training Participation' (Reports, Participation) and matches it month by month. Counting anyone who trained once in the quarter instead reads much higher, so that is used only for quarters older than the monthly data.",
+    formula: "Users with a training session in the month ÷ active users, summed over the months of the period",
     unit: "ratio",
     status: "approved",
   },

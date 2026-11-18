@@ -23,17 +23,27 @@ export interface Totals {
   sessions: number;
   featuresAvailable: number;
   featuresUsed: number;
+  /** Monthly active and training users added over the months (see ClientPeriodRow). */
+  monthActiveSum: number;
+  monthTrainingSum: number;
+  /** False when a row with active users has no monthly figures, so the monthly basis would leave part of the period out. */
+  monthlyComplete: boolean;
 }
 
 const ZERO: Totals = {
   registeredUsers: 0, activeUsers: 0, trainingUsers: 0, knowledgeLearners: 0, knowledgeWeighted: 0,
   retainedUsers: 0, previousActiveUsers: 0, sessions: 0, featuresAvailable: 0, featuresUsed: 0,
+  monthActiveSum: 0, monthTrainingSum: 0, monthlyComplete: true,
 };
 
 export function sumRows(rows: ClientPeriodRow[]): Totals {
   return rows.reduce<Totals>((t, r) => {
     const hasKnowledge = r.avgKnowledge != null && r.knowledgeLearners > 0;
+    const hasMonthly = (r.monthActiveSum ?? 0) > 0;
     return {
+      monthActiveSum: t.monthActiveSum + (r.monthActiveSum ?? 0),
+      monthTrainingSum: t.monthTrainingSum + (r.monthTrainingSum ?? 0),
+      monthlyComplete: t.monthlyComplete && (hasMonthly || r.activeUsers === 0),
       registeredUsers: t.registeredUsers + r.registeredUsers,
       activeUsers: t.activeUsers + r.activeUsers,
       trainingUsers: t.trainingUsers + r.trainingUsers,
@@ -83,7 +93,11 @@ export const lowActivity = (m: { registeredUsers: number; activeUsers: number })
 /** Derived metrics from already-summed counts (ratio-of-sums, so portfolio rates are user-weighted). */
 export function derive(t: Totals): DerivedMetrics {
   const engagementRate = ratio(t.activeUsers, t.registeredUsers);
-  const participationRate = ratio(t.trainingUsers, t.activeUsers);
+  // Axonify's Participation report (Average Training Participation) is a monthly share: people who trained in the month ÷
+  // people active in it, combined over the months of the period. Counting anyone who trained once in a quarter reads far
+  // higher (2026-Q3: Tira 34% against 16%, flydubai 57% against 28%), so the quarterly count is only the fallback when months are missing.
+  const monthly = t.monthlyComplete && t.monthActiveSum > 0;
+  const participationRate = monthly ? ratio(t.monthTrainingSum, t.monthActiveSum) : ratio(t.trainingUsers, t.activeUsers);
   const avgKnowledge = ratio(t.knowledgeWeighted, t.knowledgeLearners);
   const retentionRate = t.previousActiveUsers >= MIN_RETENTION_BASE ? ratio(t.retainedUsers, t.previousActiveUsers) : null;
   const featureAdoption = ratio(t.featuresUsed, t.featuresAvailable);

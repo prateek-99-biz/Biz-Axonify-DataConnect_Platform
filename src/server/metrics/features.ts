@@ -5,7 +5,7 @@
  * Every share is a ratio of sums across the months in the period, so it reads as "the average month": the share of
  * active users who used the feature in a typical month, weighted by how many users were active in each month.
  */
-import type { ClientMonthRow } from "@/server/data/ports";
+import type { ClientMonthRow, ClientPeriodRow } from "@/server/data/ports";
 import type { Period } from "./period";
 import { ratio } from "./calculations";
 
@@ -60,6 +60,25 @@ export const monthYearAgo = (m: string) => `${Number(m.slice(0, 4)) - 1}${m.slic
 
 /** Quarter key (2026-Q3) of a month (2026-08). */
 export const quarterOfMonth = (m: string) => `${m.slice(0, 4)}-Q${Math.floor((Number(m.slice(5, 7)) - 1) / 3) + 1}`;
+
+/**
+ * Adds each quarter's monthly active and training users to its period row, so participation can be the monthly share
+ * (see ClientPeriodRow.monthActiveSum). Quarters without monthly rows are returned unchanged.
+ */
+export function withMonthlyParticipation(rows: ClientPeriodRow[], months: ClientMonthRow[]): ClientPeriodRow[] {
+  const sums = new Map<string, { active: number; training: number }>();
+  for (const m of months) {
+    const k = `${m.clientId}|${quarterOfMonth(m.month)}`;
+    const s = sums.get(k) ?? { active: 0, training: 0 };
+    s.active += m.activeUsers;
+    s.training += m.trainingUsers;
+    sums.set(k, s);
+  }
+  return rows.map((r) => {
+    const s = sums.get(`${r.clientId}|${r.period}`);
+    return s && s.active > 0 ? { ...r, monthActiveSum: s.active, monthTrainingSum: s.training } : r;
+  });
+}
 
 export function sumMonths(rows: ClientMonthRow[], months: Iterable<string>): MonthTotals {
   const set = new Set(months);

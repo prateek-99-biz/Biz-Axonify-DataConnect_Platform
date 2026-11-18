@@ -6,6 +6,7 @@ import { db } from "@/server/db";
 import { cached, SNAPSHOT_STALE_MS, SNAPSHOT_TTL_MS } from "@/server/cache";
 import type { AnalyticsPort, ClientMonthRow, ClientPeriodRow, ClientSummary, Result } from "../../ports";
 import { applySalesforce, fromDb } from "../../salesforce-overlay";
+import { withMonthlyParticipation } from "@/server/metrics/features";
 
 const unavailable = (reason: string): Result<never> => ({ status: "unavailable", reason, source: "synced" });
 
@@ -35,9 +36,22 @@ export const syncedAnalytics: AnalyticsPort = {
   },
 
   async getClientPeriodRows(clientIds) {
-    const [at, rows] = await Promise.all([lastSync(), cached(`snap:periods:${clientIds ? [...clientIds].sort().join(",") : "*"}`, SNAPSHOT_TTL_MS, () => db.syncClientPeriod.findMany({ where: clientIds ? { clientId: { in: clientIds } } : undefined }), SNAPSHOT_STALE_MS)]);
+    const key = clientIds ? [...clientIds].sort().join(",") : "*";
+    const [at, rows] = await Promise.all([
+      lastSync(),
+      // Participation is the monthly share (Axonify's Participation report), so each quarter carries its months' totals.
+      // Without the monthly table the rows still load and participation falls back to the quarterly count.
+      cached(`snap:periods:${key}`, SNAPSHOT_TTL_MS, async () => {
+        const where = clientIds ? { clientId: { in: clientIds } } : undefined;
+        const [periods, months] = await Promise.all([
+          db.syncClientPeriod.findMany({ where }),
+          db.syncClientMonth.findMany({ where, select: { clientId: true, month: true, activeUsers: true, trainingUsers: true } }).catch(() => []),
+        ]);
+        return withMonthlyParticipation(periods as ClientPeriodRow[], months as ClientMonthRow[]);
+      }, SNAPSHOT_STALE_MS),
+    ]);
     if (!at) return unavailable(NO_SYNC);
-    return { status: "ok", data: rows as ClientPeriodRow[], source: "synced", asOf: at.toISOString() };
+    return { status: "ok", data: rows, source: "synced", asOf: at.toISOString() };
   },
 
   async getClientMonthRows(clientIds) {

@@ -12,7 +12,8 @@ const row = (o: Partial<ClientPeriodRow>): ClientPeriodRow => ({
 
 const totals = (o: Partial<Totals>): Totals => ({
   registeredUsers: 0, activeUsers: 0, trainingUsers: 0, knowledgeLearners: 0, knowledgeWeighted: 0,
-  retainedUsers: 0, previousActiveUsers: 0, sessions: 0, featuresAvailable: 0, featuresUsed: 0, ...o,
+  retainedUsers: 0, previousActiveUsers: 0, sessions: 0, featuresAvailable: 0, featuresUsed: 0,
+  monthActiveSum: 0, monthTrainingSum: 0, monthlyComplete: true, ...o,
 });
 
 describe("ratio / delta", () => {
@@ -87,6 +88,31 @@ describe("aggregate", () => {
   });
   it("ignores rows outside the period", () => {
     expect(aggregate([row({ period: "2025-Q4" })], ["2026-Q1"]).registeredUsers).toBe(0);
+  });
+});
+
+describe("participation is the monthly share, as in Axonify's Participation report", () => {
+  // Boehringer, October 2026: AdminZone shows 40.8% Average Training Participation; 378 of 926 trained that month.
+  it("uses the months' totals when every row has them", () => {
+    const m = aggregate([row({ activeUsers: 1052, trainingUsers: 399, monthActiveSum: 926, monthTrainingSum: 378 })], ["2026-Q1"]);
+    expect(m.participationRate).toBeCloseTo(378 / 926, 10);
+  });
+  it("adds months across clients and quarters (ratio of sums)", () => {
+    const rows = [
+      row({ clientId: "a", period: "2026-Q1", monthActiveSum: 300, monthTrainingSum: 30 }),
+      row({ clientId: "b", period: "2026-Q1", monthActiveSum: 100, monthTrainingSum: 90 }),
+      row({ clientId: "a", period: "2026-Q2", monthActiveSum: 300, monthTrainingSum: 60 }),
+    ];
+    expect(aggregate(rows, quartersIn({ year: 2026, quarter: null })).participationRate).toBeCloseTo(180 / 700, 10);
+  });
+  it("falls back to the quarterly count when any row with users lacks months, rather than mixing the two", () => {
+    const rows = [row({ clientId: "a", monthActiveSum: 300, monthTrainingSum: 30 }), row({ clientId: "b", activeUsers: 50, trainingUsers: 40 })];
+    expect(aggregate(rows, ["2026-Q1"]).participationRate).toBeCloseTo((40 + 40) / (50 + 50), 10);
+  });
+  it("feeds the health score", () => {
+    const m = derive(totals({ activeUsers: 100, trainingUsers: 90, monthActiveSum: 300, monthTrainingSum: 150, knowledgeLearners: 10, knowledgeWeighted: 7 }));
+    expect(m.participationRate).toBe(0.5);
+    expect(m.healthScore).toBeCloseTo(100 * (0.5 * 0.5 + 0.5 * 0.7), 6);
   });
 });
 

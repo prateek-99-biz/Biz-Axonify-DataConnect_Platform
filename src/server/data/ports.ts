@@ -53,6 +53,13 @@ export interface ClientPeriodRow {
   sessions: number;
   featuresAvailable: number;
   featuresUsed: number;
+  /**
+   * Active and training users of each month in the quarter, added up (each month's distinct users). Participation uses
+   * these when present, as Axonify's Participation report does: the monthly share, not anyone who trained once in the
+   * quarter. Filled when the period rows are read, from the monthly rows; absent outside the monthly window.
+   */
+  monthActiveSum?: number;
+  monthTrainingSum?: number;
 }
 
 /**

@@ -181,7 +181,7 @@ export const LEADER_METRICS: LeaderMetric[] = [
     question: "Who has asked Max the most questions in total?", how: "All questions asked to Max in the period.",
     value: (c) => (c.usage.maxQueries > 0 ? c.usage.maxQueries : null) },
   { key: "participation", label: "Best Participation", group: "Engagement", format: "pct", needsSize: true,
-    question: "Who has the best training participation?", how: "Active users who completed training ÷ active users (the Health Score input).",
+    question: "Who has the best training participation?", how: "Active users who completed training ÷ active users, in an average month (Axonify's Average Training Participation; the Health Score input).",
     value: (c) => c.health?.participationRate ?? null },
   { key: "engagement", label: "Highest Engagement", group: "Engagement", format: "pct", needsSize: true,
     question: "Who has the highest engagement?", how: "Active users who logged in ÷ active users, in an average month (Axonify's Average Participation).",

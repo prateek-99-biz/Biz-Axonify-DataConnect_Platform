@@ -37,10 +37,10 @@ After sign-in, a Customer Success Manager whose email matches the CSM column of 
 
 Pages that take one client show a client filter; pages that do not, do not. The Insights pages use only the period filter; Account Health and Benchmarks have their own client picker. Choose a full year (FY) in the period filter to rank the whole year on the Client Leaderboard.
 
-Every Insights page opens with **In Plain Words**: the main points as sentences. Engagement on these pages is people who logged in ÷ active users (Axonify's Average Participation); Participation is people who trained ÷ active users. Rates and growth on the leaderboard leave out clients averaging fewer than 25 active users a month.
+Every Insights page opens with **In Plain Words**: the main points as sentences. Engagement on these pages is people who logged in ÷ active users (Axonify's Average Participation); Participation is people who trained ÷ active users (Axonify's Average Training Participation). Both are for an average month, which is how AdminZone's Participation report shows them with **All Users** selected, so they can be checked there month by month. Rates and growth on the leaderboard leave out clients averaging fewer than 25 active users a month.
 
 ## Reading the numbers
-- **Health** = half participation (people who trained out of people who were active) and half knowledge. Bands: Healthy 75 or more, Moderate 60, At Risk 45, Critical below 45. The number shown is rounded down, so a 44.7 reads 44 and is Critical.
+- **Health** = half participation (people who trained out of people who were active, in an average month) and half knowledge. Bands: Healthy 75 or more, Moderate 60, At Risk 45, Critical below 45. The number shown is rounded down, so a 44.7 reads 44 and is Critical.
 - **Data to date.** The current quarter is partial. While it is under half over, "declining" flags are held back. Past quarters are complete.
 - **Check Data.** An account with many registered users and almost nobody active is shown as Check Data rather than as a real score. Look at the Axonify site setup first.
 - **Knowledge** exists for the latest quarter only; earlier quarters carry it forward.

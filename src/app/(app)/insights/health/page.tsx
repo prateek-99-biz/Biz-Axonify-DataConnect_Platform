@@ -144,7 +144,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
           <Stat label="Features in Use" value={focus.hasUsage ? `${focus.usage.featuresUsed} of ${FEATURES.length}` : "—"} note={focus.hasUsage ? `${focus.usagePrev.featuresUsed} in ${prevLabel}` : undefined} />
           <Stat label="Max Adoption" value={focus.hasUsage ? fmtPct(focus.usage.maxAdoption) : "—"} note={focus.hasUsage ? <Change value={focus.usage.maxAdoption != null && focus.usagePrev.maxAdoption != null ? focus.usage.maxAdoption - focus.usagePrev.maxAdoption : null} /> : undefined} />
         </div>
-        <p className="px-5 pb-1 text-[11px] text-slate-500">Changes are against {prevLabel}. Engagement is people who logged in ÷ active users; participation is people who completed training ÷ active users.</p>
+        <p className="px-5 pb-1 text-[11px] text-slate-500">Changes are against {prevLabel}. Engagement is people who logged in ÷ active users; participation is people who completed training ÷ active users. Both are for an average month, as in Axonify&apos;s Participation report.</p>
 
         <div className="grid gap-6 border-t hairline p-5 lg:grid-cols-2">
           <div>

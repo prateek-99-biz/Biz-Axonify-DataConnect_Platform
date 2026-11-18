@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ClientMonthRow, ClientPeriodRow, ClientSummary } from "@/server/data/ports";
-import { FEATURES, featuresByQuarter, growth, monthsIn, monthYearAgo, quarterOfMonth, sumMonths, usageComparison, deriveUsage, MIN_MAX_RATINGS } from "@/server/metrics/features";
+import { FEATURES, featuresByQuarter, growth, monthsIn, monthYearAgo, quarterOfMonth, sumMonths, usageComparison, deriveUsage, MIN_MAX_RATINGS, withMonthlyParticipation } from "@/server/metrics/features";
 import { buildInsights, healthyVsStruggling, LEADER_METRICS, MIN_RANKED_USERS, peerAverage, podiumCounts, rankBy, renewalRisk, usageDrops, valueStatus } from "./insights";
 
 const Q3 = { year: 2026, quarter: 3 as const };
@@ -26,6 +26,16 @@ describe("months and periods", () => {
     expect(monthYearAgo("2026-02")).toBe("2025-02");
     expect(quarterOfMonth("2026-09")).toBe("2026-Q3");
     expect(quarterOfMonth("2026-10")).toBe("2026-Q4");
+  });
+
+  it("attaches each quarter's monthly active and training users to its period row", () => {
+    const rows = withMonthlyParticipation(
+      [quarter("a", "2026-Q3", 0.9, 0.7), quarter("a", "2024-Q1", 0.9, 0.7), quarter("b", "2026-Q3", 0.5, null)],
+      [month("a", "2026-07", { activeUsers: 100, trainingUsers: 10 }), month("a", "2026-08", { activeUsers: 120, trainingUsers: 30 }), month("a", "2026-10")],
+    );
+    expect(rows[0]).toMatchObject({ monthActiveSum: 220, monthTrainingSum: 40 });
+    expect(rows[1].monthActiveSum).toBeUndefined(); // no months that far back
+    expect(rows[2].monthActiveSum).toBeUndefined(); // another client's months are not borrowed
   });
 });
 

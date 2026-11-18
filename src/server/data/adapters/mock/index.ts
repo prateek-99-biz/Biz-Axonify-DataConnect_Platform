@@ -6,6 +6,7 @@ import type {
   AnalyticsPort, ClientMonthRow, ClientPeriodRow, ClientSummary, CrmPort, Result, SourceCoverageRow, TeamNode, UserRow, UserLifecycle,
 } from "../../ports";
 import { quarterRange } from "@/server/metrics/period";
+import { withMonthlyParticipation } from "@/server/metrics/features";
 
 const SOURCE = "mock" as const;
 export const MOCK_AS_OF = "2026-10-20T06:00:00.000Z";
@@ -149,6 +150,8 @@ function monthRowsFor(c: (typeof CLIENTS)[number]): ClientMonthRow[] {
 }
 
 const MONTH_ROWS = CLIENTS.flatMap(monthRowsFor);
+/** Quarterly rows with their months' totals attached, as the synced adapter serves them. */
+const PERIOD_ROWS = withMonthlyParticipation(ROWS, MONTH_ROWS);
 
 const ok = <T,>(data: T): Result<T> => ({ status: "ok", data, source: SOURCE, asOf: MOCK_AS_OF });
 
@@ -257,7 +260,7 @@ export const mockAnalytics: AnalyticsPort = {
   },
   async getClientPeriodRows(clientIds) {
     const set = clientIds ? new Set(clientIds) : null;
-    return ok(ROWS.filter((r) => !set || set.has(r.clientId)));
+    return ok(PERIOD_ROWS.filter((r) => !set || set.has(r.clientId)));
   },
   async getClientMonthRows(clientIds) {
     const set = clientIds ? new Set(clientIds) : null;
