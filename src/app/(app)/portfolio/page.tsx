@@ -10,6 +10,8 @@ import { Badge, CALLOUT_WARN, Card, CardHeader, EmptyState, SourceUnavailable } 
 import { DeltaChip, KpiCard, KpiStrip } from "@/components/ui/kpi";
 import { NeedsAttention } from "@/components/dashboard/needs-attention";
 import { PeriodNotice } from "@/components/internal/period-notice";
+import { SampleNotice } from "@/components/internal/sample-notice";
+import { sampleCount } from "@/server/services/salesforce-accounts";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
@@ -18,7 +20,8 @@ import { humanize, riskLabel } from "@/lib/labels";
 
 export default async function PortfolioPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requirePagePermission("portfolio:read");
-  const loaded = await loadContext(await searchParams);
+  // Both are database reads, so start them together.
+  const [loaded, sample] = await Promise.all([loadContext(await searchParams), sampleCount()]);
   if (!loaded.ok) return <SourceUnavailable reason={loaded.reason} />;
   const { ctx } = loaded;
   const f = ctx.filters;
@@ -95,6 +98,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       )}
 
       <PeriodNotice label={periodLabel(f.period)} progress={ctx.progress} asOf={ctx.asOf} />
+      <SampleNotice count={sample} canRemove={can(user.role, "settings:manage")} />
 
       <NeedsAttention attention={attention} scopeCount={view.clients.length} periodLabel={periodLabel(f.period)} periodKey={periodKey(f.period)} healthAvailable={kpis.current.healthScore != null} />
 

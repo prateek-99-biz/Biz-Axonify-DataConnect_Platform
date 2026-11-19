@@ -9,7 +9,7 @@ export function SampleNotice({ count, canRemove }: { count: number; canRemove: b
       <Badge tone="warn">Sample Data</Badge>
       {/* One span, so the flex gap does not separate the full stop from the link. */}
       <span>
-        CSMs, licences, values and renewal dates on this page are made up.
+        CSMs, industries, licences, values and renewal dates on this page are made up until the real Salesforce export is imported.
         {canRemove ? <> <Link href="/settings" className="underline">Remove them in Settings</Link>.</> : " An admin can remove them."}
       </span>
     </p>

@@ -13,6 +13,8 @@ import { Badge, Card, CardHeader, EmptyState, SourceUnavailable } from "@/compon
 import { KpiCard } from "@/components/ui/kpi";
 import { ClientHeadlineCard } from "@/components/dashboard/client-headline";
 import { PeriodNotice } from "@/components/internal/period-notice";
+import { SampleNotice } from "@/components/internal/sample-notice";
+import { isSampleId } from "@/lib/sample-accounts";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { CompareBars, TrendChart } from "@/components/charts/charts";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
@@ -198,5 +200,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     );
   }
 
-  return <div className="space-y-4">{header}{tabs}{body}</div>;
+  // Only this client's own Salesforce row matters here, so the note goes once its real row is imported.
+  const sampleNote = <SampleNotice count={isSampleId(client.salesforceAccountId) ? 1 : 0} canRemove={can(user.role, "settings:manage")} />;
+  return <div className="space-y-4">{header}{sampleNote}{tabs}{body}</div>;
 }
