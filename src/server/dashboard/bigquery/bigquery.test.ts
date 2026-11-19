@@ -49,6 +49,12 @@ describe("queries against the DataConnect schema", () => {
     expect(checked).toBeGreaterThan(50);
   });
 
+  it("ignores learning times below zero or above a day, which DataConnect sometimes holds", () => {
+    // flydubai, November 2026: one session of -1,409,651,781 seconds turned the month's training hours negative.
+    expect(buildSql("usageMonthly", src)).toContain("SUM(IF(time_spent BETWEEN 0 AND 86400, time_spent, 0))");
+    expect(buildSql("clientMonthly", src)).toContain("SUM(IF(seconds BETWEEN 0 AND 86400, seconds, 0)) AS learning_seconds");
+  });
+
   it("counts each assigned topic once in the question pool, not once per question level", () => {
     const sql = buildSql("deliverySummary", src);
     // The progress view has a row per level; the pool must be built from distinct user-topic pairs.

@@ -114,6 +114,11 @@ export async function runSync(triggeredBy: string): Promise<SyncOutcome> {
       await tx.syncClientPeriod.deleteMany();
       await tx.syncClient.deleteMany();
       await tx.syncClient.createMany({ data: clients.data });
+      // A tenant taken out of BQ_TENANT_IDS leaves the platform altogether: its stored dashboard and key mapping go too.
+      const keep = clients.data.map((c) => c.id);
+      await tx.syncDashboardPart.deleteMany({ where: { clientId: { notIn: keep } } });
+      await tx.syncDashboard.deleteMany({ where: { clientId: { notIn: keep } } });
+      await tx.clientMapping.deleteMany({ where: { id: { notIn: keep } } });
       await tx.syncClientPeriod.createMany({ data: periodRows });
       if (months) {
         await tx.syncClientMonth.deleteMany();

@@ -75,7 +75,7 @@ async function main() {
        FROM ${P("chat_user_message")} WHERE tenant_id IN UNNEST(@t) AND delete_date IS NULL AND ${WINDOW("create_date")} GROUP BY 1, 2`),
     q(`SELECT tenant_id, ${M("create_date")} AS month, COUNT(*) AS plays
        FROM ${P("game_play")} WHERE tenant_id IN UNNEST(@t) AND is_game_played = TRUE AND status NOT IN ('Deleted', 'Cancelled') AND ${WINDOW("create_date")} GROUP BY 1, 2`),
-    q(`SELECT tenant_id, FORMAT_DATE('%Y-%m', date) AS month, SUM(seconds) AS seconds
+    q(`SELECT tenant_id, FORMAT_DATE('%Y-%m', date) AS month, SUM(CASE WHEN seconds >= 0 AND seconds <= 86400 THEN seconds ELSE 0 END) AS seconds -- a user-day over 24 hours is a broken record
        FROM ${P("foundation_user_daily_time_spent")} WHERE tenant_id IN UNNEST(@t) AND ${WINDOW("date")} GROUP BY 1, 2`),
   ]);
 

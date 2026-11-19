@@ -21,6 +21,11 @@ const TENANT = "tenant_id IN UNNEST(@tenants)";
  */
 const LIVE = "status NOT IN ('Deleted', 'Cancelled')"; // event rows (training, games, rewards, answers)
 const RELEASED = (alias = "") => `LOWER(TRIM(${alias}status)) = 'released'`; // content rows
+/**
+ * Seconds of learning that can be real: 0 to 24 hours. DataConnect holds a few broken values (a flydubai session of
+ * minus 1.4 billion seconds in November 2026, another of 3.8 years in October), which would swamp a month's hours.
+ */
+const PLAUSIBLE_SECONDS = (col: string) => `IF(${col} BETWEEN 0 AND 86400, ${col}, 0)`;
 const ACTIVE_USER = (alias = "") => `${alias}user_is_active = TRUE`; // monthly participation rows
 const ACTIVE_LEARNER = "LOWER(user_status) = 'active'"; // SDE rows
 const SCORED = "current_score IS NOT NULL AND baseline_score IS NOT NULL"; // SDE rows with both scores
@@ -297,7 +302,7 @@ export const QUERIES = {
       SELECT tenant_id, DATE(create_date) AS d, COUNT(*) AS logins, ${zeros("logins")}
       FROM ${t("foundation_user_login_record")} WHERE ${TENANT} AND ${since} GROUP BY tenant_id, d
       UNION ALL
-      SELECT tenant_id, DATE(create_date), 0, COUNT(*), SUM(COALESCE(time_spent, 0)), 0, 0, 0, 0
+      SELECT tenant_id, DATE(create_date), 0, COUNT(*), SUM(${PLAUSIBLE_SECONDS("time_spent")}), 0, 0, 0, 0
       FROM ${t("content_user_training")} WHERE ${TENANT} AND ${since} AND ${LIVE} GROUP BY tenant_id, DATE(create_date)
       UNION ALL
       SELECT tenant_id, DATE(complete_date), 0, 0, 0, COUNT(*), 0, 0, 0
@@ -468,7 +473,7 @@ export const QUERIES = {
       GROUP BY 1, 2
     )`;
     const parts = [
-      part("time_spent", "foundation_user_daily_time_spent", "date", "SUM(COALESCE(seconds, 0)) AS learning_seconds"),
+      part("time_spent", "foundation_user_daily_time_spent", "date", `SUM(${PLAUSIBLE_SECONDS("seconds")}) AS learning_seconds`),
       part("max_q", "max_user_query", "create_date", `COUNT(*) AS max_queries, COUNT(DISTINCT user_id) AS max_users,
         COUNTIF(feedback IS NOT NULL AND TRIM(feedback) != '' AND LOWER(TRIM(feedback)) NOT IN ('none', 'null')) AS max_rated,
         COUNTIF(REGEXP_CONTAINS(LOWER(COALESCE(feedback, '')), r'neg|down|unhelpful|not_helpful|not helpful|dislike|bad|wrong|incorrect')) AS max_negative`,
