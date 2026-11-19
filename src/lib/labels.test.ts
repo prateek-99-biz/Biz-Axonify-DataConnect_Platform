@@ -56,7 +56,7 @@ describe("statusLabel", () => {
 describe("riskLabel", () => {
   it("writes health bands in words", () => {
     expect(riskLabel("at_risk")).toBe("At Risk");
-    expect(riskLabel("unknown")).toBe("No Data");
+    expect(riskLabel("unknown")).toBe("Not Scored");
     expect(riskLabel("healthy")).toBe("Healthy");
   });
 });

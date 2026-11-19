@@ -147,8 +147,8 @@ describe("client insights and the leaderboard", () => {
     quarter("none", "2026-Q3", 0.5, 0.7),
   ];
   const months = [
-    month("a", "2026-07", { activeUsers: 100, loggedInUsers: 60, maxUsers: 50, maxQueries: 200, commsReachUsers: 90 }), month("a", "2025-07", { activeUsers: 80, loggedInUsers: 48 }),
-    month("b", "2026-07", { activeUsers: 400, maxUsers: 40, maxQueries: 400 }), month("b", "2025-07", { activeUsers: 400 }),
+    month("a", "2026-07", { activeUsers: 100, loggedInUsers: 60, maxUsers: 50, maxQueries: 200, commsReachUsers: 90 }), month("a", "2025-07", { activeUsers: 80, loggedInUsers: 48, trainingUsers: 48 }),
+    month("b", "2026-07", { activeUsers: 400, maxUsers: 40, maxQueries: 400 }), month("b", "2025-07", { activeUsers: 400, trainingUsers: 200 }),
     month("small", "2026-07", { activeUsers: MIN_RANKED_USERS - 1, maxUsers: 20, maxQueries: 500 }),
     month("none", "2026-07", { activeUsers: 100 }),
   ];
@@ -162,6 +162,37 @@ describe("client insights and the leaderboard", () => {
     expect(byId("b").participationGainYoY).toBeCloseTo(-0.1);
     expect(byId("none").licenceUse).toBeCloseTo(0.5);
     expect(byId("small").ranked).toBe(false);
+  });
+
+  it("measures participation gain against the same months a year earlier, not the whole quarter", () => {
+    // Q4 in progress: October and November now against October and November a year ago, though December 2025 was weak.
+    const Q4 = { year: 2026, quarter: 4 as const };
+    const rows = [
+      month("g", "2026-10", { activeUsers: 100, trainingUsers: 50 }), month("g", "2026-11", { activeUsers: 100, trainingUsers: 50 }),
+      month("g", "2025-10", { activeUsers: 100, trainingUsers: 40 }), month("g", "2025-11", { activeUsers: 100, trainingUsers: 40 }), month("g", "2025-12", { activeUsers: 100, trainingUsers: 5 }),
+    ];
+    const s = buildInsights([client("g")], [quarter("g", "2026-Q4", 0.5, 0.9), quarter("g", "2025-Q4", 85 / 300, 0.9)], rows, Q4, false, { asOf: "2026-11-19T05:15:00Z" });
+    expect(s.clients[0].participationGainYoY).toBeCloseTo(0.1);
+  });
+
+  it("compares Max questions at the same pace while the quarter is in progress", () => {
+    // 49 days of Q4 with 980 questions against 92 days of Q3 with 1,840: the same 20 a day, so no fall.
+    const Q4 = { year: 2026, quarter: 4 as const };
+    const rows = [
+      month("m", "2026-10", { maxQueries: 620 }), month("m", "2026-11", { maxQueries: 360 }),
+      month("m", "2026-07", { maxQueries: 620 }), month("m", "2026-08", { maxQueries: 620 }), month("m", "2026-09", { maxQueries: 600 }),
+    ];
+    const s = buildInsights([client("m")], [], rows, Q4, false, { asOf: "2026-11-19T00:00:00Z" });
+    expect(s.pace).toBeCloseTo(49 / 92, 5);
+    expect(s.clients[0].maxChange).toBeCloseTo(0, 2);
+    expect(usageDrops(s.clients)).toHaveLength(0);
+  });
+
+  it("counts licence use over all users even when the page counts training programs", () => {
+    const all = [month("l", "2026-07", { activeUsers: 150 })];
+    const programs = [month("l", "2026-07", { activeUsers: 30 })];
+    const lic = client("l", { commercial: { licenses: 300, licenseValue: 1000, currency: "USD", region: null, contractStart: null, renewalDate: null } });
+    expect(buildInsights([lic], [], programs, Q3, false, { allUserRows: all }).clients[0].licenceUse).toBeCloseTo(0.5);
   });
 
   it("measures growth in people logging in, not in accounts", () => {

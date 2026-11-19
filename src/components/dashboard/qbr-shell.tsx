@@ -7,7 +7,7 @@ import { ArrowLeft, ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen } f
 import { Badge, Select } from "@/components/ui/primitives";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { BizMark, BrandLogo } from "@/components/brand/brand-logo";
-import { monthLabel } from "@/server/dashboard/calc";
+import { monthLabel, resolveRange } from "@/server/dashboard/calc";
 import { cn } from "@/lib/utils";
 import { QBR_PAGES } from "./pages";
 
@@ -18,8 +18,8 @@ export interface QbrShellProps {
   clients: { id: string; name: string }[];
   clientId: string | null;
   clientName: string | null;
-  months: string[];
-  range: { from: string; to: string } | null;
+  /** Months with data per client id; the pickers offer the selected client's own months. */
+  monthsByClient: Record<string, string[]>;
   mock: boolean;
   asOf: string | null;
   signOutAction: () => Promise<void>;
@@ -61,9 +61,9 @@ export function QbrShell(p: QbrShellProps) {
   const urlClient = sp.get("client");
   const clientId = p.internal && p.clients.some((c) => c.id === urlClient) ? urlClient! : p.clientId;
   const clientName = p.clients.find((c) => c.id === clientId)?.name ?? p.clientName;
-  const pickMonth = (k: string, dflt: string) => (p.months.includes(sp.get(k) ?? "") ? sp.get(k)! : dflt);
-  const from = p.range ? pickMonth("from", p.range.from) : "";
-  const to = p.range ? pickMonth("to", p.range.to) : "";
+  // Same months and the same resolution as the page (loadQbr), so the pickers show the range the page used.
+  const months = (clientId && p.monthsByClient[clientId]) || [];
+  const { from, to } = resolveRange(months, sp.get("from") ?? undefined, sp.get("to") ?? undefined);
 
   const initials = p.userName.split(/[\s.@]+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
   const asOf = p.asOf ? new Date(p.asOf).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : null;
@@ -130,16 +130,16 @@ export function QbrShell(p: QbrShellProps) {
               </Select>
             ) : <span className="rounded-xl border border-line bg-slate-50/60 px-3 py-1.5 text-sm font-semibold text-ink">{clientName ?? "—"}</span>}
           </label>
-          {p.range && p.months.length > 0 && (
+          {months.length > 0 && (
             <>
               <label className="flex items-center gap-2 text-xs font-medium text-slate-500">From
                 <Select aria-label="From month" value={from} onChange={(e) => setParam("from", e.target.value)}>
-                  {p.months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+                  {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
                 </Select>
               </label>
               <label className="flex items-center gap-2 text-xs font-medium text-slate-500">To
                 <Select aria-label="To month" value={to} onChange={(e) => setParam("to", e.target.value)}>
-                  {p.months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+                  {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
                 </Select>
               </label>
             </>

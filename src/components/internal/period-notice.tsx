@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/primitives";
 /** Says so when the chosen quarter or year is still in progress, because a change against a finished period then compares a few weeks with a whole one. */
 export function PeriodNotice({ label, progress, asOf }: { label: string; progress: PeriodProgress; asOf: string }) {
   if (progress.fraction >= 1) return null;
-  const through = new Date(asOf).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  // The last whole day of data: a refresh early on 19 November covers up to 18 November.
+  const through = new Date(Date.parse(asOf.slice(0, 10)) - 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
   const early = progress.fraction < MIN_TREND_PROGRESS;
   return (
     <p role="note" className="glass flex flex-wrap items-center gap-2 !rounded-xl px-4 py-2 text-xs text-slate-600">

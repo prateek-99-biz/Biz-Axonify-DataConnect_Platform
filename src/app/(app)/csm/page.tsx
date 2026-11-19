@@ -183,7 +183,7 @@ export default async function MyAccountsPage({ searchParams }: { searchParams: P
           <div className="overflow-x-auto border-t hairline">
             <table className="w-full text-sm">
               <thead className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <tr><th className="px-5 py-2.5 font-semibold">CSM</th><th className="px-3 py-2.5 text-right font-semibold">Accounts</th><th className="px-3 py-2.5 text-right font-semibold">Need Attention</th><th className="px-3 py-2.5 text-right font-semibold">Average Health</th><th className="px-5 py-2.5 font-semibold"><span className="sr-only">Open</span></th></tr>
+                <tr><th className="px-5 py-2.5 font-semibold">CSM</th><th className="px-3 py-2.5 text-right font-semibold">Accounts</th><th className="px-3 py-2.5 text-right font-semibold">Need Attention</th><th className="px-3 py-2.5 text-right font-semibold">Overall Health</th><th className="px-5 py-2.5 font-semibold"><span className="sr-only">Open</span></th></tr>
               </thead>
               <tbody>
                 {all.csmBooks.filter((b) => b.csmEmail !== "").map((b) => (

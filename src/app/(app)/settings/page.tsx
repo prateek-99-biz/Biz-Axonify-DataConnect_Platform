@@ -164,7 +164,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     { name: "User Invitations", value: supabaseAdminConfigured() ? "Configured" : "Needs SUPABASE_SERVICE_ROLE_KEY", ok: supabaseAdminConfigured() },
     { name: "BigQuery Project", value: process.env.BQ_PROJECT_ID || "Not configured", ok: !!process.env.BQ_PROJECT_ID },
     { name: "Google Sign-In for Refresh", value: google.kind === "ready" ? "Keyless (Workload Identity Federation)" : google.kind === "partial" ? `Half configured, missing ${google.missing.join(", ")}` : "This machine's own Google sign-in", ok: google.kind !== "partial" },
-    { name: "Scheduled Daily Refresh", value: scheduled ? "On (22:00 UTC)" : google.kind === "ready" ? "Needs CRON_SECRET" : "Off (needs the Google setup, see DATA_REFRESH.md)", ok: scheduled },
+    { name: "Scheduled Daily Refresh on Vercel", value: scheduled ? "On (22:00 UTC)" : google.kind === "ready" ? "Needs CRON_SECRET" : "Off (needs the Google setup, see DATA_REFRESH.md)", ok: scheduled },
   ];
 
   return (

@@ -95,7 +95,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           </div>
           <Card><CardHeader title="Side by Side" />
             <DataTable searchable={false} canExport={can(user.role, "export:csv")} exportName="client-comparison"
-              columns={[{ key: "client", header: "Client" }, { key: "period", header: "Period" }, { key: "users", header: "Users", align: "right" }, { key: "participation", header: "Participation", align: "right" }, { key: "knowledge", header: "Knowledge", align: "right" }, { key: "engagement", header: "Engagement", align: "right" }, { key: "health", header: "Health", align: "right" }]}
+              columns={[{ key: "client", header: "Client" }, { key: "period", header: "Period" }, { key: "users", header: "Users", align: "right" }, { key: "participation", header: "Participation", align: "right" }, { key: "knowledge", header: "Knowledge", align: "right" }, { key: "engagement", header: "Active Accounts", align: "right" }, { key: "health", header: "Health", align: "right" }]}
               rows={tableRows} /></Card>
         </>
       )}

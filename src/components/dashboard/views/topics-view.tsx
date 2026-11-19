@@ -5,7 +5,8 @@ import { Card, CardHeader } from "@/components/ui/primitives";
 import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
 import { TreeSlicer } from "@/components/dashboard/slicers";
-import { contentFlag, descendants, reviewPriority, saturation, weightedAvg } from "@/server/dashboard/calc";
+import { contentFlag, dayLabel, descendants, fmtPts, reviewPriority, saturation, weightedAvg } from "@/server/dashboard/calc";
+import { TILE_DEFS } from "@/server/dashboard/definitions";
 import type { TopicNode, TopicStat } from "@/server/dashboard/types";
 import { unpackRows, type PackedRows } from "@/server/dashboard/sections";
 import { cn, fmtCompact, fmtNumber, fmtPct } from "@/lib/utils";
@@ -24,7 +25,7 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
   const current = keep ? weightedAvg(scoped, (t) => t.current) : overall?.current ?? weightedAvg(scoped, (t) => t.current);
   const baseline = keep ? weightedAvg(scoped, (t) => t.baseline) : overall?.baseline ?? weightedAvg(scoped, (t) => t.baseline);
   const sum = (f: (t: TopicStat) => number) => scoped.reduce((s, t) => s + f(t), 0);
-  const latest = scoped.map((t) => t.createdAt).sort().at(-1);
+  const latest = scoped.map((t) => t.createdAt).filter(Boolean).sort().at(-1);
 
   const rows: TableRow[] = scoped.map((s) => {
     const flag = contentFlag(s);
@@ -62,13 +63,13 @@ export function TopicsView({ topics: topicsP, stats: statsP, canExport, internal
     <div className="space-y-6">
       <KpiStrip cols={4}>
         <KpiTile label="Current Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(current, 0)} />
-        <KpiTile label="Knowledge Lift" metric="lift" scope="snapshot" value={fmtPct(current != null && baseline != null ? current - baseline : null, 0)} hint="Current minus baseline" />
-        <KpiTile label="Audience" scope="snapshot" value={fmtCompact(aud)} hint="Learners assigned to the selected topics" />
+        <KpiTile label="Knowledge Lift" metric="lift" scope="snapshot" value={fmtPts(current != null && baseline != null ? current - baseline : null)} hint="Current minus baseline, percentage points" />
+        <KpiTile label="Learner-Topic Pairs" definition={TILE_DEFS.learnerTopics} scope="snapshot" value={fmtCompact(aud)} hint="Scored learners per topic, added up (not distinct learners)" />
         <KpiTile label="Training Modules" scope="snapshot" value={fmtNumber(sum((t) => t.modules))} />
-        <KpiTile label="Topic Completion (Graduate)" metric="topicCompletion" scope="snapshot" value={fmtPct(weightedAvg(scoped, (t) => t.completion), 0)} />
+        <KpiTile label="Level Records at Graduate or Expert" metric="topicCompletion" definition={TILE_DEFS.graduateRecords} scope="snapshot" value={fmtPct(weightedAvg(scoped, (t) => t.completion), 0)} hint="Per topic, weighted by learners; Axonify also counts Intermediate" />
         <KpiTile label="Released Questions" scope="snapshot" value={fmtCompact(sum((t) => t.l1 + t.l2 + t.l3))} />
-        <KpiTile label="Target Groups" scope="snapshot" value={fmtNumber(sum((t) => t.targetGroups))} />
-        <KpiTile label="Latest Topic Created" scope="snapshot" value={latest ? new Date(latest).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "\u2014"} />
+        <KpiTile label="Group-Topic Links" definition={TILE_DEFS.groupTopics} scope="snapshot" value={fmtNumber(sum((t) => t.targetGroups))} hint="Target groups per topic, added up (not distinct groups)" />
+        <KpiTile label="Latest Topic Created" scope="snapshot" value={dayLabel(latest)} />
       </KpiStrip>
 
       <div className="grid gap-4 xl:grid-cols-[20rem_1fr]">

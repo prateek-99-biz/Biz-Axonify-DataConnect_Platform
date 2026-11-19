@@ -65,7 +65,7 @@ export default async function InternalHomePage({ searchParams }: { searchParams:
     accountsTile,
     { name: "Alerts and Watchlist", href: "/alerts", value: String(openAlerts.length), note: `${openAlerts.filter((a) => a.severity === "critical").length} critical · ${watch.length} on the watchlist` },
     { name: "Renewals", href: "/renewals", value: String(renewals.length), note: renewTotals.length ? `in 90 days · ${renewTotals.map((t) => `${t.currency} ${fmtNumber(Math.round(t.total))}`).join(" · ")}` : "in 90 days" },
-    { name: "Account Health", href: "/insights/health", value: fmtHealth(view.kpis.current.healthScore), note: `portfolio average · ${view.riskCounts.critical + view.riskCounts.at_risk} Critical or At Risk` },
+    { name: "Account Health", href: "/insights/health", value: fmtHealth(view.kpis.current.healthScore), note: `all clients' users together · ${view.riskCounts.critical + view.riskCounts.at_risk} Critical or At Risk` },
     { name: "Client Leaderboard", href: "/insights/leaderboard", value: aiLeader ? aiLeader.insight.client.name : String(insights.clients.length), note: aiLeader ? "uses Max the most · see who leads on every measure" : "clients ranked on participation, engagement and growth" },
     { name: "Max AI Usage", href: "/insights/ai", value: insights.hasUsage ? fmtNumber(insights.total.usage.maxQueries) : "—", note: insights.hasUsage ? `questions asked · ${fmtPct(insights.total.usage.maxAdoption)} of active users ask Max` : "waiting for the monthly usage refresh" },
     { name: "Benchmarks and Features", href: "/insights/benchmarks", value: insights.hasUsage ? fmtPct(insights.total.usage.engagement) : "—", note: "engagement across all clients · compare one client with its peers" },

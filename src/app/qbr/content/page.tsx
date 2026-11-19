@@ -13,7 +13,7 @@ export default function ContentPage({ searchParams }: Props) {
   // The header is sent at once; the topic rows stream in behind a skeleton.
   return (
     <div className="space-y-6">
-      <PageHeader icon={BookOpen} title="Content & Programs" subtitle="Topics · types · surveys · content health" />
+      <PageHeader icon={BookOpen} title="Content & Programs" subtitle="Released content · learner progress by subject and level" />
       <Suspense fallback={<BodySkeleton />}>
         <ContentBody searchParams={searchParams} />
       </Suspense>

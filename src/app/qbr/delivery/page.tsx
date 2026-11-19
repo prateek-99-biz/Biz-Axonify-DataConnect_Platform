@@ -21,7 +21,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pro
     <div className="space-y-6">
       <PageHeader icon={Package} title="Content Delivery" subtitle="How much content is being assigned to people and groups?" />
       <KpiStrip cols={6}>
-        <KpiTile label="Average Question Pool" metric="questionPool" scope="snapshot" value={fmtNumber(data.delivery.avgQuestionPool, 0)} hint="Released questions per assigned topic" />
+        <KpiTile label="Average Question Pool" metric="questionPool" scope="snapshot" value={fmtNumber(data.delivery.avgQuestionPool, 0)} hint="Released questions across each learner's assigned topics" />
         <KpiTile label="Estimated Months to Graduate" metric="monthsToGraduate" scope="snapshot" value={dash(data.delivery.estimatedMonthsToGraduate)} />
         <KpiTile label="Average Programs per Group" scope="snapshot" value={dash(avg((g) => g.programs))} hint="Active groups" />
         <KpiTile label="Maximum Programs per Group" scope="snapshot" value={dash(max((g) => g.programs), 0)} />

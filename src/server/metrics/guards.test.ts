@@ -35,13 +35,14 @@ describe("the displayed health number never contradicts its band", () => {
 describe("periodProgress", () => {
   it("counts how much of the quarter the data covers", () => {
     const p = periodProgress({ year: 2026, quarter: 4 }, "2026-11-02T06:45:00Z");
-    expect(p).toMatchObject({ covered: 33, total: 92 });
-    expect(p.fraction).toBeCloseTo(33 / 92, 5);
+    // A refresh at 06:45 on 2 November covers 1 October to 1 November: 32 whole days.
+    expect(p).toMatchObject({ covered: 32, total: 92 });
+    expect(p.fraction).toBeCloseTo(32 / 92, 5);
     expect(p.fraction).toBeLessThan(MIN_TREND_PROGRESS);
   });
   it("treats a finished quarter as whole, and a year in progress as a share of 365", () => {
     expect(periodProgress({ year: 2026, quarter: 3 }, "2026-11-02T06:45:00Z").fraction).toBe(1);
-    expect(periodProgress({ year: 2026, quarter: null }, "2026-11-02T06:45:00Z")).toMatchObject({ covered: 306, total: 365 });
+    expect(periodProgress({ year: 2026, quarter: null }, "2026-11-02T06:45:00Z")).toMatchObject({ covered: 305, total: 365 });
   });
   it("is never negative or above one", () => {
     expect(periodProgress({ year: 2027, quarter: 1 }, "2026-11-02T00:00:00Z").fraction).toBe(0);

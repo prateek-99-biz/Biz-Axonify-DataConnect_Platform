@@ -5,10 +5,13 @@ import { KpiStrip, KpiTile, PageHeader, ScopeTag } from "@/components/dashboard/
 import { SingleLine } from "@/components/dashboard/dash-charts";
 import { QBR_PAGES } from "@/components/dashboard/pages";
 import { House } from "lucide-react";
-import { headline, monthAxisLabel, monthLabel } from "@/server/dashboard/calc";
+import { headline, monthAxisLabel, monthLabel, perLoggedIn } from "@/server/dashboard/calc";
 import { carryQuery, loadQbr } from "@/server/dashboard/context";
 import type { SearchParams } from "@/server/services/context";
 import { fmtCompact, fmtPct } from "@/lib/utils";
+
+/** Frequency is an average over logged-in users; with nobody logged in there is none, so it reads "—", not "0.0 days". */
+const fmtDays = (n: number | null) => (n == null ? "—" : `${n.toFixed(1)} days`);
 
 export default async function QbrHome({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
@@ -19,7 +22,7 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
   const qs = carryQuery(sp);
 
   const series = h.months.map((m) => ({
-    month: monthAxisLabel(m.month, data.asOf), frequency: m.frequency, participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null,
+    month: monthAxisLabel(m.month, data.asOf), frequency: perLoggedIn(m, m.frequency), participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null,
   }));
 
   return (
@@ -28,7 +31,7 @@ export default async function QbrHome({ searchParams }: { searchParams: Promise<
 
       <KpiStrip>
         <KpiTile label="Engagement Health" metric="health" scope="month" scopeLabel="Month + snapshot" value={fmtPct(h.health, 0)} hint="50% participation + 50% knowledge" />
-        <KpiTile label="Average Frequency" metric="frequency" scope="month" value={h.latest ? `${h.latest.frequency.toFixed(1)} days` : "\u2014"} hint="Days active per logged-in user" />
+        <KpiTile label="Average Frequency" metric="frequency" scope="month" value={fmtDays(h.latest ? perLoggedIn(h.latest, h.latest.frequency) : null)} hint="Days active per logged-in user" />
         <KpiTile label="Active Users" metric="activeUsers" scope="month" value={fmtCompact(h.latest?.activeUsers)} hint="Latest month in range" />
         <KpiTile label="Training Participation" metric="participation" scope="month" value={fmtPct(h.participation, 0)} hint="Training users ÷ active users" />
         <KpiTile label="Average Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(h.avgKnowledge, 0)} hint="Average current score across all topic levels (as in Axonify reports)" />

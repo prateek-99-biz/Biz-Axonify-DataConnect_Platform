@@ -47,6 +47,6 @@ export const lifecycleLabel = (value: string): string => humanize(value);
 
 /** Account health bands, as written on screen and in exports. */
 export const RISK_LABEL: Record<string, string> = {
-  healthy: "Healthy", moderate: "Moderate", at_risk: "At Risk", critical: "Critical", unknown: "No Data",
+  healthy: "Healthy", moderate: "Moderate", at_risk: "At Risk", critical: "Critical", unknown: "Not Scored",
 };
 export const riskLabel = (risk: string): string => RISK_LABEL[risk] ?? humanize(risk);

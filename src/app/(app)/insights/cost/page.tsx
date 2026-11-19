@@ -52,13 +52,16 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
   const perActive = (c: ClientInsight) => (c.usage.avgActiveUsers ? value(c) / c.usage.avgActiveUsers : null);
   const perEngaged = (c: ClientInsight) => { const e = engaged(c); return e ? value(c) / e : null; };
   const status = (c: ClientInsight) => valueStatus(c.licenceUse, c.risk);
+  // Under half the licences in use, whatever the health band: an At Risk account can be under-used as well.
+  const lowUse = (c: ClientInsight) => c.licenceUse != null && c.licenceUse < 0.5;
+  const more = (l: ClientInsight[], n = 4) => (l.length > n ? ` and ${l.length - n} more` : "");
 
   // Totals are kept apart per currency because the Salesforce file can hold more than one.
   const currencies = [...new Set(priced.map(cur))].sort();
   const totals = currencies.map((currency) => {
     const inCur = priced.filter((c) => cur(c) === currency);
     const sum = (f: (c: ClientInsight) => boolean) => inCur.filter(f).reduce((s, c) => s + value(c), 0);
-    return { currency, total: sum(() => true), atRisk: sum((c) => status(c) === "At Risk"), underUsed: sum((c) => status(c) === "Under-Used"), count: inCur.length };
+    return { currency, total: sum(() => true), atRisk: sum((c) => status(c) === "At Risk"), underUsed: sum(lowUse), count: inCur.length };
   });
   const main = [...totals].sort((a, b) => b.total - a.total)[0];
   // "USD 565,890 and AED 28,516": every currency that has some of the value, so a count of accounts never hides another currency.
@@ -67,16 +70,17 @@ export default async function CostToServePage({ searchParams }: { searchParams: 
 
   const byValue = [...priced].sort((a, b) => value(b) - value(a));
   const atRisk = byValue.filter((c) => status(c) === "At Risk");
-  const underUsed = byValue.filter((c) => status(c) === "Under-Used");
-  const priciest = [...priced].filter((c) => perEngaged(c) != null && cur(c) === main.currency).sort((a, b) => perEngaged(b)! - perEngaged(a)!)[0];
-  const neglected = byValue.filter((c) => touchOf(c) === 0 && (status(c) === "At Risk" || status(c) === "Under-Used"));
+  const underUsed = byValue.filter(lowUse);
+  // Only clients big enough to rank: a near-empty account (3 active users) would top this for no useful reason.
+  const priciest = [...priced].filter((c) => c.ranked && perEngaged(c) != null && cur(c) === main.currency).sort((a, b) => perEngaged(b)! - perEngaged(a)!)[0];
+  const neglected = byValue.filter((c) => touchOf(c) === 0 && (status(c) === "At Risk" || lowUse(c)));
 
   const summary = [
     `${priced.length} account${priced.length === 1 ? " has a" : "s have a"} contract value on file, worth ${totals.map((t) => money(t.currency, t.total)).join(" and ")} a year.`,
-    atRisk.length ? `${byCurrency("atRisk")} sits with ${atRisk.length} account${atRisk.length === 1 ? "" : "s"} in the At Risk or Critical bands: ${atRisk.slice(0, 4).map((c) => c.client.name).join(", ")}${atRisk.length > 4 ? " and more" : ""}.` : "No contract value sits with an At Risk or Critical account.",
-    underUsed.length ? `${underUsed.length} account${underUsed.length === 1 ? " uses" : "s use"} under half of the licences paid for (${underUsed.slice(0, 4).map((c) => `${c.client.name} ${fmtPct(c.licenceUse, 0)}`).join(", ")}). These are the adoption conversations to have before renewal.` : "",
+    atRisk.length ? `${byCurrency("atRisk")} sits with ${atRisk.length} account${atRisk.length === 1 ? "" : "s"} in the At Risk or Critical bands: ${atRisk.slice(0, 4).map((c) => c.client.name).join(", ")}${more(atRisk)}.` : "No contract value sits with an At Risk or Critical account.",
+    underUsed.length ? `${underUsed.length} account${underUsed.length === 1 ? " uses" : "s use"} under half of the licences paid for (${underUsed.slice(0, 4).map((c) => `${c.client.name} ${fmtPct(c.licenceUse, 0)}`).join(", ")}${more(underUsed)}). These are the adoption conversations to have before renewal.` : "",
     priciest ? `${priciest.client.name} has the highest cost per engaged user: ${money(main.currency, perEngaged(priciest))} a year for each person who logs in.` : "",
-    neglected.length ? `No notes or tasks in ${TOUCH_DAYS} days for ${neglected.slice(0, 4).map((c) => c.client.name).join(", ")}, though they are At Risk or Under-Used.` : "",
+    neglected.length ? `No notes or tasks in ${TOUCH_DAYS} days for ${neglected.slice(0, 4).map((c) => c.client.name).join(", ")}${more(neglected)}, though they are At Risk or Under-Used.` : "",
   ];
 
   const rows: TableRow[] = byValue.map((c) => {

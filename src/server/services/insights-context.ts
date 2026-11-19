@@ -39,7 +39,7 @@ export async function loadInsights(sp: SearchParams): Promise<InsightsResult> {
   const rows = onBasis(raw, basis);
   // Participation and health follow the same people as the usage figures.
   const periodRows = basis === "all" ? ctx.rows : withMonthlyParticipation(ctx.rows, rows);
-  const insights = buildInsights(ctx.clients, periodRows, rows, ctx.filters.period, ctx.filters.inProgress);
+  const insights = buildInsights(ctx.clients, periodRows, rows, ctx.filters.period, ctx.filters.inProgress, { asOf: ctx.asOf, allUserRows: raw });
   const usageReason = months.status !== "ok"
     ? months.reason
     : insights.hasUsage ? null : "There is no feature or Max usage for this period. Choose a period from the last two years.";

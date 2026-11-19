@@ -66,6 +66,7 @@ export function NeedsAttention({ attention, scopeCount, periodLabel, periodKey, 
                   )}
                   <span className="min-w-0 flex-1 basis-48 text-xs text-slate-600">{c.change ?? ""}</span>
                   {c.dataCheck && <Badge tone="warn" title="Only a few registered users are active. Check Axonify before acting.">Check Data</Badge>}
+                  {c.newAccounts != null && <Badge tone="neutral" title="Many accounts were added since the previous period. New people who have not started yet pull every rate down, so read the change as a roll-out, not a decline.">+{c.newAccounts.toLocaleString("en-US")} New Accounts</Badge>}
                   {c.renewalDays != null && <Badge tone="warn" title={`Renewal date ${c.renewalDate}`}>Renews in {c.renewalDays} day{c.renewalDays === 1 ? "" : "s"}</Badge>}
                   <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </Link>

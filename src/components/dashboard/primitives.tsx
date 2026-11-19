@@ -43,9 +43,11 @@ export function ScopeTag({ scope, label }: { scope: Scope; label?: string }) {
   );
 }
 
-export function KpiTile({ label, value, hint, scope, scopeLabel, metric }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string; metric?: KpiMetric }) {
+/** `definition` replaces the metric's tooltip when a tile shows a variant of it (the metric still sets the colour). */
+export function KpiTile({ label, value, hint, scope, scopeLabel, metric, definition }: { label: string; value: string; hint?: string; scope?: Scope; scopeLabel?: string; metric?: KpiMetric; definition?: string }) {
+  const title = definition ?? (metric ? KPI_DEFS[metric] : hint);
   return (
-    <Card className={cn("relative flex flex-col py-4 pl-6 pr-4", metric && "cursor-help")} title={metric ? KPI_DEFS[metric] : hint}>
+    <Card className={cn("relative flex flex-col py-4 pl-6 pr-4", (metric || definition) && "cursor-help")} title={title}>
       <span aria-hidden className={cn("absolute bottom-4 left-3 top-4 w-1 rounded-full bg-gradient-to-b", ACCENT[accentForKpi(metric)].bar)} />
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">{value}</p>
@@ -86,7 +88,7 @@ export function DataBar({ value, label }: { value: number | null; label?: string
       <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100" aria-hidden>
         <div className="h-full rounded-full bg-gradient-to-r from-brand to-brand-accent" style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }} />
       </div>
-      <span className="w-12 text-right tabular-nums">{label ?? `${(value * 100).toFixed(0)}%`}</span>
+      <span className="min-w-[3rem] whitespace-nowrap text-right tabular-nums">{label ?? `${(value * 100).toFixed(0)}%`}</span>
     </div>
   );
 }

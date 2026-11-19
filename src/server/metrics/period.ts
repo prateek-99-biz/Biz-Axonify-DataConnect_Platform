@@ -65,13 +65,32 @@ export function quarterRange(from: Period, to: Period): string[] {
 
 export interface PeriodProgress { fraction: number; covered: number; total: number }
 
-/** How many of a period's days the data covers, given when it was last refreshed. A finished period is 1. */
+/**
+ * How many of a period's days the data covers, given when it was last refreshed. Only whole days count: a refresh at
+ * 05:15 on 19 November covers 1 October to 18 November. A finished period is 1.
+ */
 export function periodProgress(p: Period, asOfIso: string): PeriodProgress {
   const start = Date.UTC(p.year, p.quarter ? (p.quarter - 1) * 3 : 0, 1);
   const end = p.quarter ? Date.UTC(p.year, p.quarter * 3, 1) : Date.UTC(p.year + 1, 0, 1);
   const total = Math.round((end - start) / 86_400_000);
-  const covered = Math.min(total, Math.max(0, Math.ceil((Date.parse(asOfIso) - start) / 86_400_000)));
+  const covered = Math.min(total, Math.max(0, Math.floor((Date.parse(asOfIso) - start) / 86_400_000)));
   return { fraction: total === 0 ? 1 : covered / total, covered, total };
+}
+
+/**
+ * Days of data behind a list of months ("2026-10"): whole months before the refresh, and the elapsed part of the month
+ * it happened in. Months after the refresh count nothing. Used to compare totals at the same pace when a period is
+ * still in progress (49 days of Q4 against 92 of Q3).
+ */
+export function daysCovered(months: Iterable<string>, asOfIso?: string): number {
+  const asOf = asOfIso ? Date.parse(asOfIso) : Number.POSITIVE_INFINITY;
+  let days = 0;
+  for (const m of months) {
+    const [y, mo] = m.split("-").map(Number);
+    const start = Date.UTC(y, mo - 1, 1), end = Date.UTC(y, mo, 1);
+    days += (Math.min(end, Math.max(start, asOf)) - start) / 86_400_000;
+  }
+  return days;
 }
 
 /** Below this share of the period, a change against the previous period compares a few weeks with a whole one, so it is not flagged. */

@@ -14,13 +14,23 @@ export const KPI_DEFS = {
   currentKnowledge: "Average current score over every active user-topic-level record that has a score. Same method as Axonify's Knowledge Summary.",
   baselineKnowledge: "Average first-attempt score over the same records as current knowledge.",
   lift: "Current knowledge minus baseline knowledge, in percentage points.",
-  confidence: "Average self-reported confidence (0-100) over all active user-topic records, including topics not started yet (counted as 0). Lower than the learners' own view for clients with a lot of unstarted content.",
+  confidence: "Average self-reported confidence (0-100) per active learner-topic, taking the learner's highest level in each topic; topics not started at all count as 0, levels not started inside a started topic are left out. The Knowledge & Confidence Matrix averages every level instead (not-started levels count as 0), so its confidence reads lower.",
   experts: "Learners whose average current score is 90% or higher.",
-  topicCompletion: "Share of user-topic records at Graduate. Axonify's Topic Progress report counts Intermediate, Graduate and Expert as completed, so its figure is higher.",
+  topicCompletion: "Share of active learner-topics where the learner has reached Graduate or Expert on at least one question level. Axonify's Topic Progress report also counts Intermediate as completed, so its figure is higher.",
   graduateExpert: "Share of user-topic-level records at Graduate or Expert.",
   notStarted: "Share of user-topic-level records not yet started.",
-  questionPool: "Average number of released questions across the topics assigned to each learner.",
+  questionPool: "Average number of released questions across the topics assigned to each learner (each assigned topic counted once).",
   monthsToGraduate: "Average question pool ÷ questions answered per learner in the last 30 days (Power BI measure).",
 } as const;
 
 export type KpiMetric = keyof typeof KPI_DEFS;
+
+/**
+ * Definitions for tiles that are not account KPIs (sums over the selected topics). A tile shows one of these in place of
+ * its metric's definition while keeping that metric's colour.
+ */
+export const TILE_DEFS = {
+  graduateRecords: "Share of learner-topic-level records at Graduate or Expert, worked out per topic and averaged over the selected topics weighted by each topic's scored learners. Axonify's Topic Progress report also counts Intermediate as completed, so its figure is higher.",
+  learnerTopics: "Learners with a score in each selected topic, added up across topics: a learner in five topics counts five times. It is not a count of distinct learners.",
+  groupTopics: "Training groups linked to each selected topic (through programs or fast-track audiences), added up across topics: a group linked to five topics counts five times.",
+} as const;

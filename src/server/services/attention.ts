@@ -17,6 +17,14 @@ export interface AttentionItem {
   renewalDays: number | null;
   /** Active users are so few against registered that the source should be checked before acting. */
   dataCheck: boolean;
+  /** Accounts added since the previous period when there were very many (a bulk roll-out), which moves every rate. */
+  newAccounts: number | null;
+}
+
+/** A jump in registered users this large (half again, and at least 500 people) is named next to the client, so a roll-out is not read as a decline. */
+export function accountJump(c: Pick<ClientRowView, "current" | "previous">): number | null {
+  const added = c.current.registeredUsers - c.previous.registeredUsers;
+  return c.previous.registeredUsers > 0 && added >= 500 && added / c.previous.registeredUsers >= 0.5 ? added : null;
 }
 
 export interface Attention {
@@ -54,7 +62,7 @@ export function buildAttention(clients: ClientRowView[], today: string, prevLabe
       const renewalDate = c.client.commercial?.renewalDate ?? null;
       const days = renewalDate ? daysUntil(renewalDate, today) : null;
       return {
-        clientId: c.client.id, name: c.client.name, risk: c.risk, health: c.current.healthScore, change: changePhrase(c, prevLabel), dataCheck: lowActivity(c.current),
+        clientId: c.client.id, name: c.client.name, risk: c.risk, health: c.current.healthScore, change: changePhrase(c, prevLabel), dataCheck: lowActivity(c.current), newAccounts: accountJump(c),
         renewalDate, renewalDays: days != null && days >= 0 && days <= RENEWAL_WINDOW_DAYS ? days : null,
       };
     }),

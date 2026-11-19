@@ -128,7 +128,7 @@ export default async function CsmPortfolioPage({ searchParams }: { searchParams:
               {insights.hasUsage && <Stat label="Max Adoption" value={fmtPct(b.maxAdoption)} />}
             </div>
             <p className="mt-3 text-[11px] text-slate-500">
-              Average health {fmtHealth(b.health)} · {b.touches} touchpoint{b.touches === 1 ? "" : "s"} (notes and tasks) in {TOUCH_DAYS} days ·{" "}
+              Overall health {fmtHealth(b.health)} (all their clients&apos; users together) · {b.touches} touchpoint{b.touches === 1 ? "" : "s"} (notes and tasks) in {TOUCH_DAYS} days ·{" "}
               <Link href={`/csm?csm=${encodeURIComponent(b.key)}&period=${period}`} className="whitespace-nowrap underline">Open accounts</Link>
             </p>
           </Card>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateMonths, contentFlag, isCurrentMonth, monthAxisLabel, descendants, engagementHealth, withCoveredParents, resolveRange, reviewPriority, saturation, teamStatus, teamTrend } from "./calc";
+import { aggregateMonths, contentFlag, dayLabel, fmtPts, isCurrentMonth, monthAxisLabel, descendants, engagementHealth, perLoggedIn, previousMonth, withCoveredParents, resolveRange, reviewPriority, saturation, teamRows, teamStatus, teamTrend } from "./calc";
 import { mockDashboard } from "./mock";
 import { can, parseRole } from "@/server/auth/rbac";
 
@@ -15,6 +15,31 @@ describe("report thresholds", () => {
     expect(teamTrend(0.47, 0.5)).toBe("Declining");
     expect(teamTrend(0.51, 0.5)).toBe("Stable");
     expect(teamTrend(0.5, null)).toBe("No prior data");
+  });
+  it("a one-month range still trends against the month before it", () => {
+    const teams = [{ id: "t", name: "T", parentId: null }];
+    const row = (month: string, training: number, loggedIn = 5) => ({ teamId: "t", month, activeUsers: 10, loggedInUsers: loggedIn, trainingUsers: training, frequency: loggedIn ? 4 : 0, avgTimePerDayMin: 1 });
+    const tm = [row("2025-12", 2), row("2026-01", 6)];
+    expect(teamRows(teams, tm, { from: "2026-01", to: "2026-01" })[0].trend).toBe("Rising");
+    expect(teamRows(teams, tm, { from: "2025-12", to: "2025-12" })[0].trend).toBe("No prior data");
+    expect(previousMonth("2026-01")).toBe("2025-12");
+    expect(previousMonth("2026-11")).toBe("2026-10");
+    // Nobody logged in: no frequency to show, but the team still scores 0 on it.
+    const idle = teamRows(teams, [row("2026-02", 0, 0)], { from: "2026-02", to: "2026-02" })[0];
+    expect(idle.frequency).toBeNull();
+    expect(idle.status).toBe("Low");
+  });
+  it("averages over logged-in users are missing, not zero, when nobody logged in", () => {
+    expect(perLoggedIn({ loggedInUsers: 0 }, 0)).toBeNull();
+    expect(perLoggedIn({ loggedInUsers: 3 }, 2.5)).toBe(2.5);
+  });
+  it("formats lift in points and dates as 10 Nov 2026", () => {
+    expect(fmtPts(0.166)).toBe("+17 pts");
+    expect(fmtPts(-0.02)).toBe("−2 pts");
+    expect(fmtPts(0.001)).toBe("0 pts");
+    expect(fmtPts(null)).toBe("—");
+    expect(dayLabel("2026-11-10")).toBe("10 Nov 2026");
+    expect(dayLabel("")).toBe("—");
   });
   it("engagement health is half participation, half knowledge", () => {
     expect(engagementHealth(0.32, 0.85)).toBeCloseTo(0.585, 6);

@@ -49,6 +49,22 @@ describe("queries against the DataConnect schema", () => {
     expect(checked).toBeGreaterThan(50);
   });
 
+  it("counts each assigned topic once in the question pool, not once per question level", () => {
+    const sql = buildSql("deliverySummary", src);
+    // The progress view has a row per level; the pool must be built from distinct user-topic pairs.
+    expect(sql).toMatch(/SELECT DISTINCT tenant_id, user_id, topic_id\s+FROM `[^`]+\.content_user_topic_progress`/);
+    expect(sql).toMatch(/FROM user_topics ut\s+LEFT JOIN released r/);
+    expect(sql).not.toMatch(/FROM `[^`]+\.content_user_topic_progress` c\s+LEFT JOIN released/);
+  });
+
+  it("counts Graduate or Expert as a completed topic level on both completion measures", () => {
+    for (const n of ["knowledgeAccount", "topics"] as const) {
+      const sql = buildSql(n, src);
+      expect(sql, n).toContain("LOWER(topic_progress) IN ('graduate', 'expert')");
+      expect(sql, n).not.toContain("LOWER(topic_progress) = 'graduate'");
+    }
+  });
+
   it("rejects unsafe identifiers", () => {
     expect(() => buildSql("clients", { project: "a`;DROP", dataset: "x" })).toThrow();
   });
@@ -138,6 +154,9 @@ describe("assembling a dashboard from rows", () => {
     expect(d.months.map((m) => m.activeUsers)).toEqual([10, 12]);
     expect(d.topicStats[0]).toMatchObject({ baseline: 0.6, current: 0.8, l1: 5 });
     expect(d.frequency.map((f) => [f.bucket, Math.round(f.userShare * 100)])).toEqual([["< 10x / month", 70], ["10\u201320x / month", 30]]);
+    // The top bucket is "more than 20 sessions", so it must not read as 20 or more.
+    rows.frequency = [{ frequency_sort: 3, user_count: 5, avg_current: 90, avg_lift: 15 }];
+    expect(assembleDashboard("1", "Acme", rows, "2026-01-01").frequency[0].bucket).toBe("21+ / month");
     expect(d.frequency[0].knowledgeLift).toBeCloseTo(0.08, 10);
     expect(d.progress).toHaveLength(1);
     expect(d.progress[0].counts).toMatchObject({ graduate: 4, notStarted: 6 });

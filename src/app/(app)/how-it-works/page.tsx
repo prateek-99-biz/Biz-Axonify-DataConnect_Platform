@@ -9,7 +9,7 @@ import { Badge, Card, CardHeader } from "@/components/ui/primitives";
 
 const STEPS = [
   { icon: Database, title: "Axonify", body: "Learning activity lives in Axonify DataConnect, a BigQuery dataset. The dashboard only reads from it." },
-  { icon: RefreshCw, title: "Refresh", body: "An administrator presses Refresh Data. The latest figures are copied into the dashboard's own database. Pages never query Axonify while you wait." },
+  { icon: RefreshCw, title: "Refresh", body: "A scheduled refresh runs each night, and an administrator can press Refresh Data at any time. The latest figures are copied into the dashboard's own database. Pages never query Axonify while you wait." },
   { icon: FileSpreadsheet, title: "Salesforce Data", body: "CSM, industry, licences and renewal dates are loaded from a CSV by an administrator until the live Salesforce link exists." },
   { icon: LayoutDashboard, title: "This Dashboard", body: "Pages combine the two and calculate the metrics. The \"as of\" time at the top of Portfolio shows when the data was last refreshed." },
 ];
@@ -122,7 +122,7 @@ export default async function HowItWorksPage() {
           <p>Two alerts are raised automatically in the chosen quarter:</p>
           <ul className="list-disc space-y-1 pl-5 text-slate-700">
             <li><strong>Critical Health Score</strong> when a client is in the Critical band.</li>
-            <li><strong>Declining Participation</strong> when participation falls by {Math.round(Math.abs(DECLINE_THRESHOLD) * 100)} points or more against the previous quarter.</li>
+            <li><strong>Declining Participation</strong> when participation falls by {Math.round(Math.abs(DECLINE_THRESHOLD) * 100)} points or more against the previous quarter. While less than half of the quarter has data, this alert is held back, because a few weeks would be compared with a whole quarter.</li>
           </ul>
           <p className="text-xs text-slate-500">Alerts are worked out from the data each time, so they clear themselves once a client recovers. To track follow-up, add a task on the client&rsquo;s Notes &amp; Tasks tab.</p>
         </div>

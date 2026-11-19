@@ -25,15 +25,15 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "active_users",
     name: "Active Users",
-    description: "Distinct users whose account is active in the period (Axonify's 'Employees' in the Participation report). This is not a count of users who logged in, so it stays close to registered users.",
+    description: "Distinct users whose account is active in the period (Axonify's 'Employees' in the Participation report with All Users selected; the client dashboards and the In Training Programs switch count only people in active training programs). This is not a count of users who logged in, so it stays close to registered users.",
     formula: "Distinct users with an active account in the period",
     unit: "count",
     status: "provisional",
   },
   {
     key: "engagement_rate",
-    name: "Engagement Rate",
-    description: "Share of registered users with an active account in the period. Because active means an active account, this is close to 100% and says little; treat it as low-signal until a login-based or license-based version exists. Not a report measure.",
+    name: "Active Accounts",
+    description: "Share of registered users with an active account in the period (shown as Active Accounts). Because active means an active account, this is close to 100% and says little; treat it as low-signal. It is not the Engagement on the Insights pages, which is people who logged in ÷ active users (Engagement (Logged In) below). Not a report measure.",
     formula: "Active users ÷ registered users",
     unit: "ratio",
     status: "provisional",
@@ -49,7 +49,7 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: "participation_rate",
     name: "Participation",
-    description: "Share of active users who completed training, in an average month. This is Axonify's 'Average Training Participation' (Reports, Participation) and matches it month by month. Counting anyone who trained once in the quarter instead reads much higher, so that is used only for quarters older than the monthly data.",
+    description: "Share of active users who completed training, in an average month. This is Axonify's 'Average Training Participation' (Reports, Participation) with All Users selected, and matches it month by month; the client dashboards match its default Users in Active Training Programs view instead. Counting anyone who trained once in the quarter reads much higher, so that is used only for quarters before November 2024, which have no monthly data.",
     formula: "Users with a training session in the month ÷ active users, summed over the months of the period",
     unit: "ratio",
     status: "approved",

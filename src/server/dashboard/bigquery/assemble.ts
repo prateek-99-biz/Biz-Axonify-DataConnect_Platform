@@ -30,7 +30,8 @@ export function teamPath(team: string, hierarchy: string): string[] {
   return segs;
 }
 
-const FREQUENCY_LABEL: Record<number, string> = { 1: "< 10x / month", 2: "10\u201320x / month", 3: "20+ / month" };
+/** Training sessions in the last 30 days: under 10, 10 to 20, more than 20 (frequency query). */
+const FREQUENCY_LABEL: Record<number, string> = { 1: "< 10x / month", 2: "10\u201320x / month", 3: "21+ / month" };
 const STATUS: Record<string, ProgressStatus> = { "not started": "notStarted", beginner: "beginner", intermediate: "intermediate", graduate: "graduate", expert: "expert" };
 const SEGMENTS: Segment[] = ["Experts", "Graduated", "Intermediate", "Needs coaching", "Underconfident", "Overconfident", "Non-participants"];
 const PLATFORMS: Platform[] = ["Desktop", "Mobile", "Tablet", "Unknown"];

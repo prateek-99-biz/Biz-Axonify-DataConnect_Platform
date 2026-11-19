@@ -5,7 +5,7 @@ import { Card, CardHeader } from "@/components/ui/primitives";
 import { KpiStrip, KpiTile, ScopeTag } from "@/components/dashboard/primitives";
 import { ProgressStack } from "@/components/dashboard/dash-charts";
 import { ChecklistSlicer } from "@/components/dashboard/slicers";
-import { sumProgress } from "@/server/dashboard/calc";
+import { dayLabel, sumProgress } from "@/server/dashboard/calc";
 import type { SubjectProgress, TopicNode, TopicStat } from "@/server/dashboard/types";
 import { unpackRows, type PackedRows } from "@/server/dashboard/sections";
 import { fmtCompact, fmtNumber } from "@/lib/utils";
@@ -24,7 +24,7 @@ export function ContentView({ subjects, topics: topicsP, stats: statsP, progress
     const questions = s.reduce((a, t) => a + t.l1 + t.l2 + t.l3, 0);
     const modules = s.reduce((a, t) => a + t.modules, 0);
     return {
-      kpi: { items: questions + modules, topics: s.length, questions, modules, updated: s.map((t) => t.createdAt).sort().at(-1) ?? "\u2014" },
+      kpi: { items: questions + modules, topics: s.length, questions, modules, updated: dayLabel(s.map((t) => t.createdAt).filter(Boolean).sort().at(-1)) },
       prog: progress.filter((p) => !subject || p.subject === subject),
     };
   }, [topics, stats, progress, subject]);
@@ -38,7 +38,7 @@ export function ContentView({ subjects, topics: topicsP, stats: statsP, progress
         <KpiTile label="Content Items" scope="snapshot" value={fmtCompact(kpi.items)} hint="Released questions plus training modules" />
         <KpiTile label="Active Topics" scope="snapshot" value={fmtNumber(kpi.topics)} />
         <KpiTile label="Released Questions" scope="snapshot" value={fmtCompact(kpi.questions)} />
-        <KpiTile label="Last Updated" scope="snapshot" value={kpi.updated} hint="Most recent topic created" />
+        <KpiTile label="Latest Topic Created" scope="snapshot" value={kpi.updated} hint="Creation date of the newest released topic" />
         <KpiTile label="Training Modules" scope="snapshot" value={fmtNumber(kpi.modules)} />
       </KpiStrip>
 

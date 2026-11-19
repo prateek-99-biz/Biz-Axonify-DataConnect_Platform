@@ -34,7 +34,13 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
   const withUsage = insights.clients.filter((c) => c.hasUsage);
   const using = withUsage.filter((c) => c.usage.maxQueries > 0).sort((a, b) => (b.usage.maxPer100 ?? 0) - (a.usage.maxPer100 ?? 0));
   const notUsing = withUsage.filter((c) => c.usage.maxQueries === 0).sort((a, b) => (b.usage.avgActiveUsers ?? 0) - (a.usage.avgActiveUsers ?? 0));
-  const qChange = growth(t.usage.maxQueries, t.usagePrev.maxQueries);
+  // Per day of data, so a quarter in progress is not read as a fall (49 days of Q4 against 92 of Q3).
+  const qChange = t.maxChange;
+  const partial = (insights.pace ?? 1) < 0.999;
+  const paceWord = partial ? ", per day of data," : "";
+  const never = notUsing.filter((c) => c.usagePrev.maxQueries === 0 && c.usageYearAgo.maxQueries === 0);
+  const stopped = notUsing.filter((c) => !never.includes(c));
+  const names = (l: typeof notUsing) => `${l.slice(0, 6).map((c) => c.client.name).join(", ")}${l.length > 6 ? ` and ${l.length - 6} more` : ""}`;
   const top = using.find((c) => c.ranked) ?? using[0];
 
   // Every client's months added together, for the last 24 months up to the end of the period.
@@ -50,15 +56,17 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
   const shownTrend = firstMaxMonth ? trend.slice(Math.max(0, allMonths.indexOf(firstMaxMonth) - 1)) : trend;
 
   const summary = [
-    `${using.length} of ${withUsage.length} clients used Max in ${label}. Their people asked ${fmtNumber(t.usage.maxQueries)} question${t.usage.maxQueries === 1 ? "" : "s"}${qChange != null ? `, ${qChange >= 0 ? "up" : "down"} ${Math.abs(qChange * 100).toFixed(0)}% on ${prevLabel}` : ""}.`,
+    `${using.length} of ${withUsage.length} clients used Max in ${label}. Their people asked ${fmtNumber(t.usage.maxQueries)} question${t.usage.maxQueries === 1 ? "" : "s"}${qChange != null ? `, ${qChange >= 0 ? "up" : "down"} ${Math.abs(qChange * 100).toFixed(0)}% on ${prevLabel}${paceWord.replace(/,$/, "")}` : ""}.`,
     top ? `${top.client.name} uses Max the most: ${top.usage.maxPer100!.toFixed(1)} questions per 100 active users a month, with ${fmtPct(top.usage.maxAdoption)} of its people asking.` : "",
     t.usage.maxQueries > 0 ? `${fmtPct(t.usage.maxGroundedRate, 0)} of answers cited the client's own Axonify content${t.usage.maxHelpfulRate != null ? `, and ${fmtPct(t.usage.maxHelpfulRate, 0)} of rated answers were not marked unhelpful (${fmtNumber(t.usage.maxRated)} ratings)` : ""}.` : "",
-    notUsing.length ? `Not using Max yet: ${notUsing.slice(0, 6).map((c) => c.client.name).join(", ")}${notUsing.length > 6 ? ` and ${notUsing.length - 6} more` : ""}. These are the conversations to have about switching it on.` : "Every client with data used Max this period.",
+    never.length ? `Not using Max yet: ${names(never)}. These are the conversations to have about switching it on.` : "",
+    stopped.length ? `Used Max before but not in ${label}: ${names(stopped)}. Worth asking what changed.` : "",
+    notUsing.length === 0 ? "Every client with data used Max this period." : "",
   ];
 
   const rows: TableRow[] = [...using, ...notUsing].map((c) => {
     const u = c.usage;
-    const change = growth(u.maxQueries, c.usagePrev.maxQueries);
+    const change = c.maxChange;
     return {
       id: c.client.id, href: `/clients/${c.client.id}?period=${period}`,
       cells: {
@@ -84,7 +92,7 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
       <PlainSummary points={summary} />
 
       <KpiStrip items={[
-        { label: "Questions Asked", value: fmtNumber(t.usage.maxQueries), note: qChange != null ? `${qChange >= 0 ? "+" : "−"}${Math.abs(qChange * 100).toFixed(0)}% on ${prevLabel}` : undefined },
+        { label: "Questions Asked", value: fmtNumber(t.usage.maxQueries), note: qChange != null ? `${qChange >= 0 ? "+" : "−"}${Math.abs(qChange * 100).toFixed(0)}% on ${prevLabel}${partial ? " per day" : ""}` : undefined },
         { label: "People Using Max", value: fmtNumber(t.usage.maxUsers / Math.max(1, t.usage.months)), note: "in an average month" },
         { label: "Adoption", value: fmtPct(t.usage.maxAdoption), note: "of active users, average month" },
         { label: "Clients Using Max", value: `${using.length} of ${withUsage.length}` },
@@ -114,7 +122,7 @@ export default async function MaxAiPage({ searchParams }: { searchParams: Promis
         <DataTable canExport={can(user.role, "export:csv")} exportName={`max-ai-${period}`} rows={rows}
           columns={[
             { key: "client", header: "Client" }, { key: "csm", header: "CSM" },
-            { key: "questions", header: "Questions", align: "right" }, { key: "change", header: `Change vs ${prevLabel}`, align: "right" },
+            { key: "questions", header: "Questions", align: "right" }, { key: "change", header: partial ? `Per Day vs ${prevLabel}` : `Change vs ${prevLabel}`, align: "right" },
             { key: "people", header: "People Asking", align: "right", hint: "Distinct people per month, added across the months" },
             { key: "adoption", header: "Adoption", align: "right", hint: "People asking ÷ active users, average month" },
             { key: "per100", header: "Per 100 Users", align: "right", hint: "Questions per 100 active users a month" },

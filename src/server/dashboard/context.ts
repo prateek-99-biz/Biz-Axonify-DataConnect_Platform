@@ -38,6 +38,24 @@ const getParts = cache(async (clientId: string, sections: string) => {
 /** The layout and the page both resolve the dashboard in one request; build it once. */
 const buildMock = cache((id: string, name: string) => mockDashboard(id, name));
 
+/** Each synced client's months, read straight from the JSON so the layout does not load sixteen whole snapshots. */
+const getMonthIndex = cache(() => cached("snap:qbrMonths", SNAPSHOT_TTL_MS, async () => {
+  const rows = await db.$queryRaw<{ clientId: string; months: string[] | null }[]>`
+    SELECT "clientId", ARRAY(SELECT m->>'month' FROM jsonb_array_elements(payload->'months') AS m) AS months FROM "SyncDashboard"`;
+  return Object.fromEntries(rows.map((r) => [r.clientId, r.months ?? []])) as Record<string, string[]>;
+}, SNAPSHOT_STALE_MS));
+
+/**
+ * Months with data for every client the user may pick, keyed by client id. The layout cannot see the URL, so the header's
+ * month pickers look up the selected client here and resolve the range with the same `resolveRange` the page uses.
+ */
+export async function loadQbrMonths(clients: { id: string; name: string }[]): Promise<Record<string, string[]>> {
+  if (getEnv().DATA_ADAPTER === "mock") return Object.fromEntries(clients.map((c) => [c.id, buildMock(c.id, c.name).months.map((m) => m.month)]));
+  const all = await getMonthIndex();
+  // The stored months are already in order; sorting again keeps `resolveRange` correct whatever the JSON order.
+  return Object.fromEntries(clients.map((c) => [c.id, [...(all[c.id] ?? [])].sort()]));
+}
+
 export interface QbrContext {
   user: SessionUser;
   /** Internal staff see granular extras; external client users never do. */

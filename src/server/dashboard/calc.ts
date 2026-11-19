@@ -41,6 +41,21 @@ export function monthLabel(m: string) {
   return new Date(Date.UTC(y, mo - 1, 1)).toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
 
+/** "2026-11-10" as "10 Nov 2026", the date style used across the dashboard; "—" when there is no date. */
+export function dayLabel(d: string | null | undefined) {
+  if (!d) return "—";
+  const t = new Date(d);
+  return Number.isNaN(t.getTime()) ? d : t.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+/** A difference between two 0-1 ratios in percentage points, e.g. "+17 pts"; "—" when missing. */
+export function fmtPts(d: number | null | undefined, digits = 0) {
+  if (d == null || Number.isNaN(d)) return "—";
+  const v = d * 100;
+  const s = Math.abs(v).toFixed(digits);
+  return `${Number(s) === 0 ? "" : v > 0 ? "+" : "−"}${s} pts`;
+}
+
 export const participation = (m: Pick<MonthEngagement, "trainingUsers" | "activeUsers">) => div(m.trainingUsers, m.activeUsers);
 
 type TreeNode = { id: string; parentId: string | null };
@@ -111,11 +126,28 @@ export interface TeamRow {
   trend: TeamTrend;
 }
 
-/** Leaf teams only; latest month in range is the snapshot, the month before it feeds the trend. */
+/** The calendar month before a "YYYY-MM" month. */
+export function previousMonth(month: string) {
+  const [y, m] = month.split("-").map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+}
+
+/**
+ * Frequency and time per day are averages over logged-in users, so where nobody logged in there is no value. The stored
+ * rows carry 0 there; this returns null so the page shows "—" rather than "0.0 days".
+ */
+export function perLoggedIn(x: { loggedInUsers: number }, value: number): number | null {
+  return x.loggedInUsers > 0 ? value : null;
+}
+
+/**
+ * Leaf teams only; latest month in range is the snapshot. The calendar month before it feeds the trend, also when that
+ * month is outside the selected range (a one-month range still has a month-over-month trend).
+ */
 export function teamRows(teams: TeamNode[], teamMonths: TeamMonth[], range: Range): TeamRow[] {
   const months = [...new Set(teamMonths.filter((t) => inRange(t.month, range.from, range.to)).map((t) => t.month))].sort();
   const cur = months.at(-1);
-  const prev = months.at(-2);
+  const prev = cur ? previousMonth(cur) : undefined;
   const byKey = new Map(teamMonths.map((t) => [`${t.teamId}|${t.month}`, t]));
   const leaves = teams.filter((n) => !teams.some((x) => x.parentId === n.id));
   return leaves.flatMap((team) => {
@@ -123,7 +155,8 @@ export function teamRows(teams: TeamNode[], teamMonths: TeamMonth[], range: Rang
     if (!c) return [];
     const p = prev ? byKey.get(`${team.id}|${prev}`) : undefined;
     const part = div(c.trainingUsers, c.activeUsers);
-    return [{ team, activeUsers: c.activeUsers, participation: part, frequency: c.frequency, status: teamStatus(part, c.frequency), trend: teamTrend(part, p ? div(p.trainingUsers, p.activeUsers) : null) }];
+    // A team where nobody logged in shows no frequency, but still scores 0 on it for its status.
+    return [{ team, activeUsers: c.activeUsers, participation: part, frequency: perLoggedIn(c, c.frequency), status: teamStatus(part, c.frequency), trend: teamTrend(part, p ? div(p.trainingUsers, p.activeUsers) : null) }];
   });
 }
 

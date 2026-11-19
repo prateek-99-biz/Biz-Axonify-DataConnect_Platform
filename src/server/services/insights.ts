@@ -5,8 +5,8 @@
  */
 import type { ClientMonthRow, ClientPeriodRow, ClientSummary } from "@/server/data/ports";
 import { aggregate, type DerivedMetrics, type RiskLevel } from "@/server/metrics/calculations";
-import { previousPeriod, yearAgo, quartersIn, type Period } from "@/server/metrics/period";
-import { FEATURES, growth, MIN_FEATURE_SHARE, monthsIn, usageComparison, type UsageMetrics } from "@/server/metrics/features";
+import { daysCovered, previousPeriod, yearAgo, quartersIn, type Period } from "@/server/metrics/period";
+import { FEATURES, growth, MIN_FEATURE_SHARE, monthsIn, monthYearAgo, sumMonths, usageComparison, type UsageMetrics } from "@/server/metrics/features";
 import { buildPortfolio, type ClientRowView } from "./portfolio";
 
 /** Clients with fewer active users than this in an average month are left out of rate rankings: 9 of 10 is not a win. */
@@ -38,6 +38,11 @@ export interface ClientInsight {
   /** Change in participation against the same period a year earlier, in ratio points; null under the same rule. */
   participationGainYoY: number | null;
   maxGrowth: number | null;
+  /**
+   * Max questions against the previous period at the same pace (per day of data). A quarter in progress has fewer days
+   * behind it, so its raw total always looks like a fall: 49 days of Q4 against 92 of Q3.
+   */
+  maxChange: number | null;
   /** Active users in the last month of the period that has data; null when the period has no monthly data. */
   activeAtEnd: number | null;
   /** Big enough for rate rankings, on average and still at the end of the period (a client that has gone quiet is not a leader). */
@@ -47,7 +52,9 @@ export interface ClientInsight {
 export interface InsightSet {
   clients: ClientInsight[];
   /** Every client in scope added together (ratio of sums). */
-  total: { usage: UsageMetrics; usagePrev: UsageMetrics; usageYearAgo: UsageMetrics };
+  total: { usage: UsageMetrics; usagePrev: UsageMetrics; usageYearAgo: UsageMetrics; maxChange: number | null };
+  /** Days of data in the period ÷ days in the previous period: below 1 while the period is in progress. */
+  pace: number | null;
   /** Quarterly portfolio view, as used by the Portfolio page. */
   portfolio: ReturnType<typeof buildPortfolio>;
   months: string[];
@@ -55,16 +62,32 @@ export interface InsightSet {
   hasUsage: boolean;
 }
 
-export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriodRow[], monthRows: ClientMonthRow[], period: Period, inProgress = false): InsightSet {
+export interface BuildOptions {
+  /** When the data was refreshed, so a period in progress is compared at the same pace. */
+  asOf?: string;
+  /** Monthly rows counting all users, for licence use when `monthRows` follow the training-program count. */
+  allUserRows?: ClientMonthRow[];
+}
+
+export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriodRow[], monthRows: ClientMonthRow[], period: Period, inProgress = false, opts: BuildOptions = {}): InsightSet {
   const portfolio = buildPortfolio(clients, periodRows, { client: null, industry: null, period, inProgress });
   const viewById = new Map(portfolio.clients.map((v) => [v.client.id, v]));
   const months = monthsIn(period);
   const previousMonths = monthsIn(previousPeriod(period));
-  const monthsByClient = new Map<string, ClientMonthRow[]>();
-  for (const r of monthRows) monthsByClient.set(r.clientId, [...(monthsByClient.get(r.clientId) ?? []), r]);
+  const byClient = (rows: ClientMonthRow[]) => {
+    const m = new Map<string, ClientMonthRow[]>();
+    for (const r of rows) m.set(r.clientId, [...(m.get(r.clientId) ?? []), r]);
+    return m;
+  };
+  const monthsByClient = byClient(monthRows);
+  const allUsersByClient = opts.allUserRows ? byClient(opts.allUserRows) : monthsByClient;
   const ya = quartersIn(yearAgo(period));
   const monthSet = new Set(months);
-  const lastMonth = [...new Set(monthRows.map((r) => r.month))].filter((m) => monthSet.has(m)).sort().at(-1) ?? null;
+  const dataMonths = new Set(monthRows.map((r) => r.month));
+  const lastMonth = [...dataMonths].filter((m) => monthSet.has(m)).sort().at(-1) ?? null;
+  const prevDays = daysCovered(previousMonths.filter((m) => dataMonths.has(m)), opts.asOf);
+  const pace = prevDays > 0 ? daysCovered(months.filter((m) => dataMonths.has(m)), opts.asOf) / prevDays : null;
+  const atPace = (now: number, before: number, beforeMonths: number) => (pace && beforeMonths > 0 ? growth(now, before * pace) : null);
 
   const list: ClientInsight[] = clients.map((client) => {
     const view = viewById.get(client.id) ?? null;
@@ -73,8 +96,12 @@ export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriod
     const healthYearAgo = aggregate(periodRows.filter((r) => r.clientId === client.id), ya);
     const licences = client.commercial?.licenses ?? null;
     const avgActive = cmp.current.avgActiveUsers;
+    // Licences are bought for everyone, so licence use counts all users whichever count the page shows.
+    const avgActiveAll = usageComparison(allUsersByClient.get(client.id) ?? [], months, previousMonths).current.avgActiveUsers;
     const partNow = view?.current.participationRate ?? null;
-    const partThen = healthYearAgo.participationRate;
+    // A year earlier over the same months as now, so a quarter in progress is compared like for like (as growth is).
+    const sameMonthsYearAgo = sumMonths(mine, cmp.yearAgo.months > 0 ? cmp.monthsCovered.map(monthYearAgo) : []);
+    const partThen = sameMonthsYearAgo.activeUsers > 0 ? sameMonthsYearAgo.trainingUsers / sameMonthsYearAgo.activeUsers : healthYearAgo.participationRate;
     const perMonth = (n: number, m: number) => (m > 0 ? n / m : null);
     const loggedNow = perMonth(cmp.current.loggedInUsers, cmp.current.months);
     const loggedThen = perMonth(cmp.yearAgo.loggedInUsers, cmp.yearAgo.months);
@@ -85,10 +112,11 @@ export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriod
       usage: cmp.current, usagePrev: cmp.previous, usageYearAgo: cmp.yearAgo, monthsCovered: cmp.monthsCovered, monthly: new Map(mine.map((r) => [r.month, r])),
       hasUsage: cmp.current.months > 0,
       healthYearAgo,
-      licenceUse: licences && licences > 0 && avgActive != null ? avgActive / licences : null,
+      licenceUse: licences && licences > 0 && avgActiveAll != null ? avgActiveAll / licences : null,
       userGrowth: liveYearAgo ? growth(loggedNow, loggedThen) : null,
       participationGainYoY: liveYearAgo && partNow != null && partThen != null ? partNow - partThen : null,
-      maxGrowth: growth(cmp.current.maxQueries, cmp.yearAgo.maxQueries),
+      maxGrowth: (() => { const ya = daysCovered(cmp.monthsCovered.map(monthYearAgo)); return ya > 0 ? growth(cmp.current.maxQueries, cmp.yearAgo.maxQueries * (daysCovered(cmp.monthsCovered, opts.asOf) / ya)) : null; })(),
+      maxChange: atPace(cmp.current.maxQueries, cmp.previous.maxQueries, cmp.previous.months),
       activeAtEnd,
       ranked: (avgActive ?? 0) >= MIN_RANKED_USERS && (activeAtEnd == null || activeAtEnd >= MIN_RANKED_USERS),
     };
@@ -98,7 +126,8 @@ export function buildInsights(clients: ClientSummary[], periodRows: ClientPeriod
   const tot = usageComparison(all, months, previousMonths);
   return {
     clients: list, portfolio, months, previousMonths, hasUsage: list.some((c) => c.hasUsage),
-    total: { usage: tot.current, usagePrev: tot.previous, usageYearAgo: tot.yearAgo },
+    total: { usage: tot.current, usagePrev: tot.previous, usageYearAgo: tot.yearAgo, maxChange: atPace(tot.current.maxQueries, tot.previous.maxQueries, tot.previous.months) },
+    pace,
   };
 }
 
@@ -147,9 +176,10 @@ export function usageDrops(insights: ClientInsight[]): UsageDrop[] {
     if (e != null && e <= ENGAGEMENT_DROP) {
       out.push({ ...base, what: "Engagement", severity: e <= 2 * ENGAGEMENT_DROP ? "critical" : "warning", detail: `Logged-in share fell ${(Math.abs(e) * 100).toFixed(1)} pts to ${((c.usage.engagement ?? 0) * 100).toFixed(1)}%.` });
     }
-    const m = growth(c.usage.maxQueries, c.usagePrev.maxQueries);
+    // At the same pace: a quarter in progress is compared per day of data, not as a part total against a whole one.
+    const m = c.maxChange;
     if (c.usagePrev.maxQueries >= MIN_MAX_BASE && m != null && m <= MAX_DROP) {
-      out.push({ ...base, what: "Max Questions", severity: m <= -0.75 ? "critical" : "warning", detail: `Down ${(Math.abs(m) * 100).toFixed(0)}%, from ${c.usagePrev.maxQueries} to ${c.usage.maxQueries}.` });
+      out.push({ ...base, what: "Max Questions", severity: m <= -0.75 ? "critical" : "warning", detail: `Down ${(Math.abs(m) * 100).toFixed(0)}% per day of data: ${c.usage.maxQueries.toLocaleString("en-US")} questions so far against ${c.usagePrev.maxQueries.toLocaleString("en-US")} in the whole previous period.` });
     }
     const r = c.usage.commsReach != null && c.usagePrev.commsReach != null && c.usagePrev.commsReachUsers > 0 ? c.usage.commsReach - c.usagePrev.commsReach : null;
     if (r != null && r <= REACH_DROP) {

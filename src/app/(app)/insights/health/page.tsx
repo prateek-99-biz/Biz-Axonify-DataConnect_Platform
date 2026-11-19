@@ -69,7 +69,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
   const summary = [
     `${withData.length} client${withData.length === 1 ? " has" : "s have"} data for ${label}.${healthKnown ? ` ${rc.healthy} Healthy, ${rc.moderate} Moderate, ${rc.at_risk} At Risk and ${rc.critical} Critical.` : " Health bands need knowledge scores, which this period does not have."}`,
     clientsYearAgo > 0 ? `The client base is ${withData.length} client${withData.length === 1 ? "" : "s"}, against ${clientsYearAgo} in ${yaLabel} (${withData.length - clientsYearAgo >= 0 ? "+" : "−"}${Math.abs(withData.length - clientsYearAgo)}).` : "",
-    healthKnown ? `Average health is ${fmtHealth(k.current.healthScore)} out of 100${healthChange != null ? `, ${healthChange >= 0 ? "up" : "down"} ${Math.abs(healthChange).toFixed(1)} points on ${prevLabel}` : ""}.` : "",
+    healthKnown ? `Health across all clients' users together is ${fmtHealth(k.current.healthScore)} out of 100${healthChange != null ? `, ${healthChange >= 0 ? "up" : "down"} ${Math.abs(healthChange).toFixed(1)} points on ${prevLabel}` : ""}.` : "",
     toCheck.length ? `Check the data for ${toCheck.map((c) => `${c.client.name} (${fmtNumber(c.health!.activeUsers)} active of ${fmtNumber(c.health!.registeredUsers)} registered)`).join(", ")}: so few people are active that the account may be winding down or its users moved. Its scores are left out of the line below.` : "",
     worst && healthKnown && worst !== best ? `${worst.client.name} needs the most attention (health ${fmtHealth(worst.health?.healthScore)}, participation ${fmtPct(worst.health?.participationRate)}); ${best?.client.name} is the healthiest (${fmtHealth(best?.health?.healthScore)}).` : "",
   ];
@@ -120,7 +120,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
 
       <KpiStrip items={[
         { label: "Clients", value: String(withData.length), note: clientsYearAgo ? `${clientsYearAgo} in ${yaLabel}` : undefined },
-        { label: "Average Health", value: fmtHealth(k.current.healthScore) },
+        { label: "Overall Health", value: fmtHealth(k.current.healthScore), note: "all clients' users together" },
         { label: "Healthy or Moderate", value: healthKnown ? String(rc.healthy + rc.moderate) : "—" },
         { label: "Need Attention", value: healthKnown ? String(needAttention) : "—", note: "At Risk or Critical" },
       ]} />
@@ -158,7 +158,7 @@ export default async function AccountHealthPage({ searchParams }: { searchParams
           </div>
           <div>
             <h3 className="text-sm font-semibold">Other Signals Worth Watching</h3>
-            <p className="mb-2 text-xs text-slate-500">Not part of the score, but they show how widely the platform is used. The black tick is the average across all clients.</p>
+            <p className="mb-2 text-xs text-slate-500">Not part of the score, but they show how widely the platform is used. The black tick is the figure for all clients&apos; users taken together.</p>
             <MeterRow label="Engagement" value={focus.usage.engagement} marker={insights.total.usage.engagement} markerLabel="All clients" tone="orange" />
             <MeterRow label="Licence Use" value={focus.licenceUse} display={fmtPct(focus.licenceUse, 0)} note={focus.licenceUse == null ? "Needs licences in the Salesforce file" : "Average active users ÷ licences"} tone="blue" />
             <MeterRow label="Features in Use" value={focus.usage.featureBreadth} display={focus.hasUsage ? `${focus.usage.featuresUsed}/${FEATURES.length}` : "—"} tone="good" />

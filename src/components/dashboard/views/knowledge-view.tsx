@@ -6,7 +6,8 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { DataBar, KpiStrip, KpiTile, ScopeTag, SectionSkeleton } from "@/components/dashboard/primitives";
 import { HBars } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
-import { descendants, weightedAvg } from "@/server/dashboard/calc";
+import { descendants, fmtPts, weightedAvg } from "@/server/dashboard/calc";
+import { TILE_DEFS } from "@/server/dashboard/definitions";
 import type { FrequencyBucket, KnowledgeSummary } from "@/server/dashboard/types";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 import { topicsOf, type HeavyTopics } from "./heavy";
@@ -36,7 +37,7 @@ export function KnowledgeView({ heavy, knowledge, frequency, canExport }: {
       bucket: { v: f.bucket },
       users: { v: f.userShare, node: fmtPct(f.userShare, 0) },
       current: { v: f.currentKnowledge, node: <DataBar value={f.currentKnowledge} /> },
-      lift: { v: f.knowledgeLift, node: <DataBar value={f.knowledgeLift} /> },
+      lift: { v: f.knowledgeLift, node: <DataBar value={f.knowledgeLift} label={fmtPts(f.knowledgeLift)} /> },
     },
   }));
 
@@ -45,9 +46,12 @@ export function KnowledgeView({ heavy, knowledge, frequency, canExport }: {
       <KpiStrip>
         <KpiTile label="Baseline Knowledge" metric="baselineKnowledge" scope="snapshot" value={fmtPct(baseline, 0)} hint="Score at first attempt" />
         <KpiTile label="Current Knowledge" metric="currentKnowledge" scope="snapshot" value={fmtPct(current, 0)} hint="Latest score" />
-        <KpiTile label="Confidence Level" metric="confidence" scope="snapshot" value={fmtPct(knowledge.confidence, 0)} hint="Includes topics not started (as 0)" />
+        <KpiTile label="Confidence Level" metric="confidence" scope="snapshot" value={fmtPct(knowledge.confidence, 0)} hint="Best level per learner-topic; topics not started count as 0" />
         <KpiTile label="Experts" metric="experts" scope="snapshot" value={fmtNumber(knowledge.experts)} hint="Learners at 90% or above" />
-        <KpiTile label="Topic Completion (Graduate)" metric="topicCompletion" scope="snapshot" value={fmtPct(completion, 0)} hint="Learner-topic records at Graduate" />
+        {/* With topics selected only per-topic figures exist, which are on a different basis, so the tile says which one it shows. */}
+        {loaded
+          ? <KpiTile label="Level Records at Graduate or Expert" metric="topicCompletion" definition={TILE_DEFS.graduateRecords} scope="snapshot" value={fmtPct(completion, 0)} hint="Selected topics; Axonify also counts Intermediate" />
+          : <KpiTile label="Topic Completion (Graduate or Expert)" metric="topicCompletion" scope="snapshot" value={fmtPct(completion, 0)} hint="Learner-topics with a level at Graduate or Expert; Axonify also counts Intermediate" />}
       </KpiStrip>
 
       <Suspense fallback={<div className="grid gap-4 xl:grid-cols-[1fr_22rem]"><SectionSkeleton className="h-96" /><SectionSkeleton className="h-96" /></div>}>
@@ -57,7 +61,7 @@ export function KnowledgeView({ heavy, knowledge, frequency, canExport }: {
       <Card>
         <CardHeader title="Knowledge by Learning Frequency" badge={<ScopeTag scope="snapshot" />} subtitle="Learners who train more often know more and gain more" />
         <DataTable searchable={false} canExport={canExport} exportName="knowledge-by-frequency"
-          columns={[{ key: "bucket", header: "Frequency" }, { key: "users", header: "Frequency User %", align: "right" }, { key: "current", header: "Current Knowledge", align: "right" }, { key: "lift", header: "Knowledge Lift", align: "right" }]}
+          columns={[{ key: "bucket", header: "Training Sessions (30 Days)" }, { key: "users", header: "Frequency User %", align: "right" }, { key: "current", header: "Current Knowledge", align: "right" }, { key: "lift", header: "Knowledge Lift", align: "right" }]}
           rows={rows} />
       </Card>
     </div>

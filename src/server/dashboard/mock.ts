@@ -120,8 +120,8 @@ export function mockDashboard(clientId: string, clientName: string): DashboardDa
   const shares = [num(r, 0.4, 0.55), num(r, 0.3, 0.4)];
   const frequency = [
     { bucket: "< 10x / month", userShare: shares[0], currentKnowledge: num(r, 0.78, 0.83), knowledgeLift: num(r, 0.08, 0.12) },
-    { bucket: "10-20x / month", userShare: shares[1], currentKnowledge: num(r, 0.83, 0.86), knowledgeLift: num(r, 0.12, 0.16) },
-    { bucket: "20+ / month", userShare: Math.max(0.02, 1 - shares[0] - shares[1]), currentKnowledge: num(r, 0.86, 0.9), knowledgeLift: num(r, 0.16, 0.21) },
+    { bucket: "10–20x / month", userShare: shares[1], currentKnowledge: num(r, 0.83, 0.86), knowledgeLift: num(r, 0.12, 0.16) },
+    { bucket: "21+ / month", userShare: Math.max(0.02, 1 - shares[0] - shares[1]), currentKnowledge: num(r, 0.86, 0.9), knowledgeLift: num(r, 0.16, 0.21) },
   ];
 
   // ---- Progress by subject and question level ----

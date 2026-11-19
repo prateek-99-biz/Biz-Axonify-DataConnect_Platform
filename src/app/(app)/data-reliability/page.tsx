@@ -55,7 +55,7 @@ export default async function ReliabilityPage({ searchParams }: { searchParams: 
         <p className="text-sm text-slate-500">Source: {humanize(cov.source)}{cov.status === "ok" ? ` · as of ${cov.asOf.slice(0, 16).replace("T", " ")} UTC` : ""}</p></div>
       {coverageSection}
       <Card>
-        <CardHeader title="Sync History" subtitle="Daily scheduled job and manual refreshes. A failed sync keeps the previous data." />
+        <CardHeader title="Sync History" subtitle="Scheduled refreshes (the nightly task on the refresh computer, or Vercel's daily job) and manual ones. A failed sync keeps the previous data." />
         <ul className="divide-y divide-line text-sm">
           {runs.length === 0 && <li className="p-4 text-xs text-slate-500">No syncs have run yet.</li>}
           {runs.map((r) => (

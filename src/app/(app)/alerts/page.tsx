@@ -93,7 +93,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       </Card>
 
       <Card>
-        <CardHeader title="Engagement Watchlist" subtitle="Accounts whose participation fell 3 points or more against the previous quarter, worst first" />
+        <CardHeader title="Participation Watchlist" subtitle="Accounts whose participation fell 3 points or more against the previous quarter, worst first" />
         {watch.length === 0 ? (
           <EmptyState title="Nothing on the watchlist">No account lost 3 points of participation or more.</EmptyState>
         ) : (

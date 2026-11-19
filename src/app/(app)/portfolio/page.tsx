@@ -114,15 +114,15 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Pr
       <KpiStrip items={[
         { label: "Registered Users", value: fmtNumber(kpis.current.registeredUsers), vsPrev: delta(kpis.current.registeredUsers, kpis.previous.registeredUsers), unit: "pct" },
         { label: "Active Users", value: fmtNumber(kpis.current.activeUsers), vsPrev: delta(kpis.current.activeUsers, kpis.previous.activeUsers), unit: "pct" },
-        { label: "Engagement Rate", accent: "orange", note: "Low signal", noteHint: "Active means a live account, so this sits near 100% for most clients. Use Participation instead.", value: fmtPct(kpis.current.engagementRate), vsPrev: delta(kpis.current.engagementRate, kpis.previous.engagementRate) },
+        { label: "Active Accounts", accent: "orange", note: "Low signal", noteHint: "Active means a live account, so this sits near 100% for most clients. Use Participation instead.", value: fmtPct(kpis.current.engagementRate), vsPrev: delta(kpis.current.engagementRate, kpis.previous.engagementRate) },
         { label: "Retention Rate", value: fmtPct(kpis.current.retentionRate), vsPrev: delta(kpis.current.retentionRate, kpis.previous.retentionRate) },
         { label: "Feature Adoption", value: fmtPct(kpis.current.featureAdoption), vsPrev: delta(kpis.current.featureAdoption, kpis.previous.featureAdoption) },
       ]} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
-          <CardHeader title="Portfolio Trend" subtitle="Quarterly participation, knowledge and engagement (ratio of sums across clients in scope)" />
-          <div className="p-4"><TrendChart data={view.trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Engagement" }]} /></div>
+          <CardHeader title="Portfolio Trend" subtitle="Quarterly participation, knowledge and active accounts across the clients in scope. Before 2024-Q4 there is no monthly data, so participation there counts anyone who trained in the quarter and reads higher." />
+          <div className="p-4"><TrendChart data={view.trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Active Accounts" }]} /></div>
         </Card>
         <Card>
           <CardHeader title="Account Risk" subtitle="Clients by health band (Healthy 75+, Moderate 60+, At Risk 45+)" />

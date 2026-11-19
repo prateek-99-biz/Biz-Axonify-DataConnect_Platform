@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { signOut } from "@/server/auth";
 import { ROLE_LABEL } from "@/server/auth/rbac";
-import { loadQbr } from "@/server/dashboard/context";
+import { loadQbr, loadQbrMonths } from "@/server/dashboard/context";
 import { QbrShell } from "@/components/dashboard/qbr-shell";
 
 export default async function QbrLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,8 @@ export default async function QbrLayout({ children }: { children: React.ReactNod
 
   const user = q.ok ? q.ctx.user : q.user;
   const ctx = q.ok ? q.ctx : null;
+  // The layout cannot see the URL's client, so the header gets every client's months and resolves the range itself.
+  const monthsByClient = ctx ? await loadQbrMonths(ctx.clients) : {};
 
   return (
     <QbrShell
@@ -24,8 +26,7 @@ export default async function QbrLayout({ children }: { children: React.ReactNod
       clients={ctx?.clients ?? []}
       clientId={ctx?.data.clientId ?? null}
       clientName={ctx?.data.clientName ?? null}
-      months={ctx?.months ?? []}
-      range={ctx?.range ?? null}
+      monthsByClient={monthsByClient}
       mock={ctx?.source === "mock"}
       asOf={ctx?.data.asOf ?? null}
       signOutAction={doSignOut}

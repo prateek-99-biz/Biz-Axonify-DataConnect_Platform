@@ -24,6 +24,8 @@ const RELEASED = (alias = "") => `LOWER(TRIM(${alias}status)) = 'released'`; // 
 const ACTIVE_USER = (alias = "") => `${alias}user_is_active = TRUE`; // monthly participation rows
 const ACTIVE_LEARNER = "LOWER(user_status) = 'active'"; // SDE rows
 const SCORED = "current_score IS NOT NULL AND baseline_score IS NOT NULL"; // SDE rows with both scores
+/** A topic level counts as complete at Graduate or Expert (Expert is above Graduate). */
+const COMPLETE = (alias = "") => `LOWER(${alias}topic_progress) IN ('graduate', 'expert')`;
 
 export const QUERIES = {
   clients: (t: T) => `SELECT id, name FROM ${t("tenant")} WHERE id IN UNNEST(@tenants)`,
@@ -76,7 +78,7 @@ export const QUERIES = {
     user_topic AS (
       SELECT tenant_id, user_id, topic_id,
         MAX(current_confidence) AS current_confidence,
-        IF(COUNTIF(LOWER(topic_progress) = 'graduate') > 0, 1, 0) AS is_graduate
+        IF(COUNTIF(${COMPLETE()}) > 0, 1, 0) AS is_graduate
       FROM ${t("content_user_topic_progress")}
       WHERE ${TENANT} AND is_active = TRUE
       GROUP BY tenant_id, user_id, topic_id
@@ -111,7 +113,7 @@ export const QUERIES = {
     ),
     progress AS (
       SELECT tenant_id, topic_id AS topic_internal_id,
-        SAFE_DIVIDE(COUNTIF(LOWER(topic_progress) = 'graduate'), COUNT(*)) AS completion
+        SAFE_DIVIDE(COUNTIF(${COMPLETE()}), COUNT(*)) AS completion
       FROM ${t("content_user_topic_progress")}
       WHERE ${TENANT} AND is_active = TRUE AND topic_id IS NOT NULL
       GROUP BY tenant_id, topic_internal_id
@@ -417,18 +419,26 @@ export const QUERIES = {
     LEFT JOIN topics_per_group tg ON g.tenant_id = tg.tenant_id AND g.id = tg.training_group_id
     WHERE g.${TENANT} AND g.delete_date IS NULL`,
 
-  /** Question pool per learner and months to graduate (report: FactContentDelivery). */
+  /**
+   * Question pool per learner and months to graduate (report: FactContentDelivery). content_user_topic_progress has one
+   * row per question level, so it is reduced to one row per user and topic first; joining it directly counted each
+   * topic's questions once per level (gm showed a pool larger than all of its released questions).
+   */
   deliverySummary: (t: T) => `
     WITH released AS (
       SELECT tenant_id, topic_id, COUNT(DISTINCT id) AS questions
-      FROM ${t("content_question")} WHERE ${TENANT} AND ${RELEASED()} GROUP BY tenant_id, topic_id
+      FROM ${t("content_question")} WHERE ${TENANT} AND delete_date IS NULL AND ${RELEASED()} GROUP BY tenant_id, topic_id
+    ),
+    user_topics AS (
+      SELECT DISTINCT tenant_id, user_id, topic_id
+      FROM ${t("content_user_topic_progress")}
+      WHERE ${TENANT} AND is_active = TRUE
     ),
     pool AS (
-      SELECT c.tenant_id, c.user_id, SUM(COALESCE(r.questions, 0)) AS assigned_pool
-      FROM ${t("content_user_topic_progress")} c
-      LEFT JOIN released r ON c.tenant_id = r.tenant_id AND c.topic_id = r.topic_id
-      WHERE c.${TENANT} AND c.is_active = TRUE
-      GROUP BY c.tenant_id, c.user_id
+      SELECT ut.tenant_id, ut.user_id, SUM(COALESCE(r.questions, 0)) AS assigned_pool
+      FROM user_topics ut
+      LEFT JOIN released r ON ut.tenant_id = r.tenant_id AND ut.topic_id = r.topic_id
+      GROUP BY ut.tenant_id, ut.user_id
     ),
     pool_summary AS (SELECT tenant_id, AVG(assigned_pool) AS avg_question_pool FROM pool GROUP BY tenant_id),
     answers AS (

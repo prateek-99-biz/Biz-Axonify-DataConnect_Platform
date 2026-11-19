@@ -6,7 +6,7 @@ import { DataTable, type TableRow } from "@/components/tables/data-table";
 import { KpiStrip, KpiTile, ScopeTag, SectionSkeleton, TrendPill } from "@/components/dashboard/primitives";
 import { DualAxisLine } from "@/components/dashboard/dash-charts";
 import { TreeSlicer } from "@/components/dashboard/slicers";
-import { aggregateMonths, descendants, inRange, monthAxisLabel, teamRows, withCoveredParents, type Range } from "@/server/dashboard/calc";
+import { aggregateMonths, descendants, inRange, monthAxisLabel, perLoggedIn, teamRows, withCoveredParents, type Range } from "@/server/dashboard/calc";
 import type { MonthEngagement } from "@/server/dashboard/types";
 import { fmtNumber, fmtPct } from "@/lib/utils";
 import { titleCase } from "@/lib/labels";
@@ -34,14 +34,17 @@ export function EngagementView({ months: coreMonths, heavy, range, canExport, as
 
   const latest = months.at(-1);
   const part = latest && latest.activeUsers ? latest.trainingUsers / latest.activeUsers : null;
-  const chart = months.map((m) => ({ month: monthAxisLabel(m.month, asOf), participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null, frequency: m.frequency }));
+  const chart = months.map((m) => ({ month: monthAxisLabel(m.month, asOf), participation: m.activeUsers ? m.trainingUsers / m.activeUsers : null, frequency: perLoggedIn(m, m.frequency) }));
+  // Both are averages over logged-in users: with nobody logged in they read "—", not 0.
+  const time = latest ? perLoggedIn(latest, latest.avgTimePerDayMin) : null;
+  const freq = latest ? perLoggedIn(latest, latest.frequency) : null;
 
   return (
     <div className="space-y-6">
       <KpiStrip>
         <KpiTile label="Training Participation" metric="participation" scope="month" value={fmtPct(part, 0)} hint="Training users ÷ active users, latest month" />
-        <KpiTile label="Average Time per Day" metric="time" scope="month" value={latest ? latest.avgTimePerDayMin.toFixed(1) : "—"} hint="Minutes per active user" />
-        <KpiTile label="Average Frequency" metric="frequency" scope="month" value={latest ? latest.frequency.toFixed(1) : "—"} hint="Days active per logged-in user" />
+        <KpiTile label="Average Time per Day" metric="time" scope="month" value={time == null ? "—" : `${time.toFixed(1)} min`} hint="Minutes per logged-in user" />
+        <KpiTile label="Average Frequency" metric="frequency" scope="month" value={freq == null ? "—" : `${freq.toFixed(1)} days`} hint="Days active per logged-in user" />
         <KpiTile label="Logged-In Users" metric="loggedIn" scope="month" value={fmtNumber(latest?.loggedInUsers)} hint="Users with at least one session" />
         <KpiTile label="Training Users" metric="trainingUsers" scope="month" value={fmtNumber(latest?.trainingUsers)} hint="Active users with a training session" />
       </KpiStrip>

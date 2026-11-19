@@ -122,13 +122,13 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           <KpiCard label="Participation" accent="green" value={fmtPct(m.participationRate)} vsPrev={delta(m.participationRate, mPrev.participationRate)} vsYear={delta(m.participationRate, mYa.participationRate)} />
           <KpiCard label="Knowledge" accent="purple" value={fmtPct(m.avgKnowledge)} vsPrev={delta(m.avgKnowledge, mPrev.avgKnowledge)} vsYear={delta(m.avgKnowledge, mYa.avgKnowledge)} />
           <KpiCard label="Health Score" unit="abs" value={fmtHealth(m.healthScore)} vsPrev={delta(m.healthScore, mPrev.healthScore)} vsYear={delta(m.healthScore, mYa.healthScore)} />
-          <KpiCard label="Engagement" accent="orange" value={fmtPct(m.engagementRate)} vsPrev={delta(m.engagementRate, mPrev.engagementRate)} vsYear={delta(m.engagementRate, mYa.engagementRate)} />
+          <KpiCard label="Active Accounts" accent="orange" value={fmtPct(m.engagementRate)} vsPrev={delta(m.engagementRate, mPrev.engagementRate)} vsYear={delta(m.engagementRate, mYa.engagementRate)} />
           <KpiCard label="Retention" value={fmtPct(m.retentionRate)} vsPrev={delta(m.retentionRate, mPrev.retentionRate)} vsYear={delta(m.retentionRate, mYa.retentionRate)} />
           <KpiCard label="Feature Adoption" value={fmtPct(m.featureAdoption)} vsPrev={delta(m.featureAdoption, mPrev.featureAdoption)} vsYear={delta(m.featureAdoption, mYa.featureAdoption)} />
         </div>
         <div className="grid gap-4 xl:grid-cols-3">
-          <Card className="xl:col-span-2"><CardHeader title="Historical Performance" subtitle="All available quarters" />
-            <div className="p-4"><TrendChart data={trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Engagement" }]} /></div></Card>
+          <Card className="xl:col-span-2"><CardHeader title="Historical Performance" subtitle="All available quarters. Before 2024-Q4 there is no monthly data, so participation there counts anyone who trained in the quarter and reads higher." />
+            <div className="p-4"><TrendChart data={trend} series={[{ key: "participationRate", label: "Participation" }, { key: "avgKnowledge", label: "Knowledge" }, { key: "engagementRate", label: "Active Accounts" }]} /></div></Card>
           <Card><CardHeader title="What Changed" subtitle={`Weighted contribution to health score vs ${periodLabel(previousPeriod(f.period))}`} />
             <ul className="divide-y divide-line text-sm">
               {mPrev.healthScore == null ? <li className="p-4 text-xs text-slate-500">Health can’t be broken down against {periodLabel(previousPeriod(f.period))}, because knowledge isn’t recorded for it.</li> :
@@ -140,7 +140,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             data={[
               { metric: "Participation", client: m.participationRate, peers: peerMetrics.participationRate, portfolio: portfolioView.kpis.current.participationRate },
               { metric: "Knowledge", client: m.avgKnowledge, peers: peerMetrics.avgKnowledge, portfolio: portfolioView.kpis.current.avgKnowledge },
-              { metric: "Engagement", client: m.engagementRate, peers: peerMetrics.engagementRate, portfolio: portfolioView.kpis.current.engagementRate },
+              { metric: "Active Accounts", client: m.engagementRate, peers: peerMetrics.engagementRate, portfolio: portfolioView.kpis.current.engagementRate },
               { metric: "Retention", client: m.retentionRate, peers: peerMetrics.retentionRate, portfolio: portfolioView.kpis.current.retentionRate },
               { metric: "Adoption", client: m.featureAdoption, peers: peerMetrics.featureAdoption, portfolio: portfolioView.kpis.current.featureAdoption },
             ].filter((d) => d.client != null || d.peers != null || d.portfolio != null)} /></div></Card>
@@ -179,7 +179,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         body = (
           <div className="grid gap-4 xl:grid-cols-2">
             <Card><CardHeader title="Active Users and Sessions" subtitle="Quarterly" /><div className="p-4"><TrendChart format="number" data={trend} series={[{ key: "activeUsers", label: "Active Users" }, { key: "sessions", label: "Sessions" }]} /></div></Card>
-            <Card><CardHeader title="Engagement by Team" subtitle={`Active ÷ registered, ${snapshotQuarter}`} /><div className="p-4"><CompareBars xKey="team" data={leaves.map((l) => ({ team: l.name, engagement: l.registeredUsers ? l.activeUsers / l.registeredUsers : null }))} series={[{ key: "engagement", label: "Engagement" }]} /></div></Card>
+            <Card><CardHeader title="Active Accounts by Team" subtitle={`Active ÷ registered, ${snapshotQuarter}`} /><div className="p-4"><CompareBars xKey="team" data={leaves.map((l) => ({ team: l.name, engagement: l.registeredUsers ? l.activeUsers / l.registeredUsers : null }))} series={[{ key: "engagement", label: "Engagement" }]} /></div></Card>
           </div>
         );
       }

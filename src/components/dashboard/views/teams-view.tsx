@@ -18,7 +18,7 @@ const STATUS_DOT: Record<TeamStatus, string> = { High: "bg-brand", Medium: "bg-a
 const COLS = [
   { key: "team", header: "Team" },
   { key: "participation", header: "Team Training Participation", align: "right" as const },
-  { key: "frequency", header: "Team Frequency", align: "right" as const },
+  { key: "frequency", header: "Team Frequency (Days)", align: "right" as const },
   { key: "users", header: "Team Active Users", align: "right" as const },
   { key: "status", header: "Status" },
 ];
@@ -28,7 +28,7 @@ const toRow = (r: TeamRow): TableRow => ({
   cells: {
     team: { v: r.team.name },
     participation: { v: r.participation, node: fmtPct(r.participation, 0) },
-    frequency: { v: r.frequency, node: r.frequency == null ? "\u2014" : r.frequency.toFixed(2) },
+    frequency: { v: r.frequency, node: r.frequency == null ? "\u2014" : r.frequency.toFixed(1) },
     users: { v: r.activeUsers, node: fmtNumber(r.activeUsers) },
     status: { v: r.status, node: <StatusDot status={r.status} /> },
     trend: { v: titleCase(r.trend), node: <TrendPill trend={r.trend} /> },
@@ -58,7 +58,7 @@ export function TeamsView({ teams, packed, range, canExport, internal }: { teams
       <ChecklistSlicer title="Team Name" options={names} selected={sel} onChange={setSel} />
       <div className="space-y-4">
         <Card>
-          <CardHeader title="Team Performance Distribution" badge={<ScopeTag scope="month" />} subtitle={`${rows.length} team${rows.length === 1 ? "" : "s"} \u00b7 status blends participation (\u2265 75% = full score) and frequency (\u2265 6x = full score)`} />
+          <CardHeader title="Team Performance Distribution" badge={<ScopeTag scope="month" />} subtitle={`${rows.length} team${rows.length === 1 ? "" : "s"} \u00b7 status blends participation (\u2265 75% = full score) and frequency (\u2265 6 days = full score)`} />
           <div className="p-5">
             <div className="flex h-10 overflow-hidden rounded-xl" role="img" aria-label={`High ${counts.High}, Medium ${counts.Medium}, Low ${counts.Low}`}>
               {(["High", "Medium", "Low"] as const).map((s) => counts[s] > 0 && (
